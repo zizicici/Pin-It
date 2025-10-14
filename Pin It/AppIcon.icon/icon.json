@@ -16,10 +16,10 @@
           "image-name" : "pin.png",
           "name" : "pin",
           "position" : {
-            "scale" : 0.8,
+            "scale" : 1,
             "translation-in-points" : [
-              187.03125,
-              183.2421875
+              159.9765625,
+              158.71875
             ]
           }
         }
