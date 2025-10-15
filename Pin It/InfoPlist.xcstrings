@@ -30,6 +30,18 @@
           }
         }
       }
+    },
+    "NSPhotoLibraryAddUsageDescription" : {
+      "comment" : "Privacy - Photo Library Additions Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Allow access to photo library to save photos to your photo library directly when using Pin It"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

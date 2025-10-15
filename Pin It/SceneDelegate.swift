@@ -6,11 +6,10 @@
 //
 
 import UIKit
+import os.log
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-
     var window: UIWindow?
-
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
@@ -21,6 +20,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window = UIWindow(windowScene: windowScene)
         window?.rootViewController = UINavigationController(rootViewController: MainViewController())
         window?.makeKeyAndVisible()
+        
+        if let _ = connectionOptions.urlContexts.first {
+            logger.log("\(#function, privacy: .public)")
+            handleURLContext()
+        }
+    }
+    
+    func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
+        logger.log("\(#function, privacy: .public)")
+        handleURLContext()
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -51,6 +60,27 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // to restore the scene back to its current state.
     }
 
-
+    func handleURLContext() {
+        logger.log("\(#function, privacy: .public)")
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) else {
+            logger.log("no container URL")
+            return
+        }
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: containerURL,
+            includingPropertiesForKeys: nil,
+            options: .skipsHiddenFiles
+        ) else {
+            logger.log("no contents")
+            return
+        }
+        for file in files {
+            logger.log("found \(file, privacy: .public)")
+            if let data = try? Data(contentsOf: file) {
+                if let _ = UIImage(data: data) {
+                    logger.log("it's an image")
+                }
+            }
+        }
+    }
 }
-

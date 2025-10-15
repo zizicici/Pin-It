@@ -1,0 +1,24 @@
+{
+  "originHash" : "2198b036657e3ce217a7babe9813d162f2bb01ae2c635144fd66965fb0308f21",
+  "pins" : [
+    {
+      "identity" : "snapkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SnapKit/SnapKit",
+      "state" : {
+        "revision" : "2842e6e84e82eb9a8dac0100ca90d9444b0307f4",
+        "version" : "5.7.1"
+      }
+    },
+    {
+      "identity" : "tocropviewcontroller",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/TimOliver/TOCropViewController.git",
+      "state" : {
+        "revision" : "4901016b791bf2dab2a660125463e230d7298214",
+        "version" : "3.0.0"
+      }
+    }
+  ],
+  "version" : 3
+}

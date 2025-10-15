@@ -1,0 +1,30 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "1/20" : {
+
+    },
+    "Configuration" : {
+
+    },
+    "Favorite Emoji" : {
+
+    },
+    "Favorite Emoji:" : {
+
+    },
+    "intent.updateCalendar.title" : {
+
+    },
+    "This is an example widget." : {
+
+    },
+    "Time:" : {
+
+    }
+  },
+  "version" : "1.1"
+}

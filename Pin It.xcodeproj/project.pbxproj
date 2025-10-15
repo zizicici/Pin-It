@@ -7,8 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		14558CE52E9DF9C1007A67E2 /* UniformTypeIdentifiers.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 14558CE42E9DF9C1007A67E2 /* UniformTypeIdentifiers.framework */; };
-		14558CF12E9DF9C1007A67E2 /* Action.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 14558CE32E9DF9C1007A67E2 /* Action.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		14558D072E9E8CE1007A67E2 /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 14558D062E9E8CE1007A67E2 /* SnapKit */; };
+		1477252E2E9F4E8A001A3EBD /* CropViewController in Frameworks */ = {isa = PBXBuildFile; productRef = 1477252D2E9F4E8A001A3EBD /* CropViewController */; };
+		147725302E9F4EAA001A3EBD /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1477252F2E9F4EAA001A3EBD /* SnapKit */; };
 		1481AAF92E9D543400E359C9 /* Box.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1481AAEF2E9D543400E359C9 /* Box.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1481AB062E9D547700E359C9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1481AB052E9D547700E359C9 /* WidgetKit.framework */; };
 		1481AB082E9D547700E359C9 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1481AB072E9D547700E359C9 /* SwiftUI.framework */; };
@@ -16,13 +17,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		14558CEF2E9DF9C1007A67E2 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1481AAAF2E9D4CFD00E359C9 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 14558CE22E9DF9C1007A67E2;
-			remoteInfo = Action;
-		};
 		1481AAF72E9D543400E359C9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1481AAAF2E9D4CFD00E359C9 /* Project object */;
@@ -46,7 +40,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				14558CF12E9DF9C1007A67E2 /* Action.appex in Embed Foundation Extensions */,
 				1481AAF92E9D543400E359C9 /* Box.appex in Embed Foundation Extensions */,
 				1481AB172E9D547800E359C9 /* Board.appex in Embed Foundation Extensions */,
 			);
@@ -56,7 +49,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		14558CE32E9DF9C1007A67E2 /* Action.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Action.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		14558CE42E9DF9C1007A67E2 /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
 		1481AAB72E9D4CFD00E359C9 /* Pin It.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Pin It.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1481AAEF2E9D543400E359C9 /* Box.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Box.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -66,12 +58,33 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		14558CF52E9DF9C1007A67E2 /* Exceptions for "Action" folder in "Action" target */ = {
+		14558D032E9E826B007A67E2 /* Exceptions for "Shared" folder in "Pin It" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				Globals.swift,
+				LiveActivityManager.swift,
+				Localizable.xcstrings,
+				PinAttributes.swift,
 			);
-			target = 14558CE22E9DF9C1007A67E2 /* Action */;
+			target = 1481AAB62E9D4CFD00E359C9 /* Pin It */;
+		};
+		14558D042E9E826B007A67E2 /* Exceptions for "Shared" folder in "Board" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Globals.swift,
+				LiveActivityManager.swift,
+				Localizable.xcstrings,
+				PinAttributes.swift,
+			);
+			target = 1481AB022E9D547700E359C9 /* Board */;
+		};
+		147725372E9F5B6D001A3EBD /* Exceptions for "Shared" folder in "Box" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Globals.swift,
+				Localizable.xcstrings,
+			);
+			target = 1481AAEE2E9D543400E359C9 /* Box */;
 		};
 		1481AAC92E9D4CFD00E359C9 /* Exceptions for "Pin It" folder in "Pin It" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -97,12 +110,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		14558CE62E9DF9C1007A67E2 /* Action */ = {
+		14558CFE2E9E8250007A67E2 /* Shared */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				14558CF52E9DF9C1007A67E2 /* Exceptions for "Action" folder in "Action" target */,
+				14558D032E9E826B007A67E2 /* Exceptions for "Shared" folder in "Pin It" target */,
+				147725372E9F5B6D001A3EBD /* Exceptions for "Shared" folder in "Box" target */,
+				14558D042E9E826B007A67E2 /* Exceptions for "Shared" folder in "Board" target */,
 			);
-			path = Action;
+			path = Shared;
 			sourceTree = "<group>";
 		};
 		1481AAB92E9D4CFD00E359C9 /* Pin It */ = {
@@ -132,18 +147,11 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		14558CE02E9DF9C1007A67E2 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				14558CE52E9DF9C1007A67E2 /* UniformTypeIdentifiers.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		1481AAB42E9D4CFD00E359C9 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				14558D072E9E8CE1007A67E2 /* SnapKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -151,6 +159,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1477252E2E9F4E8A001A3EBD /* CropViewController in Frameworks */,
+				147725302E9F4EAA001A3EBD /* SnapKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -169,10 +179,10 @@
 		1481AAAE2E9D4CFD00E359C9 = {
 			isa = PBXGroup;
 			children = (
+				14558CFE2E9E8250007A67E2 /* Shared */,
 				1481AAB92E9D4CFD00E359C9 /* Pin It */,
 				1481AAF02E9D543400E359C9 /* Box */,
 				1481AB092E9D547700E359C9 /* Board */,
-				14558CE62E9DF9C1007A67E2 /* Action */,
 				1481AB042E9D547700E359C9 /* Frameworks */,
 				1481AAB82E9D4CFD00E359C9 /* Products */,
 			);
@@ -184,7 +194,6 @@
 				1481AAB72E9D4CFD00E359C9 /* Pin It.app */,
 				1481AAEF2E9D543400E359C9 /* Box.appex */,
 				1481AB032E9D547700E359C9 /* Board.appex */,
-				14558CE32E9DF9C1007A67E2 /* Action.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -202,28 +211,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		14558CE22E9DF9C1007A67E2 /* Action */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 14558CF42E9DF9C1007A67E2 /* Build configuration list for PBXNativeTarget "Action" */;
-			buildPhases = (
-				14558CDF2E9DF9C1007A67E2 /* Sources */,
-				14558CE02E9DF9C1007A67E2 /* Frameworks */,
-				14558CE12E9DF9C1007A67E2 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				14558CE62E9DF9C1007A67E2 /* Action */,
-			);
-			name = Action;
-			packageProductDependencies = (
-			);
-			productName = Action;
-			productReference = 14558CE32E9DF9C1007A67E2 /* Action.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 		1481AAB62E9D4CFD00E359C9 /* Pin It */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1481AACA2E9D4CFD00E359C9 /* Build configuration list for PBXNativeTarget "Pin It" */;
@@ -238,13 +225,13 @@
 			dependencies = (
 				1481AAF82E9D543400E359C9 /* PBXTargetDependency */,
 				1481AB162E9D547800E359C9 /* PBXTargetDependency */,
-				14558CF02E9DF9C1007A67E2 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				1481AAB92E9D4CFD00E359C9 /* Pin It */,
 			);
 			name = "Pin It";
 			packageProductDependencies = (
+				14558D062E9E8CE1007A67E2 /* SnapKit */,
 			);
 			productName = "Pin It";
 			productReference = 1481AAB72E9D4CFD00E359C9 /* Pin It.app */;
@@ -267,6 +254,8 @@
 			);
 			name = Box;
 			packageProductDependencies = (
+				1477252D2E9F4E8A001A3EBD /* CropViewController */,
+				1477252F2E9F4EAA001A3EBD /* SnapKit */,
 			);
 			productName = Box;
 			productReference = 1481AAEF2E9D543400E359C9 /* Box.appex */;
@@ -304,9 +293,6 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
-					14558CE22E9DF9C1007A67E2 = {
-						CreatedOnToolsVersion = 26.0;
-					};
 					1481AAB62E9D4CFD00E359C9 = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -330,6 +316,10 @@
 			);
 			mainGroup = 1481AAAE2E9D4CFD00E359C9;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				14558D052E9E8CE1007A67E2 /* XCRemoteSwiftPackageReference "SnapKit" */,
+				1477252C2E9F4E8A001A3EBD /* XCRemoteSwiftPackageReference "TOCropViewController" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1481AAB82E9D4CFD00E359C9 /* Products */;
 			projectDirPath = "";
@@ -338,19 +328,11 @@
 				1481AAB62E9D4CFD00E359C9 /* Pin It */,
 				1481AAEE2E9D543400E359C9 /* Box */,
 				1481AB022E9D547700E359C9 /* Board */,
-				14558CE22E9DF9C1007A67E2 /* Action */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		14558CE12E9DF9C1007A67E2 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		1481AAB52E9D4CFD00E359C9 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -375,13 +357,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		14558CDF2E9DF9C1007A67E2 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		1481AAB32E9D4CFD00E359C9 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -406,11 +381,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		14558CF02E9DF9C1007A67E2 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 14558CE22E9DF9C1007A67E2 /* Action */;
-			targetProxy = 14558CEF2E9DF9C1007A67E2 /* PBXContainerItemProxy */;
-		};
 		1481AAF82E9D543400E359C9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 1481AAEE2E9D543400E359C9 /* Box */;
@@ -424,74 +394,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		14558CF22E9DF9C1007A67E2 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = Action/Action.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = KKQQQNKMM6;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Action/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Pin It";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin.Action;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		14558CF32E9DF9C1007A67E2 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = Action/Action.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = KKQQQNKMM6;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Action/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Pin It";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin.Action;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 		1481AACB2E9D4CFD00E359C9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -503,10 +405,13 @@
 				DEVELOPMENT_TEAM = KKQQQNKMM6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Pin It/Info.plist";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Allow access to photo library to save photos to your photo library directly when using Pin It";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -539,10 +444,13 @@
 				DEVELOPMENT_TEAM = KKQQQNKMM6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Pin It/Info.plist";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Allow access to photo library to save photos to your photo library directly when using Pin It";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -700,6 +608,8 @@
 				INFOPLIST_FILE = Box/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Box;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Allow access to photo library to save photos to your photo library directly when using Pin It";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -733,6 +643,8 @@
 				INFOPLIST_FILE = Box/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Box;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Allow access to photo library to save photos to your photo library directly when using Pin It";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -768,6 +680,7 @@
 				INFOPLIST_FILE = Board/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Board;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -803,6 +716,7 @@
 				INFOPLIST_FILE = Board/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Board;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -828,15 +742,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		14558CF42E9DF9C1007A67E2 /* Build configuration list for PBXNativeTarget "Action" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				14558CF22E9DF9C1007A67E2 /* Debug */,
-				14558CF32E9DF9C1007A67E2 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		1481AAB22E9D4CFD00E359C9 /* Build configuration list for PBXProject "Pin It" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -874,6 +779,43 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		14558D052E9E8CE1007A67E2 /* XCRemoteSwiftPackageReference "SnapKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SnapKit/SnapKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.7.1;
+			};
+		};
+		1477252C2E9F4E8A001A3EBD /* XCRemoteSwiftPackageReference "TOCropViewController" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/TimOliver/TOCropViewController.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		14558D062E9E8CE1007A67E2 /* SnapKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 14558D052E9E8CE1007A67E2 /* XCRemoteSwiftPackageReference "SnapKit" */;
+			productName = SnapKit;
+		};
+		1477252D2E9F4E8A001A3EBD /* CropViewController */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1477252C2E9F4E8A001A3EBD /* XCRemoteSwiftPackageReference "TOCropViewController" */;
+			productName = CropViewController;
+		};
+		1477252F2E9F4EAA001A3EBD /* SnapKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 14558D052E9E8CE1007A67E2 /* XCRemoteSwiftPackageReference "SnapKit" */;
+			productName = SnapKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1481AAAF2E9D4CFD00E359C9 /* Project object */;
 }

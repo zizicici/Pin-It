@@ -6,25 +6,65 @@
 //
 
 import UIKit
-import Social
+import UniformTypeIdentifiers
+import os.log
 
-class ShareViewController: SLComposeServiceViewController {
+class BoxViewController: UIViewController {
+    var context: NSExtensionContext?
 
-    override func isContentValid() -> Bool {
-        // Do validation of contentText and/or NSExtensionContext attachments here
-        return true
+    override func beginRequest(with context: NSExtensionContext) {
+        logger.log(#function)
+        self.context = context
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) else {
+            return
+        }
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: containerURL,
+            includingPropertiesForKeys: nil,
+            options: .skipsHiddenFiles
+        ) else {
+            return
+        }
+        for file in files {
+            try? FileManager.default.removeItem(at: file)
+        }
+        for item in context.inputItems {
+            if let item = item as? NSExtensionItem {
+                for provider in (item.attachments ?? []) {
+                    _ = provider.loadDataRepresentation(for: .image) { data, error in
+                        if let data {
+                            let file = UUID().uuidString
+                            do {
+                                try data.write(to: containerURL.appending(path: file))
+                                logger.log("wrote \(file, privacy: .public)")
+                            } catch {
+                                print(error)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    override func didSelectPost() {
-        // This is called after the user selects Post. Do the upload of contentText and/or NSExtensionContext attachments.
-    
-        // Inform the host that we're done, so it un-blocks its UI. Note: Alternatively you could call super's -didSelectPost, which will similarly complete the extension context.
-        self.extensionContext!.completeRequest(returningItems: [], completionHandler: nil)
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        logger.log(#function)
+        context?.completeRequest(returningItems: nil) { [weak self] _ in
+            self?.openURL(URL(string: "openbox:"))
+        }
     }
 
-    override func configurationItems() -> [Any]! {
-        // To add configuration options via table cells at the bottom of the sheet, return an array of SLComposeSheetConfigurationItem here.
-        return []
+    func openURL(_ url: URL?) {
+        guard let url else { return }
+        logger.log(#function)
+        var responder: UIResponder? = self
+        while responder != nil {
+            if let application = responder as? UIApplication {
+                application.open(url, options: [:], completionHandler: nil)
+                return
+            }
+            responder = responder?.next
+        }
     }
-
 }
