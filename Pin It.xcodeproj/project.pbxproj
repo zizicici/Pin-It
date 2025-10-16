@@ -14,6 +14,7 @@
 		1481AB062E9D547700E359C9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1481AB052E9D547700E359C9 /* WidgetKit.framework */; };
 		1481AB082E9D547700E359C9 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1481AB072E9D547700E359C9 /* SwiftUI.framework */; };
 		1481AB172E9D547800E359C9 /* Board.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1481AB032E9D547700E359C9 /* Board.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		14AA37282EA0907300685425 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 14AA37272EA0907300685425 /* GRDB */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -89,7 +90,7 @@
 		1481AAC92E9D4CFD00E359C9 /* Exceptions for "Pin It" folder in "Pin It" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				Resource/Info.plist,
 			);
 			target = 1481AAB62E9D4CFD00E359C9 /* Pin It */;
 		};
@@ -152,6 +153,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				14558D072E9E8CE1007A67E2 /* SnapKit in Frameworks */,
+				14AA37282EA0907300685425 /* GRDB in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -232,6 +234,7 @@
 			name = "Pin It";
 			packageProductDependencies = (
 				14558D062E9E8CE1007A67E2 /* SnapKit */,
+				14AA37272EA0907300685425 /* GRDB */,
 			);
 			productName = "Pin It";
 			productReference = 1481AAB72E9D4CFD00E359C9 /* Pin It.app */;
@@ -319,6 +322,7 @@
 			packageReferences = (
 				14558D052E9E8CE1007A67E2 /* XCRemoteSwiftPackageReference "SnapKit" */,
 				1477252C2E9F4E8A001A3EBD /* XCRemoteSwiftPackageReference "TOCropViewController" */,
+				14AA37262EA0907300685425 /* XCRemoteSwiftPackageReference "GRDB" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1481AAB82E9D4CFD00E359C9 /* Products */;
@@ -797,6 +801,14 @@
 				minimumVersion = 3.0.0;
 			};
 		};
+		14AA37262EA0907300685425 /* XCRemoteSwiftPackageReference "GRDB" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/groue/GRDB.swift";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 7.8.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -814,6 +826,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 14558D052E9E8CE1007A67E2 /* XCRemoteSwiftPackageReference "SnapKit" */;
 			productName = SnapKit;
+		};
+		14AA37272EA0907300685425 /* GRDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 14AA37262EA0907300685425 /* XCRemoteSwiftPackageReference "GRDB" */;
+			productName = GRDB;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
