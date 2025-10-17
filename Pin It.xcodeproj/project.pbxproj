@@ -90,7 +90,7 @@
 		1481AAC92E9D4CFD00E359C9 /* Exceptions for "Pin It" folder in "Pin It" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Resource/Info.plist,
+				Info.plist,
 			);
 			target = 1481AAB62E9D4CFD00E359C9 /* Pin It */;
 		};
@@ -805,8 +805,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/groue/GRDB.swift";
 			requirement = {
-				kind = upToNextMinorVersion;
-				minimumVersion = 7.8.0;
+				kind = exactVersion;
+				version = 7.6.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
