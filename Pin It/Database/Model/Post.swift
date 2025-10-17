@@ -9,10 +9,14 @@ import Foundation
 import GRDB
 
 struct Post: Identifiable, Hashable, Codable {
-    struct Detail: Decodable, FetchableRecord {
+    struct Detail: Decodable, FetchableRecord, Hashable {
         var post: Post
         var images: [PostImage]
         var texts: [PostText]
+        
+        var title: String {
+            return post.title
+        }
     }
     
     var id: Int64?

@@ -11,7 +11,7 @@ import GRDB
 final class DataManager {
     static let shared = DataManager()
     
-    private func fetchAllPostDetails() -> [Post.Detail] {
+    public func fetchAllPostDetails() -> [Post.Detail] {
         var result: [Post.Detail] = []
         do {
             try AppDatabase.shared.reader?.read{ db in

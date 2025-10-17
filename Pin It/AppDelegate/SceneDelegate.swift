@@ -18,7 +18,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = UINavigationController(rootViewController: MainViewController())
+        
+        let tabbarController = UITabBarController()
+        tabbarController.view.tintColor = .systemRed
+        tabbarController.tabBar.tintColor = .systemRed
+        tabbarController.viewControllers = [UINavigationController(rootViewController: MainViewController()), UINavigationController(rootViewController: MoreViewController())]
+        
+        window?.rootViewController = tabbarController
         window?.makeKeyAndVisible()
         
         if let _ = connectionOptions.urlContexts.first {
