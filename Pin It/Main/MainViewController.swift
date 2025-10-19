@@ -48,7 +48,16 @@ class MainViewController: UIViewController {
     
     @objc
     func addAction() {
+        let editorViewController = EditorViewController(postText: PostText(postId: -1, content: "", order: 0)) { postText in
+            let result = DataManager.shared.createPost(content: postText.content)
+            print(result)
+            if result {
+            } else {
+                
+            }
+        }
         
+        navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
     }
     
     func createLayout() -> UICollectionViewLayout {

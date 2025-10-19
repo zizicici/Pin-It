@@ -53,5 +53,13 @@ extension Post: TimestampedRecord {
 extension Post {
     static let images = hasMany(PostImage.self).forKey("images").order(PostImage.Columns.order.asc)
     
+    var images: QueryInterfaceRequest<PostImage> {
+        request(for: Post.images)
+    }
+    
     static let texts = hasMany(PostText.self).forKey("texts").order(PostText.Columns.order.asc)
+    
+    var texts: QueryInterfaceRequest<PostText> {
+        request(for: Post.texts)
+    }
 }

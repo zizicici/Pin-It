@@ -17,8 +17,8 @@ final class DataManager {
             try AppDatabase.shared.reader?.read{ db in
                 let orderColumn = Post.Columns.order
                 result = try Post
-                    .including(required: Post.images)
-                    .including(required: Post.texts)
+                    .including(all: Post.images)
+                    .including(all: Post.texts)
                     .asRequest(of: Post.Detail.self)
                     .order(orderColumn.desc)
                     .fetchAll(db)
@@ -46,7 +46,7 @@ final class DataManager {
         return result
     }
     
-    private func createPost(content: String) -> Bool {
+    public func createPost(content: String) -> Bool {
         // Fetch Last Post
         let newOrder = (fetchLastPost()?.order ?? -1) + 1
         let newPost = Post(title: "", order: newOrder)
