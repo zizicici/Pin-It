@@ -13,10 +13,6 @@ struct Post: Identifiable, Hashable, Codable {
         var post: Post
         var images: [PostImage]
         var texts: [PostText]
-        
-        var title: String {
-            return post.title
-        }
     }
     
     var id: Int64?
@@ -24,15 +20,17 @@ struct Post: Identifiable, Hashable, Codable {
     var creationTime: Int64?
     var modificationTime: Int64?
     
-    var title: String
+    var isPinned: Bool
     var order: Int64
     
     enum Columns: String, ColumnExpression {
         case order
+        
+        static let isPinned = Column(CodingKeys.isPinned)
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, creationTime = "creation_time", modificationTime = "modification_time", title, order
+        case id, creationTime = "creation_time", modificationTime = "modification_time", isPinned = "is_pinned", order
     }
 }
 

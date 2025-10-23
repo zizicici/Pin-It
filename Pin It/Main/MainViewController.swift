@@ -92,7 +92,7 @@ class MainViewController: UIViewController {
     func createNormalCellRegistration() -> UICollectionView.CellRegistration<UICollectionViewListCell, Post.Detail> {
         return UICollectionView.CellRegistration<UICollectionViewListCell, Post.Detail> { (cell, indexPath, item) in
             var content = UIListContentConfiguration.subtitleCell()
-            content.text = item.title
+            content.text = "item.post.creationTime"
             content.secondaryText = item.texts.first?.content ?? ""
             content.textToSecondaryTextVerticalPadding = 6.0
             content.secondaryTextProperties.color = AppColor.text.withAlphaComponent(0.75)

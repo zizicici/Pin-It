@@ -32,7 +32,7 @@ final class AppDatabase {
                 table.column("creation_time", .integer).notNull()
                 table.column("modification_time", .integer).notNull()
                 
-                table.column("title", .text).notNull()
+                table.column("is_pinned", .boolean).notNull()
                 table.column("order", .integer).notNull()
             }
             try db.create(table: "text") { table in

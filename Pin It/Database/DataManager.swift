@@ -31,12 +31,13 @@ final class DataManager {
         return result
     }
     
-    private func fetchLastPost() -> Post? {
+    public func fetchLastPost(isPinned: Bool) -> Post? {
         var result: Post?
         do {
             try AppDatabase.shared.reader?.read { db in
                 let orderColumn = Post.Columns.order
-                result = try Post.order(orderColumn.desc).fetchOne(db)
+                let isPinnedColumn = Post.Columns.isPinned
+                result = try Post.order(orderColumn.desc).filter(isPinnedColumn == isPinned).fetchOne(db)
             }
         }
         catch {
@@ -48,8 +49,8 @@ final class DataManager {
     
     public func createPost(content: String) -> Bool {
         // Fetch Last Post
-        let newOrder = (fetchLastPost()?.order ?? -1) + 1
-        let newPost = Post(title: "", order: newOrder)
+        let newOrder = (fetchLastPost(isPinned: true)?.order ?? -1) + 1
+        let newPost = Post(isPinned: true, order: newOrder)
         guard let savedPost = AppDatabase.shared.add(post: newPost), let id = savedPost.id else {
             return false
         }
