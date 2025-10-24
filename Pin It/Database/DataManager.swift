@@ -11,15 +11,17 @@ import GRDB
 final class DataManager {
     static let shared = DataManager()
     
-    public func fetchAllPostDetails() -> [Post.Detail] {
+    public func fetchAllPostDetails(isPinned: Bool) -> [Post.Detail] {
         var result: [Post.Detail] = []
         do {
             try AppDatabase.shared.reader?.read{ db in
                 let orderColumn = Post.Columns.order
+                let isPinnedColumn = Post.Columns.isPinned
                 result = try Post
                     .including(all: Post.images)
                     .including(all: Post.texts)
                     .asRequest(of: Post.Detail.self)
+                    .filter(isPinnedColumn == isPinned)
                     .order(orderColumn.desc)
                     .fetchAll(db)
             }
@@ -65,5 +67,11 @@ final class DataManager {
     
     private func createPost(original: String, cropped: String, rect: CGRect, orientation: Int) -> Bool {
         return false
+    }
+    
+    public func update(post: Post, isPinned: Bool) -> Bool {
+        var newPost = post
+        newPost.isPinned = isPinned
+        return AppDatabase.shared.update(post: newPost)
     }
 }

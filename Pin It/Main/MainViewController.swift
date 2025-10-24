@@ -12,8 +12,20 @@ class MainViewController: UIViewController {
     private var collectionView: UICollectionView!
     private var dataSource: UICollectionViewDiffableDataSource<Section, Post.Detail>!
     
+    static let sectionHeaderElementKind = "sectionHeaderElementKind"
+    
     enum Section: Hashable, Sendable {
-        case main
+        case pinned
+        case others
+        
+        var title: String {
+            switch self {
+            case .pinned:
+                return String(localized: "pin.pinned.title")
+            case .others:
+                return String(localized: "pin.others.title")
+            }
+        }
     }
     
     private var addButton: UIBarButtonItem?
@@ -61,20 +73,40 @@ class MainViewController: UIViewController {
     }
     
     func createLayout() -> UICollectionViewLayout {
-        let sectionProvider = { (sectionIndex: Int, layoutEnvironment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection? in
-            var configuration = UICollectionLayoutListConfiguration(appearance: .insetGrouped)
-            configuration.separatorConfiguration = UIListSeparatorConfiguration(listAppearance: .insetGrouped)
-            configuration.backgroundColor = AppColor.background
-            let section = NSCollectionLayoutSection.list(using: configuration, layoutEnvironment: layoutEnvironment)
+        let config = UICollectionViewCompositionalLayoutConfiguration()
+        config.scrollDirection = .vertical
+        
+        let layout = UICollectionViewCompositionalLayout(sectionProvider: { index, environment in
+            let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
+                                                 heightDimension: .estimated(100))
+            let item = NSCollectionLayoutItem(layoutSize: itemSize)
+
+            let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
+                                                  heightDimension: .estimated(100))
+            let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize,
+                                                             subitems: [item])
+
+            let section = NSCollectionLayoutSection(group: group)
+            section.interGroupSpacing = 20.0
+            section.contentInsets = NSDirectionalEdgeInsets(top: 12.0, leading: 12.0, bottom: 12.0, trailing: 12.0)
+            
+            let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
+                                                         heightDimension: .estimated(100))
+            let sectionHeader = NSCollectionLayoutBoundarySupplementaryItem(
+                layoutSize: headerSize,
+                elementKind: Self.sectionHeaderElementKind, alignment: .top)
+            section.boundarySupplementaryItems = [sectionHeader]
             
             return section
-        }
-        return UICollectionViewCompositionalLayout(sectionProvider: sectionProvider)
+        }, configuration: config)
+        
+        return layout
     }
     
     func configureHierarchy() {
         collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: createLayout())
         collectionView.delegate = self
+        collectionView.backgroundColor = .clear
         view.addSubview(collectionView)
         collectionView.snp.makeConstraints { make in
             make.edges.equalTo(view)
@@ -87,30 +119,39 @@ class MainViewController: UIViewController {
         dataSource = UICollectionViewDiffableDataSource<Section, Post.Detail>(collectionView: collectionView, cellProvider: { collectionView, indexPath, itemIdentifier in
             return collectionView.dequeueConfiguredReusableCell(using: normalCellRegistration, for: indexPath, item: itemIdentifier)
         })
+        
+        let headerRegistration = UICollectionView.SupplementaryRegistration
+        <HeaderReuseView>(elementKind: Self.sectionHeaderElementKind) { [weak self] supplementaryView, elementKind, indexPath in
+            guard let self = self else { return }
+            guard let section = self.dataSource.sectionIdentifier(for: indexPath.section) else { fatalError("Unknown section") }
+            
+            supplementaryView.titleLabel.text = section.title
+        }
+        
+        dataSource.supplementaryViewProvider = { collectionView, kind, index in
+            return collectionView.dequeueConfiguredReusableSupplementary(using: headerRegistration, for: index)
+        }
     }
     
-    func createNormalCellRegistration() -> UICollectionView.CellRegistration<UICollectionViewListCell, Post.Detail> {
-        return UICollectionView.CellRegistration<UICollectionViewListCell, Post.Detail> { (cell, indexPath, item) in
-            var content = UIListContentConfiguration.subtitleCell()
-            content.text = "item.post.creationTime"
-            content.secondaryText = item.texts.first?.content ?? ""
-            content.textToSecondaryTextVerticalPadding = 6.0
-            content.secondaryTextProperties.color = AppColor.text.withAlphaComponent(0.75)
-            var layoutMargins = content.directionalLayoutMargins
-            layoutMargins.leading = 10.0
-            layoutMargins.top = 10.0
-            layoutMargins.bottom = 10.0
-            content.directionalLayoutMargins = layoutMargins
-            cell.contentConfiguration = content
+    func createNormalCellRegistration() -> UICollectionView.CellRegistration<PostCell, Post.Detail> {
+        return UICollectionView.CellRegistration<PostCell, Post.Detail> { [weak self] (cell, indexPath, item) in
+            guard let self = self else { return }
+            cell.delegate = self
+            cell.update(with: item)
         }
     }
     
     @objc
     func reloadData() {
-        let postDetails = DataManager.shared.fetchAllPostDetails()
+        let pinnedPostDetails = DataManager.shared.fetchAllPostDetails(isPinned: true)
+        let otherPostDetails = DataManager.shared.fetchAllPostDetails(isPinned: false)
         var snapshot = NSDiffableDataSourceSnapshot<Section, Post.Detail>()
-        snapshot.appendSections([.main])
-        snapshot.appendItems(postDetails)
+        snapshot.appendSections([.pinned])
+        snapshot.appendItems(pinnedPostDetails, toSection: .pinned)
+        if otherPostDetails.count > 0 {
+            snapshot.appendSections([.others])
+            snapshot.appendItems(otherPostDetails, toSection: .others)
+        }
         
         dataSource.apply(snapshot, animatingDifferences: true)
     }
@@ -119,5 +160,15 @@ class MainViewController: UIViewController {
 extension MainViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         collectionView.deselectItem(at: indexPath, animated: true)
+    }
+}
+
+extension MainViewController: PostCellDelegate {
+    func getMoreButtonMenu(for post: Post.Detail) -> UIMenu {
+        return UIMenu()
+    }
+    
+    func update(post: Post, isPinned: Bool) {
+        _ = DataManager.shared.update(post: post, isPinned: isPinned  )
     }
 }

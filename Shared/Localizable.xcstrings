@@ -131,6 +131,38 @@
     "intent.updateCalendar.title" : {
 
     },
+    "pin.others.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Others"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "其他记录"
+          }
+        }
+      }
+    },
+    "pin.pinned.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pinned"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前记录"
+          }
+        }
+      }
+    },
     "This is an example widget." : {
 
     },
