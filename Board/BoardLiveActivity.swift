@@ -36,17 +36,55 @@ struct BoardLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: PinAttributes.self) { context in
             // Lock screen/banner UI goes here
-            VStack {
-                Image("testimage").resizable().scaledToFit()
-
-//                Text("\(context.state.text)")
-//                Text("\(context.state.text)")
-//                Text("\(context.state.text)")
-//                Text("\(context.state.text)")
-//                Text("\(context.state.text)")
-//                Text("\(context.state.text)")
-//                Text("\(context.state.text)")
-//                Text("\(context.state.text)")
+            HStack {
+                VStack {
+                    Button(intent: ButtonIntent()) {
+                        Image(systemName: "pin.fill")
+                    }
+                    .tint(.red)
+                    
+                    Spacer(minLength: 4.0)
+                    
+                    Button(intent: ButtonIntent()) {
+                        Image(systemName: "pin.slash")
+                    }
+                    .buttonStyle(.borderless)
+                    .tint(.secondary)
+                    
+                    Spacer().frame(height: 4.0)
+                }
+                .padding(12.0)
+                VStack {
+                    Spacer()
+                    AutoSizeText(text: context.state.text ?? "")
+    //                Image("testimage").resizable().scaledToFit()
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack {
+                    Button(intent: ButtonIntent()) {
+                        Image(systemName: "chevron.up")
+                            .frame(minHeight: 21.0)
+                    }
+                    .tint(.primary)
+                    
+                    Spacer(minLength: 18.0)
+                        .frame(maxHeight: .infinity)
+                    
+                    Text("1/20")
+                        .font(Font.footnote)
+                        .foregroundStyle(.secondary)
+                    
+                    Spacer(minLength: 18.0)
+                        .frame(maxHeight: .infinity)
+                    
+                    Button(intent: ButtonIntent()) {
+                        Image(systemName: "chevron.down")
+                            .frame(minHeight: 21.0)
+                    }
+                    .tint(.primary)
+                }
+                .padding(12.0)
             }
             .activityBackgroundTint(.clear)
             .activitySystemActionForegroundColor(Color.black)
@@ -64,7 +102,7 @@ struct BoardLiveActivity: Widget {
                         Spacer(minLength: 4.0)
                         
                         Button(intent: ButtonIntent()) {
-                            Image(systemName: "trash")
+                            Image(systemName: "pin.slash")
                         }
                         .buttonStyle(.borderless)
                         .tint(.secondary)
@@ -102,7 +140,8 @@ struct BoardLiveActivity: Widget {
                     VStack {
 //                            Image("testimage").resizable().scaledToFit()
                         
-                        AutoSizeText(text: "民革重工商大支部成立大会\n10月16日\n9:00 选举 厚德楼3020\n10:30 成立 明德楼1019")
+                        AutoSizeText(text: context.state.text ?? "")
+                        Spacer(minLength: 12.0)
 //                        AutoSizeText(text: qianzi)
                     }
 //                        .clipShape(RoundedRectangle(cornerRadius: 10.0))
