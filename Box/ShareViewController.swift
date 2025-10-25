@@ -15,7 +15,7 @@ class BoxViewController: UIViewController {
     override func beginRequest(with context: NSExtensionContext) {
         logger.log(#function)
         self.context = context
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) else {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
             return
         }
         guard let files = try? FileManager.default.contentsOfDirectory(

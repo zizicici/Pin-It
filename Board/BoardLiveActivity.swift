@@ -11,25 +11,6 @@ import SwiftUI
 import AppIntents
 import NaturalLanguage
 
-struct ButtonIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "intent.updateCalendar.title"
-    
-    @MainActor
-    func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        print("ButtonIntent perform()")
-        //await LiveActivityManager.shared.updateCalendarDisplay()
-        return .result(value: true)
-    }
-
-    static var parameterSummary: some ParameterSummary {
-        Summary("")
-    }
-    
-    static var openAppWhenRun: Bool = false
-    
-    static var isDiscoverable: Bool = false
-}
-
 var qianzi = "天地玄黃宇宙洪荒日月盈昃辰宿列張寒來暑往秋收冬藏閏餘成歲律召調陽雲騰致雨露結爲霜金生麗水玉出崑岡劍號巨闕珠稱夜光果珍李柰菜重芥薑海鹹河淡鱗潛羽翔龍師火帝鳥官人皇始制文字乃服衣裳推位讓國有虞陶唐弔民伐罪周發殷湯坐朝問道垂拱平章愛育黎首臣伏戎羌遐邇壹體率賓歸王鳴鳳在樹白駒食場化被草木賴及萬方蓋此身髮四大五常"
 
 struct BoardLiveActivity: Widget {

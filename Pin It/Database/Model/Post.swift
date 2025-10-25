@@ -9,7 +9,7 @@ import Foundation
 import GRDB
 
 struct Post: Identifiable, Hashable, Codable {
-    struct Detail: Decodable, FetchableRecord, Hashable {
+    struct Detail: Codable, FetchableRecord, Hashable {
         var post: Post
         var images: [PostImage]
         var texts: [PostText]

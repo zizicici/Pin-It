@@ -66,6 +66,7 @@
 				LiveActivityManager.swift,
 				Localizable.xcstrings,
 				PinAttributes.swift,
+				SyncData/SyncDataManager.swift,
 			);
 			target = 1481AAB62E9D4CFD00E359C9 /* Pin It */;
 		};
@@ -76,6 +77,7 @@
 				LiveActivityManager.swift,
 				Localizable.xcstrings,
 				PinAttributes.swift,
+				SyncData/SyncDataManager.swift,
 			);
 			target = 1481AB022E9D547700E359C9 /* Board */;
 		};
