@@ -52,14 +52,11 @@ class LiveActivityManager: NSObject {
     }
     
     @discardableResult
-    func start(retryFlag: Int = 1) async -> Bool {
+    func start() async -> Bool {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return false }
         switch Activity<PinAttributes>.activities.count {
         case 0:
             // Create
-            guard retryFlag >= 0 else {
-                return false
-            }
             var result: Bool = false
             let posts = (try? PinInfoManager.shared.getPosts()) ?? []
             guard posts.count >= 0 else {
@@ -75,7 +72,6 @@ class LiveActivityManager: NSObject {
             do {
                 let activity = try Activity.request(attributes: activityAttributes, content: activityContent)
                 startDate = Date()
-                updateStatus()
                 print(activity)
                 result = true
             }
@@ -87,12 +83,11 @@ class LiveActivityManager: NSObject {
         case 1:
             // Update
             let activities = Activity<PinAttributes>.activities
-            if let first = activities.first {
-                await first.end(nil, dismissalPolicy: .immediate)
-                return await start(retryFlag: retryFlag - 1)
-            } else {
-                return false
+            await restartIfNeeded()
+            if let position = getCurrentPosition() {
+                await update(index: position.index)
             }
+            return true
         default:
             return false
         }
@@ -105,7 +100,7 @@ class LiveActivityManager: NSObject {
         switch currentActivity.activityState {
         case .active, .dismissed:
             if let startDate = startDate {
-                if startDate.timeIntervalSinceNow < -14400 {
+                if startDate.timeIntervalSinceNow < -3600 {
                     await start()
                 }
             }
