@@ -11,12 +11,9 @@ import SwiftUI
 import AppIntents
 import NaturalLanguage
 
-var qianzi = "天地玄黃宇宙洪荒日月盈昃辰宿列張寒來暑往秋收冬藏閏餘成歲律召調陽雲騰致雨露結爲霜金生麗水玉出崑岡劍號巨闕珠稱夜光果珍李柰菜重芥薑海鹹河淡鱗潛羽翔龍師火帝鳥官人皇始制文字乃服衣裳推位讓國有虞陶唐弔民伐罪周發殷湯坐朝問道垂拱平章愛育黎首臣伏戎羌遐邇壹體率賓歸王鳴鳳在樹白駒食場化被草木賴及萬方蓋此身髮四大五常"
-
 struct BoardLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: PinAttributes.self) { context in
-            let text = getText(index: context.state.index, total: context.state.total)
             // Lock screen/banner UI goes here
             HStack {
                 VStack {
@@ -38,13 +35,13 @@ struct BoardLiveActivity: Widget {
                 .padding(12.0)
                 VStack {
                     Spacer()
-                    AutoSizeText(text: text)
+                    AutoSizeText(text: context.state.text ?? "")
     //                Image("testimage").resizable().scaledToFit()
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 VStack {
-                    Button(intent: ButtonEmptyIntent()) {
+                    Button(intent: ButtonPreviousIntent()) {
                         Image(systemName: "chevron.up")
                             .frame(minHeight: 21.0)
                     }
@@ -53,14 +50,14 @@ struct BoardLiveActivity: Widget {
                     Spacer(minLength: 18.0)
                         .frame(maxHeight: .infinity)
                     
-                    Text("1/20")
+                    Text("\(context.state.index + 1)/\(context.state.total)")
                         .font(Font.footnote)
                         .foregroundStyle(.secondary)
                     
                     Spacer(minLength: 18.0)
                         .frame(maxHeight: .infinity)
                     
-                    Button(intent: ButtonEmptyIntent()) {
+                    Button(intent: ButtonNextIntent()) {
                         Image(systemName: "chevron.down")
                             .frame(minHeight: 21.0)
                     }
@@ -95,7 +92,7 @@ struct BoardLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack {
-                        Button(intent: ButtonEmptyIntent()) {
+                        Button(intent: ButtonPreviousIntent()) {
                             Image(systemName: "chevron.up")
                                 .frame(minHeight: 21.0)
                         }
@@ -103,13 +100,13 @@ struct BoardLiveActivity: Widget {
                         
                         Spacer(minLength: 18.0)
                         
-                        Text("1/20")
+                        Text("\(context.state.index + 1)/\(context.state.total)")
                             .font(Font.footnote)
                             .foregroundStyle(.secondary)
                         
                         Spacer(minLength: 18.0)
                         
-                        Button(intent: ButtonEmptyIntent()) {
+                        Button(intent: ButtonNextIntent()) {
                             Image(systemName: "chevron.down")
                                 .frame(minHeight: 21.0)
                         }
@@ -119,11 +116,10 @@ struct BoardLiveActivity: Widget {
 //                    .background(.white)
                 }
                 DynamicIslandExpandedRegion(.center) {
-                    let text = getText(index: context.state.index, total: context.state.total)
                     VStack {
 //                            Image("testimage").resizable().scaledToFit()
                         
-                        AutoSizeText(text: text)
+                        AutoSizeText(text: context.state.text ?? "")
                         Spacer(minLength: 12.0)
 //                        AutoSizeText(text: qianzi)
                     }
@@ -167,19 +163,6 @@ struct BoardLiveActivity: Widget {
             .widgetURL(URL(string: "http://www.apple.com"))
             .keylineTint(Color.red)
         }
-    }
-    
-    func getText(index: Int, total: Int) -> String {
-        do {
-            let result = try SyncDataManager.read(SyncPostStorage.self)
-            return "\(result)"
-        }
-        catch {
-            return "error\(error)"
-        }
-        return ""
-//        let result = (try? PinInfoManager.shared.getPost(by: PinInfo(index: index, total: total))?.text) ?? "lalala"
-//        return result
     }
 }
 
@@ -248,69 +231,3 @@ struct AutoSizeText: View {
         return attributedString
     }
 }
-
-//struct AutoSizeText: View {
-//    let text: String
-//    
-//    var body: some View {
-//        ViewThatFits(in: .vertical) {
-//            // 尝试不同的字体大小，系统会自动选择最适合的
-//            VStack {
-//                Spacer(minLength: 0.0)
-//                Text(text)
-//                    .font(.system(size: 36).monospacedDigit())
-//                    .multilineTextAlignment(.center)
-//                Spacer(minLength: 0.0)
-//            }
-//            
-//            VStack {
-//                Spacer(minLength: 0.0)
-//                Text(text)
-//                    .font(.system(size: 28).monospacedDigit())
-//                    .multilineTextAlignment(.center)
-//                Spacer(minLength: 0.0)
-//            }
-//            
-//            VStack {
-//                Spacer(minLength: 0.0)
-//                Text(text)
-//                    .font(.system(size: 20).monospacedDigit())
-//                    .multilineTextAlignment(.center)
-//                Spacer(minLength: 0.0)
-//            }
-//            
-//            VStack {
-//                Spacer(minLength: 0.0)
-//                Text(text)
-//                    .font(.system(size: 16).monospacedDigit())
-//                    .multilineTextAlignment(.center)
-//                Spacer(minLength: 0.0)
-//            }
-//            
-//            VStack {
-//                Spacer(minLength: 0.0)
-//                Text(text)
-//                    .font(.system(size: 12).monospacedDigit())
-//                    .multilineTextAlignment(.center)
-//                Spacer(minLength: 0.0)
-//            }
-//            
-//            VStack {
-//                Spacer(minLength: 0.0)
-//                Text(text)
-//                    .font(.system(size: 10).monospacedDigit())
-//                    .multilineTextAlignment(.center)
-//                Spacer(minLength: 0.0)
-//            }
-//            
-//            VStack {
-//                Spacer(minLength: 0.0)
-//                Text(text)
-//                    .font(.system(size: 8).monospacedDigit())
-//                    .multilineTextAlignment(.center)
-//                Spacer(minLength: 0.0)
-//            }
-//        }
-//        .frame(maxHeight: .infinity)
-//    }
-//}

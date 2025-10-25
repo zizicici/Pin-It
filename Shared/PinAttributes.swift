@@ -12,6 +12,8 @@ struct PinAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         var index: Int
         var total: Int
+        var text: String?
+        var imageName: String?
     }
     
     var name: String

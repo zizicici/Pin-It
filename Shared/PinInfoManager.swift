@@ -7,6 +7,10 @@
 
 import Foundation
 
+protocol PinInfoPrivider {
+    var pinInfo: PinInfo { get }
+}
+
 struct PinInfo {
     var index: Int
     var total: Int
@@ -55,11 +59,9 @@ class PinInfoManager: NSObject {
     public func getPost(by pinInfo: PinInfo) throws -> SyncPost? {
         let posts = try getPosts()
         
-        print(posts)
-        
-//        guard pinInfo.total == posts.count else {
-//            throw NSError(domain: "PinInfoError", code: -1, userInfo: [NSLocalizedDescriptionKey: "total not equal"])
-//        }
+        guard pinInfo.total == posts.count else {
+            throw NSError(domain: "PinInfoError", code: -1, userInfo: [NSLocalizedDescriptionKey: "total not equal"])
+        }
         
         if (pinInfo.index >= 0) && (pinInfo.index < posts.count) {
             return posts[pinInfo.index]

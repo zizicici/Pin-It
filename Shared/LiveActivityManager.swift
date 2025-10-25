@@ -61,8 +61,11 @@ class LiveActivityManager: NSObject {
                 return false
             }
             var result: Bool = false
-            let total: Int = (try? PinInfoManager.shared.getPosts().count) ?? 0
-            let activityContent = ActivityContent(state: PinAttributes.ContentState(index: 0, total: total), staleDate: nil)
+            let posts = (try? PinInfoManager.shared.getPosts()) ?? []
+            let total: Int = posts.count
+            let index: Int = 0
+            let target = try? PinInfoManager.shared.getPost(by: PinInfo(index: index, total: total))
+            let activityContent = ActivityContent(state: PinAttributes.ContentState(index: index, total: total, text: target?.text), staleDate: nil)
             let activityAttributes = PinAttributes(name: "Pin")
             
             do {
@@ -126,5 +129,49 @@ class LiveActivityManager: NSObject {
             currentCount = Activity<PinAttributes>.activities.count
         }
         print("Activity Count: \(currentCount)")
+    }
+    
+    private func getCurrentPosition() -> (Int, Int)? {
+        if let state = Activity<PinAttributes>.activities.first?.content.state {
+            return (state.index, state.total)
+        } else {
+            return nil
+        }
+    }
+    
+    public func previousAction() async {
+        if let position = getCurrentPosition() {
+            var newIndex: Int
+            if position.0 == 0 {
+                newIndex = position.1 - 1
+            } else {
+                newIndex = position.0 - 1
+            }
+            await update(index: newIndex)
+        }
+    }
+    
+    public func nextAction() async {
+        if let position = getCurrentPosition() {
+            var newIndex: Int
+            if position.0 == position.1 - 1 {
+                newIndex = 0
+            } else {
+                newIndex = position.0 + 1
+            }
+            await update(index: newIndex)
+        }
+    }
+    
+    func update(index: Int) async {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        guard let currentActivity = Activity<PinAttributes>.activities.first else { return }
+        
+        let posts = (try? PinInfoManager.shared.getPosts()) ?? []
+        let total: Int = posts.count
+        let target = try? PinInfoManager.shared.getPost(by: PinInfo(index: index, total: total))
+        let activityContent = ActivityContent(state: PinAttributes.ContentState(index: index, total: total, text: target?.text), staleDate: nil)
+        
+        await currentActivity.update(activityContent)
     }
 }

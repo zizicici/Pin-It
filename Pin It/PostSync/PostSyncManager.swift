@@ -18,7 +18,6 @@ class PostSyncManager: NSObject {
         
         NotificationCenter.default.addObserver(self, selector: #selector(syncPostData), name: .DatabaseUpdated, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(syncPostData), name: UIApplication.didBecomeActiveNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(syncPostData), name: UIApplication.willResignActiveNotification, object: nil)
     }
     
     @objc
