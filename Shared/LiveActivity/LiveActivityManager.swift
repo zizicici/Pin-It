@@ -144,7 +144,7 @@ class LiveActivityManager: NSObject {
             if position.index == 0 {
                 newIndex = position.total - 1
             } else {
-                newIndex = position.total - 1
+                newIndex = position.index - 1
             }
             await update(index: newIndex)
         }
