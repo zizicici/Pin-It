@@ -125,9 +125,6 @@
     "Favorite Emoji" : {
 
     },
-    "Favorite Emoji:" : {
-
-    },
     "intent.updateCalendar.title" : {
 
     },
@@ -164,9 +161,6 @@
       }
     },
     "This is an example widget." : {
-
-    },
-    "Time:" : {
 
     }
   },

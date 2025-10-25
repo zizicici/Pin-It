@@ -10,8 +10,8 @@ import ActivityKit
 
 struct PinAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
-        var text: String?
-        var imageName: String?
+        var index: Int
+        var total: Int
     }
     
     var name: String

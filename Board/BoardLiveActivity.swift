@@ -16,17 +16,18 @@ var qianzi = "天地玄黃宇宙洪荒日月盈昃辰宿列張寒來暑往秋收
 struct BoardLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: PinAttributes.self) { context in
+            let text = getText(index: context.state.index, total: context.state.total)
             // Lock screen/banner UI goes here
             HStack {
                 VStack {
-                    Button(intent: ButtonIntent()) {
+                    Button(intent: ButtonEmptyIntent()) {
                         Image(systemName: "pin.fill")
                     }
                     .tint(.red)
                     
                     Spacer(minLength: 4.0)
                     
-                    Button(intent: ButtonIntent()) {
+                    Button(intent: ButtonEmptyIntent()) {
                         Image(systemName: "pin.slash")
                     }
                     .buttonStyle(.borderless)
@@ -37,13 +38,13 @@ struct BoardLiveActivity: Widget {
                 .padding(12.0)
                 VStack {
                     Spacer()
-                    AutoSizeText(text: context.state.text ?? "")
+                    AutoSizeText(text: text)
     //                Image("testimage").resizable().scaledToFit()
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 VStack {
-                    Button(intent: ButtonIntent()) {
+                    Button(intent: ButtonEmptyIntent()) {
                         Image(systemName: "chevron.up")
                             .frame(minHeight: 21.0)
                     }
@@ -59,7 +60,7 @@ struct BoardLiveActivity: Widget {
                     Spacer(minLength: 18.0)
                         .frame(maxHeight: .infinity)
                     
-                    Button(intent: ButtonIntent()) {
+                    Button(intent: ButtonEmptyIntent()) {
                         Image(systemName: "chevron.down")
                             .frame(minHeight: 21.0)
                     }
@@ -75,14 +76,14 @@ struct BoardLiveActivity: Widget {
                 // various regions, like leading/trailing/center/bottom
                 DynamicIslandExpandedRegion(.leading) {
                     VStack {
-                        Button(intent: ButtonIntent()) {
+                        Button(intent: ButtonEmptyIntent()) {
                             Image(systemName: "pin.fill")
                         }
                         .tint(.red)
                         
                         Spacer(minLength: 4.0)
                         
-                        Button(intent: ButtonIntent()) {
+                        Button(intent: ButtonEmptyIntent()) {
                             Image(systemName: "pin.slash")
                         }
                         .buttonStyle(.borderless)
@@ -94,7 +95,7 @@ struct BoardLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack {
-                        Button(intent: ButtonIntent()) {
+                        Button(intent: ButtonEmptyIntent()) {
                             Image(systemName: "chevron.up")
                                 .frame(minHeight: 21.0)
                         }
@@ -108,7 +109,7 @@ struct BoardLiveActivity: Widget {
                         
                         Spacer(minLength: 18.0)
                         
-                        Button(intent: ButtonIntent()) {
+                        Button(intent: ButtonEmptyIntent()) {
                             Image(systemName: "chevron.down")
                                 .frame(minHeight: 21.0)
                         }
@@ -118,10 +119,11 @@ struct BoardLiveActivity: Widget {
 //                    .background(.white)
                 }
                 DynamicIslandExpandedRegion(.center) {
+                    let text = getText(index: context.state.index, total: context.state.total)
                     VStack {
 //                            Image("testimage").resizable().scaledToFit()
                         
-                        AutoSizeText(text: context.state.text ?? "")
+                        AutoSizeText(text: text)
                         Spacer(minLength: 12.0)
 //                        AutoSizeText(text: qianzi)
                     }
@@ -165,6 +167,19 @@ struct BoardLiveActivity: Widget {
             .widgetURL(URL(string: "http://www.apple.com"))
             .keylineTint(Color.red)
         }
+    }
+    
+    func getText(index: Int, total: Int) -> String {
+        do {
+            let result = try SyncDataManager.read(SyncPostStorage.self)
+            return "\(result)"
+        }
+        catch {
+            return "error\(error)"
+        }
+        return ""
+//        let result = (try? PinInfoManager.shared.getPost(by: PinInfo(index: index, total: total))?.text) ?? "lalala"
+//        return result
     }
 }
 

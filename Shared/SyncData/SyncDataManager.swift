@@ -7,6 +7,10 @@
 
 import Foundation
 
+extension Notification.Name {
+    static let SyncDataUpdated = Notification.Name(rawValue: "com.zizicici.common.syncData.updated")
+}
+
 struct SyncPost: Codable {
     var id: Int64
     var text: String?
@@ -124,6 +128,8 @@ struct SyncDataManager {
         
         if let error = writeError {
             throw error
+        } else {
+            NotificationCenter.default.post(name: .SyncDataUpdated, object: nil)
         }
     }
     
@@ -134,6 +140,10 @@ struct SyncDataManager {
         
         guard let dataFileURL = dataFileURL(for: type) else {
             throw NSError(domain: "SyncDataError", code: -1, userInfo: [NSLocalizedDescriptionKey: "无法访问共享目录"])
+        }
+        
+        guard FileManager.default.fileExists(atPath: dataFileURL.path) else {
+            return nil
         }
         
         let coordinator = NSFileCoordinator()
@@ -153,12 +163,12 @@ struct SyncDataManager {
                 result = container.data
             } catch {
                 // 如果解码失败，清除损坏的数据
-                try? clearData(for: type)
                 readError = error
             }
         }
         
         if let error = readError {
+            try? clearData(for: type)
             throw error
         }
         

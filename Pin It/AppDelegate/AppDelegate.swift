@@ -13,6 +13,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Override point for customization after application launch.
         
         _ = AppDatabase.shared
+        _ = PinInfoManager.shared
         _ = PostSyncManager.shared
         
         return true

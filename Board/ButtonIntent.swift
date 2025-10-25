@@ -8,11 +8,13 @@
 import Foundation
 import AppIntents
 
-struct ButtonIntent: LiveActivityIntent {
+struct ButtonEmptyIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "intent.updateCalendar.title"
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
+        let posts = try? PinInfoManager.shared.getPosts()
+        print(posts)
         print("ButtonIntent perform()")
         
         return .result(value: true)

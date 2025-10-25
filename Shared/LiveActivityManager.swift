@@ -52,7 +52,7 @@ class LiveActivityManager: NSObject {
     }
     
     @discardableResult
-    func start(text: String, retryFlag: Int = 1) async -> Bool {
+    func start(retryFlag: Int = 1) async -> Bool {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return false }
         switch Activity<PinAttributes>.activities.count {
         case 0:
@@ -61,9 +61,10 @@ class LiveActivityManager: NSObject {
                 return false
             }
             var result: Bool = false
-            let activityContent = ActivityContent(state: PinAttributes.ContentState(text: text), staleDate: nil)
+            let total: Int = (try? PinInfoManager.shared.getPosts().count) ?? 0
+            let activityContent = ActivityContent(state: PinAttributes.ContentState(index: 0, total: total), staleDate: nil)
             let activityAttributes = PinAttributes(name: "Pin")
-
+            
             do {
                 let activity = try Activity.request(attributes: activityAttributes, content: activityContent)
                 startDate = Date()
@@ -81,7 +82,7 @@ class LiveActivityManager: NSObject {
             let activities = Activity<PinAttributes>.activities
             if let first = activities.first {
                 await first.end(nil, dismissalPolicy: .immediate)
-                return await start(text: text, retryFlag: retryFlag - 1)
+                return await start(retryFlag: retryFlag - 1)
             } else {
                 return false
             }
@@ -98,11 +99,11 @@ class LiveActivityManager: NSObject {
         case .active, .dismissed:
             if let startDate = startDate {
                 if startDate.timeIntervalSinceNow < -14400 {
-                    await start(text: currentActivity.content.state.text ?? "")
+                    await start()
                 }
             }
         case .stale, .ended:
-            await start(text: currentActivity.content.state.text ?? "")
+            await start()
         case .pending:
             break
         @unknown default:
