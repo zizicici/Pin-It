@@ -62,6 +62,8 @@
 		14558D032E9E826B007A67E2 /* Exceptions for "Shared" folder in "Pin It" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				BoardLiveActivity.swift,
+				ButtonIntent.swift,
 				Globals.swift,
 				LiveActivityManager.swift,
 				Localizable.xcstrings,
@@ -74,6 +76,8 @@
 		14558D042E9E826B007A67E2 /* Exceptions for "Shared" folder in "Board" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				BoardLiveActivity.swift,
+				ButtonIntent.swift,
 				Globals.swift,
 				LiveActivityManager.swift,
 				Localizable.xcstrings,
@@ -112,14 +116,6 @@
 			);
 			target = 1481AB022E9D547700E359C9 /* Board */;
 		};
-		14A3A4822EACF6E300874CEE /* Exceptions for "Board" folder in "Pin It" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				BoardLiveActivity.swift,
-				ButtonIntent.swift,
-			);
-			target = 1481AAB62E9D4CFD00E359C9 /* Pin It */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -152,7 +148,6 @@
 		1481AB092E9D547700E359C9 /* Board */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				14A3A4822EACF6E300874CEE /* Exceptions for "Board" folder in "Pin It" target */,
 				1481AB1B2E9D547800E359C9 /* Exceptions for "Board" folder in "Board" target */,
 			);
 			path = Board;

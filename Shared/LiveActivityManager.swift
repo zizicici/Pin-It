@@ -62,6 +62,10 @@ class LiveActivityManager: NSObject {
             }
             var result: Bool = false
             let posts = (try? PinInfoManager.shared.getPosts()) ?? []
+            guard posts.count >= 0 else {
+                await end()
+                return false
+            }
             let total: Int = posts.count
             let index: Int = 0
             let target = try? PinInfoManager.shared.getPost(by: PinInfo(index: index, total: total))
@@ -131,9 +135,9 @@ class LiveActivityManager: NSObject {
         print("Activity Count: \(currentCount)")
     }
     
-    private func getCurrentPosition() -> (Int, Int)? {
+    public func getCurrentPosition() -> PinInfo? {
         if let state = Activity<PinAttributes>.activities.first?.content.state {
-            return (state.index, state.total)
+            return PinInfo(index: state.index, total: state.total)
         } else {
             return nil
         }
@@ -142,10 +146,10 @@ class LiveActivityManager: NSObject {
     public func previousAction() async {
         if let position = getCurrentPosition() {
             var newIndex: Int
-            if position.0 == 0 {
-                newIndex = position.1 - 1
+            if position.index == 0 {
+                newIndex = position.total - 1
             } else {
-                newIndex = position.0 - 1
+                newIndex = position.total - 1
             }
             await update(index: newIndex)
         }
@@ -154,10 +158,10 @@ class LiveActivityManager: NSObject {
     public func nextAction() async {
         if let position = getCurrentPosition() {
             var newIndex: Int
-            if position.0 == position.1 - 1 {
+            if position.index == position.total - 1 {
                 newIndex = 0
             } else {
-                newIndex = position.0 + 1
+                newIndex = position.index + 1
             }
             await update(index: newIndex)
         }

@@ -27,10 +27,8 @@ class PinInfoManager: NSObject {
     
     @objc
     private func startPinIfNeeded() {
-        let syncPostStorage = try? SyncDataManager.read(SyncPostStorage.self)
-        if let syncPostStorage = syncPostStorage {
-            let posts = syncPostStorage.posts
-            if posts.count > 0 {
+        if let syncPostStorage = try? getPosts() {
+            if syncPostStorage.count > 0 {
                 Task {
                     await LiveActivityManager.shared.start()
                 }
@@ -68,5 +66,15 @@ class PinInfoManager: NSObject {
         } else {
             throw NSError(domain: "PinInfoError", code: -1, userInfo: [NSLocalizedDescriptionKey: "index outbound"])
         }
+    }
+    
+    public func unpinCurrentPost() async {
+        guard let pinInfo = LiveActivityManager.shared.getCurrentPosition() else { return }
+        guard let post = try? getPost(by: pinInfo) else { return }
+        
+        var actionStorage = (try? SyncDataManager.read(SyncActionStorage.self)) ?? SyncActionStorage(actions: [])
+        actionStorage.actions.append(SyncAction(id: post.id, actionType: .unpin))
+        
+        try? SyncDataManager.write(actionStorage)
     }
 }

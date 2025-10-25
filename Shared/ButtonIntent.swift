@@ -67,3 +67,21 @@ struct ButtonNextIntent: LiveActivityIntent {
     static var isDiscoverable: Bool = false
 }
 
+struct ButtonUnpinIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "intent.unpin.title"
+    
+    @MainActor
+    func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
+        await PinInfoManager.shared.unpinCurrentPost()
+
+        return .result(value: true)
+    }
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("")
+    }
+    
+    static var openAppWhenRun: Bool = false
+    
+    static var isDiscoverable: Bool = false
+}

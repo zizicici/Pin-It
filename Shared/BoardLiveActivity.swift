@@ -24,7 +24,7 @@ struct BoardLiveActivity: Widget {
                     
                     Spacer(minLength: 4.0)
                     
-                    Button(intent: ButtonEmptyIntent()) {
+                    Button(intent: ButtonUnpinIntent()) {
                         Image(systemName: "pin.slash")
                     }
                     .buttonStyle(.borderless)
@@ -80,7 +80,7 @@ struct BoardLiveActivity: Widget {
                         
                         Spacer(minLength: 4.0)
                         
-                        Button(intent: ButtonEmptyIntent()) {
+                        Button(intent: ButtonUnpinIntent()) {
                             Image(systemName: "pin.slash")
                         }
                         .buttonStyle(.borderless)
@@ -120,7 +120,7 @@ struct BoardLiveActivity: Widget {
 //                            Image("testimage").resizable().scaledToFit()
                         
                         AutoSizeText(text: context.state.text ?? "")
-                        Spacer(minLength: 12.0)
+                        Spacer(minLength: 14.0)
 //                        AutoSizeText(text: qianzi)
                     }
 //                        .clipShape(RoundedRectangle(cornerRadius: 10.0))
