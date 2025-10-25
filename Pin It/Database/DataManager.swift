@@ -15,15 +15,26 @@ final class DataManager {
         var result: [Post.Detail] = []
         do {
             try AppDatabase.shared.reader?.read{ db in
-                let orderColumn = Post.Columns.order
                 let isPinnedColumn = Post.Columns.isPinned
-                result = try Post
-                    .including(all: Post.images)
-                    .including(all: Post.texts)
-                    .asRequest(of: Post.Detail.self)
-                    .filter(isPinnedColumn == isPinned)
-                    .order(orderColumn.desc)
-                    .fetchAll(db)
+                if isPinned {
+                    let orderColumn = Post.Columns.order
+                    result = try Post
+                        .including(all: Post.images)
+                        .including(all: Post.texts)
+                        .asRequest(of: Post.Detail.self)
+                        .filter(isPinnedColumn == isPinned)
+                        .order(orderColumn.desc)
+                        .fetchAll(db)
+                } else {
+                    let modificationTimeColumn = Post.Columns.modificationTime
+                    result = try Post
+                        .including(all: Post.images)
+                        .including(all: Post.texts)
+                        .asRequest(of: Post.Detail.self)
+                        .filter(isPinnedColumn == isPinned)
+                        .order(modificationTimeColumn.desc)
+                        .fetchAll(db)
+                }
             }
         }
         catch {

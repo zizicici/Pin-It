@@ -28,6 +28,7 @@ struct Post: Identifiable, Hashable, Codable {
         case order
         
         static let isPinned = Column(CodingKeys.isPinned)
+        static let modificationTime = Column(CodingKeys.modificationTime)
     }
     
     enum CodingKeys: String, CodingKey {
