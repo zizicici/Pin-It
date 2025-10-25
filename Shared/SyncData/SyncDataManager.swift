@@ -19,7 +19,7 @@ struct SyncPostStorage: Codable {
 
 struct SyncAction: Codable {
     enum ActionType: Int, Codable {
-        case delete = 0
+        case unpin = 0
     }
     
     var id: Int64

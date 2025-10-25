@@ -104,14 +104,18 @@ extension AppDatabase {
         return result
     }
     
-    func update(post: Post) -> Bool {
+    func update(post: Post, updateTimestamp: Bool = true) -> Bool {
         guard post.id != nil else {
             return false
         }
         do {
             _ = try dbWriter?.write{ db in
                 var savePost = post
-                try savePost.updateWithTimestamp(db)
+                if updateTimestamp {
+                    try savePost.updateWithTimestamp(db)
+                } else {
+                    try savePost.update(db)
+                }
             }
         }
         catch {
@@ -237,6 +241,26 @@ extension AppDatabase {
         do {
             _ = try dbWriter?.write{ db in
                 try PostText.deleteAll(db, ids: [textId])
+            }
+        }
+        catch {
+            print(error)
+            return false
+        }
+        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        return true
+    }
+}
+
+extension AppDatabase {
+    public func unpinPosts(by ids: [Int64]) -> Bool {
+        do {
+            _ = try dbWriter?.write{ db in
+                for id in ids {
+                    var post = try Post.fetchOne(db, id: id)
+                    post?.isPinned = false
+                    try post?.save(db)
+                }
             }
         }
         catch {

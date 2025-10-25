@@ -24,6 +24,7 @@ struct Post: Identifiable, Hashable, Codable {
     var order: Int64
     
     enum Columns: String, ColumnExpression {
+        case id
         case order
         
         static let isPinned = Column(CodingKeys.isPinned)

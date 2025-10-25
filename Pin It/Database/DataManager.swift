@@ -72,6 +72,10 @@ final class DataManager {
     public func update(post: Post, isPinned: Bool) -> Bool {
         var newPost = post
         newPost.isPinned = isPinned
-        return AppDatabase.shared.update(post: newPost)
+        return AppDatabase.shared.update(post: newPost, updateTimestamp: false)
+    }
+    
+    public func unpinPosts(by ids: [Int64]) -> Bool {
+        return AppDatabase.shared.unpinPosts(by: ids)
     }
 }
