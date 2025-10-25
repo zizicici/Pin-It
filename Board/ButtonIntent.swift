@@ -40,7 +40,7 @@ struct ButtonPreviousIntent: LiveActivityIntent {
     }
 
     static var parameterSummary: some ParameterSummary {
-        Summary("lalala")
+        Summary("")
     }
     
     static var openAppWhenRun: Bool = false
