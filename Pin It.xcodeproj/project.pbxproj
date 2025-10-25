@@ -62,13 +62,13 @@
 		14558D032E9E826B007A67E2 /* Exceptions for "Shared" folder in "Pin It" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				BoardLiveActivity.swift,
-				ButtonIntent.swift,
 				Globals.swift,
-				LiveActivityManager.swift,
+				LiveActivity/BoardLiveActivity.swift,
+				LiveActivity/ButtonIntent.swift,
+				LiveActivity/LiveActivityManager.swift,
+				LiveActivity/PinAttributes.swift,
+				LiveActivity/PinInfoManager.swift,
 				Localizable.xcstrings,
-				PinAttributes.swift,
-				PinInfoManager.swift,
 				SyncData/SyncDataManager.swift,
 			);
 			target = 1481AAB62E9D4CFD00E359C9 /* Pin It */;
@@ -76,13 +76,13 @@
 		14558D042E9E826B007A67E2 /* Exceptions for "Shared" folder in "Board" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				BoardLiveActivity.swift,
-				ButtonIntent.swift,
 				Globals.swift,
-				LiveActivityManager.swift,
+				LiveActivity/BoardLiveActivity.swift,
+				LiveActivity/ButtonIntent.swift,
+				LiveActivity/LiveActivityManager.swift,
+				LiveActivity/PinAttributes.swift,
+				LiveActivity/PinInfoManager.swift,
 				Localizable.xcstrings,
-				PinAttributes.swift,
-				PinInfoManager.swift,
 				SyncData/SyncDataManager.swift,
 			);
 			target = 1481AB022E9D547700E359C9 /* Board */;
