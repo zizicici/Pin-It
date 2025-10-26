@@ -104,18 +104,14 @@ extension AppDatabase {
         return result
     }
     
-    func update(post: Post, updateTimestamp: Bool = true) -> Bool {
+    func update(post: Post) -> Bool {
         guard post.id != nil else {
             return false
         }
         do {
             _ = try dbWriter?.write{ db in
                 var savePost = post
-                if updateTimestamp {
-                    try savePost.updateWithTimestamp(db)
-                } else {
-                    try savePost.update(db)
-                }
+                try savePost.updateWithTimestamp(db)
             }
         }
         catch {
@@ -253,13 +249,14 @@ extension AppDatabase {
 }
 
 extension AppDatabase {
-    public func unpinPosts(by ids: [Int64]) -> Bool {
+    public func update(postIds: [Int64], isPinned: Bool, newOrder: Int64) -> Bool {
         do {
             _ = try dbWriter?.write{ db in
-                for id in ids {
+                try postIds.enumerated().forEach { (index, id) in
                     var post = try Post.fetchOne(db, id: id)
-                    post?.isPinned = false
-                    try post?.save(db)
+                    post?.isPinned = isPinned
+                    post?.order = newOrder + Int64(index)
+                    try post?.updateWithTimestamp(db)
                 }
             }
         }

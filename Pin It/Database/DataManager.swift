@@ -16,25 +16,14 @@ final class DataManager {
         do {
             try AppDatabase.shared.reader?.read{ db in
                 let isPinnedColumn = Post.Columns.isPinned
-                if isPinned {
-                    let orderColumn = Post.Columns.order
-                    result = try Post
-                        .including(all: Post.images)
-                        .including(all: Post.texts)
-                        .asRequest(of: Post.Detail.self)
-                        .filter(isPinnedColumn == isPinned)
-                        .order(orderColumn.desc)
-                        .fetchAll(db)
-                } else {
-                    let modificationTimeColumn = Post.Columns.modificationTime
-                    result = try Post
-                        .including(all: Post.images)
-                        .including(all: Post.texts)
-                        .asRequest(of: Post.Detail.self)
-                        .filter(isPinnedColumn == isPinned)
-                        .order(modificationTimeColumn.desc)
-                        .fetchAll(db)
-                }
+                let orderColumn = Post.Columns.order
+                result = try Post
+                    .including(all: Post.images)
+                    .including(all: Post.texts)
+                    .asRequest(of: Post.Detail.self)
+                    .filter(isPinnedColumn == isPinned)
+                    .order(orderColumn.desc)
+                    .fetchAll(db)
             }
         }
         catch {
@@ -60,9 +49,13 @@ final class DataManager {
         return result
     }
     
+    private func getNewOrder(isPinned: Bool) -> Int64 {
+        return (fetchLastPost(isPinned: isPinned)?.order ?? -1) + 1
+    }
+    
     public func createPost(content: String) -> Bool {
         // Fetch Last Post
-        let newOrder = (fetchLastPost(isPinned: true)?.order ?? -1) + 1
+        let newOrder = getNewOrder(isPinned: true)
         let newPost = Post(isPinned: true, order: newOrder)
         guard let savedPost = AppDatabase.shared.add(post: newPost), let id = savedPost.id else {
             return false
@@ -81,13 +74,16 @@ final class DataManager {
     }
     
     public func update(post: Post, isPinned: Bool) -> Bool {
+        let newOrder = getNewOrder(isPinned: isPinned)
         var newPost = post
         newPost.isPinned = isPinned
-        return AppDatabase.shared.update(post: newPost, updateTimestamp: false)
+        newPost.order = newOrder
+        return AppDatabase.shared.update(post: newPost)
     }
     
-    public func unpinPosts(by ids: [Int64]) -> Bool {
-        return AppDatabase.shared.unpinPosts(by: ids)
+    public func update(postIds: [Int64], isPinned: Bool) -> Bool {
+        let newOrder = getNewOrder(isPinned: isPinned)
+        return AppDatabase.shared.update(postIds: postIds, isPinned: isPinned, newOrder: newOrder)
     }
     
     public func update(text: PostText) -> Bool {
