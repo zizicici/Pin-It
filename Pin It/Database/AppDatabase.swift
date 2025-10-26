@@ -267,6 +267,22 @@ extension AppDatabase {
         NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
         return true
     }
+    
+    public func update(posts: [Post]) -> Bool {
+        do {
+            _ = try dbWriter?.write{ db in
+                for var post in posts {
+                    try? post.updateWithTimestamp(db)
+                }
+            }
+        }
+        catch {
+            print(error)
+            return false
+        }
+        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        return true
+    }
 }
 
 extension AppDatabase {

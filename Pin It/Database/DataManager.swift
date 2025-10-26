@@ -93,4 +93,8 @@ final class DataManager {
     public func delete(post: Post) -> Bool {
         return AppDatabase.shared.delete(post: post)
     }
+    
+    public func update(posts: [Post]) -> Bool {
+        return AppDatabase.shared.update(posts: posts)
+    }
 }

@@ -31,6 +31,15 @@ class MainViewController: UIViewController {
     enum Item: Hashable {
         case blank(Section)
         case post(Post.Detail)
+        
+        var post: Post? {
+            switch self {
+            case .blank:
+                return nil
+            case .post(let detail):
+                return detail.post
+            }
+        }
     }
     
     private var addButton: UIBarButtonItem?
@@ -117,6 +126,9 @@ class MainViewController: UIViewController {
         collectionView.snp.makeConstraints { make in
             make.edges.equalTo(view)
         }
+        collectionView.dragDelegate = self
+        collectionView.dropDelegate = self
+        collectionView.dragInteractionEnabled = true
     }
     
     func configureDataSource() {
@@ -190,6 +202,131 @@ extension MainViewController: UICollectionViewDelegate {
     }
 }
 
+extension MainViewController: UICollectionViewDragDelegate {
+    func collectionView(_ collectionView: UICollectionView, itemsForBeginning session: UIDragSession, at indexPath: IndexPath) -> [UIDragItem] {
+        if let item = dataSource.itemIdentifier(for: indexPath) {
+            switch item {
+            case .blank:
+                return []
+            case .post(let detail):
+                let title = detail.title
+                let itemProvider = NSItemProvider(object: title as NSString)
+                let dragItem = UIDragItem(itemProvider: itemProvider)
+                dragItem.localObject = item
+                return [dragItem]
+            }
+        } else {
+            return []
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, dragPreviewParametersForItemAt indexPath: IndexPath) -> UIDragPreviewParameters? {
+        guard let cell = collectionView.cellForItem(at: indexPath) else {
+            return nil
+        }
+        let previewParameters = UIDragPreviewParameters()
+        previewParameters.visiblePath = UIBezierPath(rect: cell.bounds)
+        previewParameters.backgroundColor = .clear
+        previewParameters.shadowPath = UIBezierPath(rect: .zero)
+        return previewParameters
+    }
+}
+
+extension MainViewController: UICollectionViewDropDelegate {
+    func collectionView(_ collectionView: UICollectionView, performDropWith coordinator: UICollectionViewDropCoordinator) {
+        guard let destinationIndexPath = coordinator.destinationIndexPath else {
+            return
+        }
+        switch coordinator.proposal.operation {
+        case .cancel:
+            break
+        case .forbidden:
+            break
+        case .copy:
+            break
+        case .move:
+            if let item = coordinator.items.first, let cellItem = item.dragItem.localObject as? Item {
+                guard let sourceIndexPath = item.sourceIndexPath, sourceIndexPath != destinationIndexPath else { return }
+                
+                guard let sourceSection = dataSource.sectionIdentifier(for: sourceIndexPath.section) else { return }
+                guard let destinationSection = dataSource.sectionIdentifier(for: destinationIndexPath.section) else { return }
+                
+                let pinnedPostDetails = DataManager.shared.fetchAllPostDetails(isPinned: true)
+                let otherPostDetails = DataManager.shared.fetchAllPostDetails(isPinned: false)
+                
+                var snapshot = dataSource.snapshot()
+                snapshot.deleteItems([cellItem])
+                
+                if snapshot.itemIdentifiers(inSection: .others).count == 0 {
+                    snapshot.appendItems([.blank(.others)], toSection: .others)
+                }
+                if snapshot.itemIdentifiers(inSection: .pinned).count == 0 {
+                    snapshot.appendItems([.blank(.pinned)], toSection: .pinned)
+                }
+                
+                if let destination = dataSource.itemIdentifier(for: destinationIndexPath) {
+                    if sourceSection == destinationSection {
+                        // Same Section, no need update pinned state
+                        if sourceIndexPath.item < destinationIndexPath.item {
+                            snapshot.insertItems([cellItem], afterItem: destination)
+                        } else {
+                            snapshot.insertItems([cellItem], beforeItem: destination)
+                        }
+                    } else {
+                        // Different Section
+                        switch destinationSection {
+                        case .pinned:
+                            if pinnedPostDetails.count == 0 {
+                                snapshot.deleteItems([.blank(destinationSection)])
+                                snapshot.appendItems([cellItem], toSection: destinationSection)
+                            } else {
+                                snapshot.insertItems([cellItem], beforeItem: destination)
+                            }
+                        case .others:
+                            if otherPostDetails.count == 0 {
+                                snapshot.deleteItems([.blank(destinationSection)])
+                                snapshot.appendItems([cellItem], toSection: destinationSection)
+                            } else {
+                                snapshot.insertItems([cellItem], beforeItem: destination)
+                            }
+                        }
+                    }
+                } else {
+                    // Move to different empty section, or unempty section bottom
+                    switch destinationSection {
+                    case .pinned:
+                        if pinnedPostDetails.count == 0 {
+                            snapshot.deleteItems([.blank(destinationSection)])
+                        }
+                    case .others:
+                        if otherPostDetails.count == 0 {
+                            snapshot.deleteItems([.blank(destinationSection)])
+                        }
+                    }
+                    snapshot.appendItems([cellItem], toSection: destinationSection)
+                }
+                dataSource.apply(snapshot, animatingDifferences: false) { [weak self] in
+                    self?.updatePostsOrder(by: snapshot)
+                }
+            }
+        @unknown default:
+            fatalError()
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, dropSessionDidUpdate session: UIDropSession, withDestinationIndexPath destinationIndexPath: IndexPath?) -> UICollectionViewDropProposal {
+        if session.localDragSession != nil {
+            if collectionView.hasActiveDrag {
+                return UICollectionViewDropProposal(operation: .move, intent: .insertAtDestinationIndexPath)
+            } else {
+                return UICollectionViewDropProposal(operation: .cancel)
+            }
+        } else {
+            return UICollectionViewDropProposal(operation: .forbidden)
+        }
+    }
+}
+
 extension MainViewController: PostCellDelegate {
     func getMoreButtonMenu(for post: Post.Detail) -> UIMenu {
         var elements: [UIMenuElement] = []
@@ -241,5 +378,64 @@ extension MainViewController {
     
     func delete(post: Post) {
         _ = DataManager.shared.delete(post: post)
+    }
+}
+
+extension MainViewController {
+    func updatePostsOrder(by snapshot: NSDiffableDataSourceSnapshot<Section, Item>) {
+        let pinnedItems = snapshot.itemIdentifiers(inSection: .pinned).compactMap{ $0.post }
+        let othersItems = snapshot.itemIdentifiers(inSection: .others).compactMap{ $0.post }
+        
+        let posts = findRequiredUpdates(pinnedPosts: pinnedItems, unpinnedPosts: othersItems)
+        
+        _ = DataManager.shared.update(posts: posts)
+    }
+    
+    func findRequiredUpdates(pinnedPosts: [Post], unpinnedPosts: [Post]) -> [Post] {
+        var updates: [Post] = []
+        
+        for var pinnedPost in pinnedPosts {
+            if pinnedPost.isPinned == false {
+                pinnedPost.isPinned = true
+                updates.append(pinnedPost)
+            }
+        }
+        
+        for var unpinnedPost in unpinnedPosts {
+            if unpinnedPost.isPinned == true {
+                unpinnedPost.isPinned = false
+                updates.append(unpinnedPost)
+            }
+        }
+        
+        for (index, var post) in pinnedPosts.enumerated() {
+            let newOrder = pinnedPosts.count - index - 1
+            if post.order != newOrder {
+                if let existingIndex = updates.firstIndex(where: { $0.id == post.id }) {
+                    post = updates[existingIndex]
+                    post.order = Int64(newOrder)
+                    updates[existingIndex] = post
+                } else {
+                    post.order = Int64(newOrder)
+                    updates.append(post)
+                }
+            }
+        }
+        
+        for (index, var post) in unpinnedPosts.enumerated() {
+            let newOrder = unpinnedPosts.count - index - 1
+            if post.order != newOrder {
+                if let existingIndex = updates.firstIndex(where: { $0.id == post.id }) {
+                    post = updates[existingIndex]
+                    post.order = Int64(newOrder)
+                    updates[existingIndex] = post
+                } else {
+                    post.order = Int64(newOrder)
+                    updates.append(post)
+                }
+            }
+        }
+        
+        return updates
     }
 }

@@ -13,6 +13,10 @@ struct Post: Identifiable, Hashable, Codable {
         var post: Post
         var images: [PostImage]
         var texts: [PostText]
+        
+        var title: String {
+            return texts.first?.content ?? ""
+        }
     }
     
     var id: Int64?
