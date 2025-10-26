@@ -126,28 +126,6 @@ struct BoardLiveActivity: Widget {
 //                        .clipShape(RoundedRectangle(cornerRadius: 10.0))
 //                    .background(.orange)
                 }
-                
-//                DynamicIslandExpandedRegion(.bottom) {
-//                    HStack {
-//                        VStack {
-//                            Button(intent: ButtonIntent()) {
-//                                Image(systemName: "pin.fill")
-//                            }
-//                            .tint(.red)
-//                        }
-//                        Spacer()
-//                        HStack {
-//                            Button(intent: ButtonIntent()) {
-//                                Image(systemName: "chevron.left")
-//                            }
-//                            .tint(.secondary)
-//                            Button(intent: ButtonIntent()) {
-//                                Image(systemName: "chevron.right")
-//                            }
-//                            .tint(.secondary)
-//                        }
-//                    }
-//                }
             } compactLeading: {
                 HStack {
                     Spacer().frame(width: 3.0)

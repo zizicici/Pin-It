@@ -82,7 +82,6 @@ class LiveActivityManager: NSObject {
             return result
         case 1:
             // Update
-            let activities = Activity<PinAttributes>.activities
             await restartIfNeeded()
             if let position = getCurrentPosition() {
                 await update(index: position.index)
