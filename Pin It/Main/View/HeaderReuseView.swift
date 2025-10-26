@@ -11,7 +11,11 @@ import SnapKit
 class HeaderReuseView: UICollectionReusableView {
     var titleLabel: UILabel = {
         let label = UILabel()
-        label.font = UIFont.preferredFont(forTextStyle: .footnote)
+        if #available(iOS 26.0, *) {
+            label.font = UIFont.preferredFont(forTextStyle: .headline)
+        } else {
+            label.font = UIFont.preferredFont(forTextStyle: .footnote)
+        }
         label.textAlignment = .natural
         label.numberOfLines = 1
         label.textColor = .secondaryLabel
@@ -24,8 +28,8 @@ class HeaderReuseView: UICollectionReusableView {
         
         addSubview(titleLabel)
         titleLabel.snp.makeConstraints { make in
-            make.top.equalTo(self).inset(6)
-            make.bottom.equalTo(self).inset(6)
+            make.top.equalTo(self).inset(8)
+            make.bottom.equalTo(self).inset(8)
             make.leading.trailing.equalTo(self).inset(20)
         }
     }

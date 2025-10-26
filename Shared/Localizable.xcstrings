@@ -263,6 +263,22 @@
     "intent.updateCalendar.title" : {
 
     },
+    "pin.blank" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blank"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无记录"
+          }
+        }
+      }
+    },
     "pin.others.title" : {
       "localizations" : {
         "en" : {

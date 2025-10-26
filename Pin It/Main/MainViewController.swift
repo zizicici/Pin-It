@@ -10,7 +10,7 @@ import SnapKit
 
 class MainViewController: UIViewController {
     private var collectionView: UICollectionView!
-    private var dataSource: UICollectionViewDiffableDataSource<Section, Post.Detail>!
+    private var dataSource: UICollectionViewDiffableDataSource<Section, Item>!
     
     static let sectionHeaderElementKind = "sectionHeaderElementKind"
     
@@ -26,6 +26,11 @@ class MainViewController: UIViewController {
                 return String(localized: "pin.others.title")
             }
         }
+    }
+    
+    enum Item: Hashable {
+        case blank(Section)
+        case post(Post.Detail)
     }
     
     private var addButton: UIBarButtonItem?
@@ -88,7 +93,7 @@ class MainViewController: UIViewController {
 
             let section = NSCollectionLayoutSection(group: group)
             section.interGroupSpacing = 20.0
-            section.contentInsets = NSDirectionalEdgeInsets(top: 12.0, leading: 12.0, bottom: 12.0, trailing: 12.0)
+            section.contentInsets = NSDirectionalEdgeInsets(top: 0.0, leading: 16.0, bottom: 20.0, trailing: 16.0)
             
             let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
                                                          heightDimension: .estimated(100))
@@ -114,10 +119,16 @@ class MainViewController: UIViewController {
     }
     
     func configureDataSource() {
+        let blankCellRegistration = createBlankCellRegistration()
         let normalCellRegistration = createNormalCellRegistration()
         
-        dataSource = UICollectionViewDiffableDataSource<Section, Post.Detail>(collectionView: collectionView, cellProvider: { collectionView, indexPath, itemIdentifier in
-            return collectionView.dequeueConfiguredReusableCell(using: normalCellRegistration, for: indexPath, item: itemIdentifier)
+        dataSource = UICollectionViewDiffableDataSource<Section, Item>(collectionView: collectionView, cellProvider: { collectionView, indexPath, itemIdentifier in
+            switch itemIdentifier {
+            case .blank:
+                return collectionView.dequeueConfiguredReusableCell(using: blankCellRegistration, for: indexPath, item: itemIdentifier)
+            case .post(let post):
+                return collectionView.dequeueConfiguredReusableCell(using: normalCellRegistration, for: indexPath, item: post)
+            }
         })
         
         let headerRegistration = UICollectionView.SupplementaryRegistration
@@ -133,6 +144,12 @@ class MainViewController: UIViewController {
         }
     }
     
+    func createBlankCellRegistration() -> UICollectionView.CellRegistration<BlankCell, Item> {
+        return UICollectionView.CellRegistration<BlankCell, Item> { (cell, indexPath, item) in
+            return
+        }
+    }
+    
     func createNormalCellRegistration() -> UICollectionView.CellRegistration<PostCell, Post.Detail> {
         return UICollectionView.CellRegistration<PostCell, Post.Detail> { [weak self] (cell, indexPath, item) in
             guard let self = self else { return }
@@ -143,14 +160,23 @@ class MainViewController: UIViewController {
     
     @objc
     func reloadData() {
+        var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
+        
         let pinnedPostDetails = DataManager.shared.fetchAllPostDetails(isPinned: true)
         let otherPostDetails = DataManager.shared.fetchAllPostDetails(isPinned: false)
-        var snapshot = NSDiffableDataSourceSnapshot<Section, Post.Detail>()
+        
         snapshot.appendSections([.pinned])
-        snapshot.appendItems(pinnedPostDetails, toSection: .pinned)
-        if otherPostDetails.count > 0 {
-            snapshot.appendSections([.others])
-            snapshot.appendItems(otherPostDetails, toSection: .others)
+        if pinnedPostDetails.count == 0 {
+            snapshot.appendItems([.blank(.pinned)], toSection: .pinned)
+        } else {
+            snapshot.appendItems(pinnedPostDetails.map{ .post($0) }, toSection: .pinned)
+        }
+        
+        snapshot.appendSections([.others])
+        if otherPostDetails.count == 0 {
+            snapshot.appendItems([.blank(.others)], toSection: .others)
+        } else {
+            snapshot.appendItems(otherPostDetails.map{ .post($0) }, toSection: .others)
         }
         
         dataSource.apply(snapshot, animatingDifferences: true)
