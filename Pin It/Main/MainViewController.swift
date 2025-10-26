@@ -94,7 +94,7 @@ class MainViewController: UIViewController {
 
             let section = NSCollectionLayoutSection(group: group)
             section.interGroupSpacing = 20.0
-            section.contentInsets = NSDirectionalEdgeInsets(top: 0.0, leading: 16.0, bottom: 20.0, trailing: 16.0)
+            section.contentInsets = NSDirectionalEdgeInsets(top: 10.0, leading: 16.0, bottom: 20.0, trailing: 16.0)
             
             let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
                                                          heightDimension: .estimated(100))
