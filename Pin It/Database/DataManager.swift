@@ -89,4 +89,12 @@ final class DataManager {
     public func unpinPosts(by ids: [Int64]) -> Bool {
         return AppDatabase.shared.unpinPosts(by: ids)
     }
+    
+    public func update(text: PostText) -> Bool {
+        return AppDatabase.shared.update(text: text)
+    }
+    
+    public func delete(post: Post) -> Bool {
+        return AppDatabase.shared.delete(post: post)
+    }
 }

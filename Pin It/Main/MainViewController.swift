@@ -69,6 +69,7 @@ class MainViewController: UIViewController {
             let result = DataManager.shared.createPost(content: postText.content)
             print(result)
             if result {
+                
             } else {
                 
             }
@@ -191,10 +192,54 @@ extension MainViewController: UICollectionViewDelegate {
 
 extension MainViewController: PostCellDelegate {
     func getMoreButtonMenu(for post: Post.Detail) -> UIMenu {
-        return UIMenu()
+        var elements: [UIMenuElement] = []
+        let editAction = UIAction(title: String(localized: "pin.edit"), image: UIImage(systemName: "pencil")) { [weak self] _ in
+            self?.edit(post: post)
+        }
+        elements.append(editAction)
+        let deleteAction = UIAction(title: String(localized: "pin.delete"), image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
+            self?.showDeleteAlert(for: post)
+        }
+        let currentPageDivider = UIMenu(title: "", options: .displayInline, children: [deleteAction])
+        elements.append(currentPageDivider)
+        
+        return UIMenu(children: elements)
     }
     
     func update(post: Post, isPinned: Bool) {
         _ = DataManager.shared.update(post: post, isPinned: isPinned  )
+    }
+}
+
+extension MainViewController {
+    func edit(post: Post.Detail) {
+        guard let postText = post.texts.first else { return }
+        let editorViewController = EditorViewController(postText: postText) { postText in
+            let result = DataManager.shared.update(text: postText)
+            print(result)
+            if result {
+                
+            } else {
+                
+            }
+        }
+        
+        navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
+    }
+    
+    func showDeleteAlert(for post: Post.Detail) {
+        let alertController = UIAlertController(title: String(localized: "pin.delete.alert.title"), message: nil, preferredStyle: .alert)
+        let deleteAction = UIAlertAction(title: String(localized: "button.delete"), style: .destructive) { [weak self] _ in
+            alertController.dismiss(animated: ConsideringUser.animated)
+            self?.delete(post: post.post)
+        }
+        let cancelAction = UIAlertAction(title: String(localized: "button.cancel"), style: .cancel)
+        alertController.addAction(deleteAction)
+        alertController.addAction(cancelAction)
+        present(alertController, animated: ConsideringUser.animated)
+    }
+    
+    func delete(post: Post) {
+        _ = DataManager.shared.delete(post: post)
     }
 }
