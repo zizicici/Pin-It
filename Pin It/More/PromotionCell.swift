@@ -107,6 +107,8 @@ class PromotionCell: UITableViewCell {
     var purchaseClosure: (() -> ())?
     var restoreClosure: (() -> ())?
     
+    private var priceText: String = "?.??"
+    
     private var topLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.preferredFont(forTextStyle: .headline)
@@ -165,16 +167,21 @@ class PromotionCell: UITableViewCell {
     
     private let purchaseButton: UIButton = {
         var configuration = UIButton.Configuration.tinted()
-        configuration.image = UIImage(systemName: "arrowshape.up.circle", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .medium))
+        configuration.image = UIImage(systemName: "arrowshape.up.circle")
         configuration.title = String(localized: "membership.purchase")
         configuration.titleAlignment = .center
         configuration.imagePadding = 6.0
         configuration.cornerStyle = .large
-        configuration.titlePadding = 10.0
+        configuration.titlePadding = 4.0
         configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer({ incoming in
             var outgoing = incoming
             outgoing.font = UIFont.systemFont(ofSize: 16, weight: .bold)
-//            outgoing.foregroundColor = .text
+
+            return outgoing
+        })
+        configuration.subtitleTextAttributesTransformer = UIConfigurationTextAttributesTransformer({ incoming in
+            var outgoing = incoming
+            outgoing.font = UIFont.preferredFont(forTextStyle: .footnote)
 
             return outgoing
         })
@@ -185,18 +192,6 @@ class PromotionCell: UITableViewCell {
         button.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         return button
-    }()
-    
-    private var priceLabel: UILabel = {
-        let label = UILabel()
-        label.font = UIFont.preferredFont(forTextStyle: .footnote)
-        label.textAlignment = .center
-        label.textColor = .white.withAlphaComponent(0.9)
-        label.numberOfLines = 1
-        
-        label.text = "?.??"
-        
-        return label
     }()
     
     private let restoreButton: UIButton = {
@@ -229,27 +224,30 @@ class PromotionCell: UITableViewCell {
         }
         
         // Button Part
-        contentView.addSubview(priceLabel)
         contentView.addSubview(purchaseButton)
         purchaseButton.snp.makeConstraints { make in
-            make.bottom.equalTo(priceLabel.snp.top).offset(-6)
-            make.trailing.equalTo(contentView).inset(20)
+            make.top.equalTo(contentView).inset(20.0)
+            make.trailing.equalTo(contentView).inset(20.0)
             make.height.greaterThanOrEqualTo(40.0)
         }
-        priceLabel.snp.makeConstraints { make in
-            make.top.equalTo(contentView.snp.centerY)
-            make.leading.trailing.equalTo(purchaseButton)
+        purchaseButton.addTarget(self, action: #selector(purchaseAction), for: .touchUpInside)
+        
+        purchaseButton.configurationUpdateHandler = { [weak self] button in
+            var config = button.configuration
+            config?.subtitle = self?.priceText
+            
+            button.configuration = config
         }
+        
         contentView.addSubview(restoreButton)
         restoreButton.snp.makeConstraints { make in
             make.bottom.equalTo(contentView).inset(20)
             make.trailing.lessThanOrEqualTo(contentView).inset(18)
-            make.centerX.equalTo(priceLabel).priority(.medium)
-            make.top.greaterThanOrEqualTo(priceLabel.snp.bottom).offset(10)
+            make.centerX.equalTo(purchaseButton).priority(.medium)
+            make.top.greaterThanOrEqualTo(purchaseButton.snp.bottom).offset(10)
         }
         restoreButton.setContentCompressionResistancePriority(.required, for: .horizontal)
         restoreButton.addTarget(self, action: #selector(restoreAction), for: .touchUpInside)
-        purchaseButton.addTarget(self, action: #selector(purchaseAction), for: .touchUpInside)
         
         // Text Part
         contentView.addSubview(topLabel)
@@ -304,7 +302,8 @@ class PromotionCell: UITableViewCell {
     }
     
     func update(price: String) {
-        priceLabel.text = price
+        priceText = price
+        purchaseButton.setNeedsUpdateConfiguration()
     }
 }
 
