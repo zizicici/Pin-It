@@ -1180,6 +1180,22 @@
         }
       }
     },
+    "shortcuts.title.add" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin Text Post"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "钉文本记录"
+          }
+        }
+      }
+    },
     "shortcuts.title.start" : {
       "localizations" : {
         "en" : {

@@ -45,6 +45,63 @@
         }
       }
     },
+    "New ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "New ${applicationName}",
+              "New ${applicationName} Post",
+              "Create ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "新${applicationName}",
+              "新建${applicationName}",
+              "新的${applicationName}",
+              "新${applicationName}记录",
+              "新建${applicationName}记录",
+              "新的${applicationName}记录",
+              "创建${applicationName}记录"
+            ]
+          }
+        },
+        "zh-Hant" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "新${applicationName}",
+              "新建${applicationName}",
+              "新的${applicationName}",
+              "新${applicationName}記錄",
+              "新建${applicationName}記錄",
+              "新的${applicationName}記錄",
+              "創建${applicationName}記錄"
+            ]
+          }
+        },
+        "zh-HK" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "新${applicationName}",
+              "新建${applicationName}",
+              "新的${applicationName}",
+              "新${applicationName}記錄",
+              "新建${applicationName}記錄",
+              "新的${applicationName}記錄",
+              "創建${applicationName}記錄"
+            ]
+          }
+        }
+      }
+    },
     "Show ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
@@ -53,7 +110,8 @@
             "state" : "new",
             "values" : [
               "Show ${applicationName}",
-              "Display ${applicationName}"
+              "Display ${applicationName}",
+              "Present ${applicationName}"
             ]
           }
         },

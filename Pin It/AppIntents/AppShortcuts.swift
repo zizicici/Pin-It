@@ -13,7 +13,8 @@ struct AppShortcuts: AppShortcutsProvider {
             intent: StartIntent(),
             phrases: [
                 "Show \(.applicationName)",
-                "Display \(.applicationName)"
+                "Display \(.applicationName)",
+                "Present \(.applicationName)"
             ],
             shortTitle: "shortcuts.title.start",
             systemImageName: "play"
@@ -27,5 +28,14 @@ struct AppShortcuts: AppShortcutsProvider {
             shortTitle: "shortcuts.title.stop",
             systemImageName: "stop"
         )
+        AppShortcut(
+            intent: AddTextRecordIntent(),
+            phrases: [
+                "New \(.applicationName)",
+                "New \(.applicationName) Post",
+                "Create \(.applicationName)"
+            ],
+            shortTitle: "shortcuts.title.add",
+            systemImageName: "pin")
     }
 }
