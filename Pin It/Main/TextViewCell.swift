@@ -2,7 +2,7 @@
 //  TextViewCell.swift
 //  Pin It
 //
-//  Created by Salley Garden on 2025/10/19.
+//  Created by Ci Zi on 2025/10/19.
 //
 
 import UIKit
