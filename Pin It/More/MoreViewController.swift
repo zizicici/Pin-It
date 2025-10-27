@@ -350,7 +350,9 @@ extension MoreViewController: UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
         if let item = dataSource.itemIdentifier(for: indexPath) {
             switch item {
-            case .promotion, .thanks:
+            case .promotion:
+                showPromotionAlert()
+            case .thanks:
                 break
             case .settings(let item):
                 switch item {
@@ -487,6 +489,24 @@ extension MoreViewController: SKStoreProductViewControllerDelegate {
 }
 
 extension MoreViewController {
+    func showPromotionAlert() {
+        let alertController = UIAlertController(title: String(localized: "promotion.alert.title"), message: String(localized: "promotion.alert.message"), preferredStyle: .alert)
+        
+        let purchaseAction = UIAlertAction(title: String(localized: "membership.purchase"), style: .default) { [weak self] _ in
+            self?.lifetimeAction()
+        }
+        let restoreAction = UIAlertAction(title: String(localized: "membership.restore"), style: .default) { [weak self] _ in
+            self?.restorePurchases()
+        }
+        let cancelAction = UIAlertAction(title: String(localized: "button.cancel"), style: .cancel)
+        
+        alertController.addAction(purchaseAction)
+        alertController.addAction(restoreAction)
+        alertController.addAction(cancelAction)
+        
+        present(alertController, animated: ConsideringUser.animated)
+    }
+    
     func lifetimeAction() {
         showOverlayViewController()
         Task {
