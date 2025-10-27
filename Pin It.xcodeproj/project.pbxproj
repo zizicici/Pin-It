@@ -117,6 +117,13 @@
 			);
 			target = 1481AB022E9D547700E359C9 /* Board */;
 		};
+		1482A66E2EAFABA100E59CA9 /* Exceptions for "Pin It" folder in "Board" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				AppIntents/StartIntent.swift,
+			);
+			target = 1481AB022E9D547700E359C9 /* Board */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -134,6 +141,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				1481AAC92E9D4CFD00E359C9 /* Exceptions for "Pin It" folder in "Pin It" target */,
+				1482A66E2EAFABA100E59CA9 /* Exceptions for "Pin It" folder in "Board" target */,
 			);
 			path = "Pin It";
 			sourceTree = "<group>";

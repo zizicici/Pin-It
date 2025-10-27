@@ -23,6 +23,7 @@ struct BoardLiveActivity: Widget {
                     VStack {
                         Button(intent: ButtonEmptyIntent()) {
                             Image(systemName: "pin.fill")
+                                .rotationEffect(Angle.degrees(-45.0))
                         }
                         .tint(.red)
                         
@@ -77,14 +78,20 @@ struct BoardLiveActivity: Widget {
             } compactLeading: {
                 HStack {
                     Spacer().frame(width: 3.0)
-                    Image(systemName: "pin")
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 12))
                         .foregroundColor(.red)
+                        .rotationEffect(Angle.degrees(-45.0))
                 }
             } compactTrailing: {
                 //
             } minimal: {
-                Image(systemName: "pin")
+                Spacer().frame(width: 3.0)
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 12))
                     .foregroundColor(.red)
+                    .rotationEffect(Angle.degrees(-45.0))
+                Spacer().frame(width: 3.0)
             }
             .widgetURL(URL(string: "http://www.apple.com"))
             .keylineTint(Color.red)
@@ -189,7 +196,10 @@ struct BoardSmallView: View {
             Spacer(minLength: 3.0)
             Button(intent: ButtonNextIntent()) {
                 Image(systemName: "pin.fill")
+                    .rotationEffect(Angle.degrees(-45.0))
+                    .foregroundColor(.red)
             }
+            .buttonStyle(.borderedProminent)
             .buttonBorderShape(.circle)
             .tint(.white)
             Spacer().frame(width: 6.0)
@@ -205,6 +215,7 @@ struct BoardMediumView: View {
             VStack {
                 Button(intent: ButtonEmptyIntent()) {
                     Image(systemName: "pin.fill")
+                        .rotationEffect(Angle.degrees(-45.0))
                 }
                 .tint(.red)
                 

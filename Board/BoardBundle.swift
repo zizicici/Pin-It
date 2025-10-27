@@ -11,6 +11,7 @@ import SwiftUI
 @main
 struct BoardBundle: WidgetBundle {
     var body: some Widget {
+        StartButtonWidget()
         BoardLiveActivity()
     }
 }
