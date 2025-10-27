@@ -12,7 +12,8 @@ struct AppShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: StartIntent(),
             phrases: [
-                "Start \(.applicationName)"
+                "Show \(.applicationName)",
+                "Display \(.applicationName)"
             ],
             shortTitle: "shortcuts.title.start",
             systemImageName: "play"
@@ -20,7 +21,8 @@ struct AppShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: EndIntent(),
             phrases: [
-                "End \(.applicationName)"
+                "Dismiss \(.applicationName)",
+                "Hide \(.applicationName)"
             ],
             shortTitle: "shortcuts.title.stop",
             systemImageName: "stop"

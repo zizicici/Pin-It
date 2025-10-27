@@ -1,0 +1,94 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Dismiss ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Dismiss ${applicationName}",
+              "Hide ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "隐藏${applicationName}",
+              "结束${applicationName}",
+              "收起${applicationName}"
+            ]
+          }
+        },
+        "zh-Hant" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "隱藏${applicationName}",
+              "結束${applicationName}",
+              "收起${applicationName}"
+            ]
+          }
+        },
+        "zh-HK" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "隱藏${applicationName}",
+              "結束${applicationName}",
+              "收起${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Show ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Show ${applicationName}",
+              "Display ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "显示${applicationName}",
+              "开始${applicationName}",
+              "展示${applicationName}"
+            ]
+          }
+        },
+        "zh-Hant" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "顯示${applicationName}",
+              "開始${applicationName}",
+              "展示${applicationName}"
+            ]
+          }
+        },
+        "zh-HK" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "顯示${applicationName}",
+              "開始${applicationName}",
+              "展示${applicationName}"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}
