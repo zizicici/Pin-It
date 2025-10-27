@@ -331,7 +331,7 @@ class MoreViewController: UIViewController {
         snapshot.appendItems([.contact(.email), .contact(.xiaohongshu)], toSection: .contact)
         
         snapshot.appendSections([.appjun])
-        var appItems: [Item] = [.appjun(.otherApps(.offDay)), .appjun(.otherApps(.tagDay)), .appjun(.otherApps(.lemon)), .appjun(.otherApps(.moontake)), .appjun(.otherApps(.coconut)), .appjun(.otherApps(.pigeon))]
+        var appItems: [Item] = [.appjun(.otherApps(.offDay)), .appjun(.otherApps(.tagDay)), .appjun(.otherApps(.moontake)), .appjun(.otherApps(.coconut)), .appjun(.otherApps(.lemon)), .appjun(.otherApps(.pigeon))]
         if Language.type() == .zh {
             appItems.append(.appjun(.otherApps(.festivals)))
         }
