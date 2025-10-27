@@ -1,6 +1,15 @@
 {
-  "originHash" : "3112fec4d2647314b868d003b65de909dd3f552ae3d55b45648555435a868852",
+  "originHash" : "e6bd4bcb09fc1b240c96c0aa32830ec7806b9ef818c57036cd94ad770261e1de",
   "pins" : [
+    {
+      "identity" : "appinfo",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/zizicici/AppInfo",
+      "state" : {
+        "revision" : "0c2d5fa8f4a67ccba6fc44f02d346ae73a6af5f8",
+        "version" : "1.2.0"
+      }
+    },
     {
       "identity" : "grdb.swift",
       "kind" : "remoteSourceControl",

@@ -10,6 +10,7 @@
 		14558D072E9E8CE1007A67E2 /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 14558D062E9E8CE1007A67E2 /* SnapKit */; };
 		1477252E2E9F4E8A001A3EBD /* CropViewController in Frameworks */ = {isa = PBXBuildFile; productRef = 1477252D2E9F4E8A001A3EBD /* CropViewController */; };
 		147725302E9F4EAA001A3EBD /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1477252F2E9F4EAA001A3EBD /* SnapKit */; };
+		147F4C3E2EAE7DAC00F8DD7E /* AppInfo in Frameworks */ = {isa = PBXBuildFile; productRef = 147F4C3D2EAE7DAC00F8DD7E /* AppInfo */; };
 		1481AAF92E9D543400E359C9 /* Box.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1481AAEF2E9D543400E359C9 /* Box.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1481AB062E9D547700E359C9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1481AB052E9D547700E359C9 /* WidgetKit.framework */; };
 		1481AB082E9D547700E359C9 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1481AB072E9D547700E359C9 /* SwiftUI.framework */; };
@@ -160,6 +161,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				147F4C3E2EAE7DAC00F8DD7E /* AppInfo in Frameworks */,
 				14558D072E9E8CE1007A67E2 /* SnapKit in Frameworks */,
 				14AA37282EA0907300685425 /* GRDB in Frameworks */,
 			);
@@ -243,6 +245,7 @@
 			packageProductDependencies = (
 				14558D062E9E8CE1007A67E2 /* SnapKit */,
 				14AA37272EA0907300685425 /* GRDB */,
+				147F4C3D2EAE7DAC00F8DD7E /* AppInfo */,
 			);
 			productName = "Pin It";
 			productReference = 1481AAB72E9D4CFD00E359C9 /* Pin It.app */;
@@ -331,6 +334,7 @@
 				14558D052E9E8CE1007A67E2 /* XCRemoteSwiftPackageReference "SnapKit" */,
 				1477252C2E9F4E8A001A3EBD /* XCRemoteSwiftPackageReference "TOCropViewController" */,
 				14AA37262EA0907300685425 /* XCRemoteSwiftPackageReference "GRDB" */,
+				147F4C3C2EAE7DAC00F8DD7E /* XCRemoteSwiftPackageReference "AppInfo" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1481AAB82E9D4CFD00E359C9 /* Products */;
@@ -809,6 +813,14 @@
 				minimumVersion = 3.0.0;
 			};
 		};
+		147F4C3C2EAE7DAC00F8DD7E /* XCRemoteSwiftPackageReference "AppInfo" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/zizicici/AppInfo";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.0;
+			};
+		};
 		14AA37262EA0907300685425 /* XCRemoteSwiftPackageReference "GRDB" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/groue/GRDB.swift";
@@ -834,6 +846,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 14558D052E9E8CE1007A67E2 /* XCRemoteSwiftPackageReference "SnapKit" */;
 			productName = SnapKit;
+		};
+		147F4C3D2EAE7DAC00F8DD7E /* AppInfo */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 147F4C3C2EAE7DAC00F8DD7E /* XCRemoteSwiftPackageReference "AppInfo" */;
+			productName = AppInfo;
 		};
 		14AA37272EA0907300685425 /* GRDB */ = {
 			isa = XCSwiftPackageProductDependency;

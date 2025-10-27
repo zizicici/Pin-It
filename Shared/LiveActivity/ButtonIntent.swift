@@ -9,7 +9,7 @@ import Foundation
 import AppIntents
 
 struct ButtonEmptyIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "intent.updateCalendar.title"
+    static var title: LocalizedStringResource = "intent.empty.title"
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
