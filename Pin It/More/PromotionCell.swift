@@ -165,7 +165,7 @@ class PromotionCell: UITableViewCell {
     
     private let purchaseButton: UIButton = {
         var configuration = UIButton.Configuration.tinted()
-        configuration.image = UIImage(systemName: "arrowshape.up.circle", withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .medium))
+        configuration.image = UIImage(systemName: "arrowshape.up.circle", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .medium))
         configuration.title = String(localized: "membership.purchase")
         configuration.titleAlignment = .center
         configuration.imagePadding = 6.0
@@ -234,6 +234,7 @@ class PromotionCell: UITableViewCell {
         purchaseButton.snp.makeConstraints { make in
             make.bottom.equalTo(priceLabel.snp.top).offset(-6)
             make.trailing.equalTo(contentView).inset(20)
+            make.height.greaterThanOrEqualTo(40.0)
         }
         priceLabel.snp.makeConstraints { make in
             make.top.equalTo(contentView.snp.centerY)
