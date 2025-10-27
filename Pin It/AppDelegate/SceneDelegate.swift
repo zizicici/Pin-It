@@ -28,13 +28,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.makeKeyAndVisible()
         
         if let _ = connectionOptions.urlContexts.first {
-            logger.log("\(#function, privacy: .public)")
+            logger.log("\(#function)")
             handleURLContext()
         }
     }
     
     func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
-        logger.log("\(#function, privacy: .public)")
+        logger.log("\(#function)")
         handleURLContext()
     }
 
@@ -67,26 +67,68 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func handleURLContext() {
-        logger.log("\(#function, privacy: .public)")
+        logger.log("\(#function)")
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
             logger.log("no container URL")
             return
         }
+        
+        let inboxURL = containerURL.appendingPathComponent("inbox")
+        
         guard let files = try? FileManager.default.contentsOfDirectory(
-            at: containerURL,
+            at: inboxURL,
             includingPropertiesForKeys: nil,
             options: .skipsHiddenFiles
         ) else {
             logger.log("no contents")
             return
         }
-        for file in files {
-            logger.log("found \(file, privacy: .public)")
-            if let data = try? Data(contentsOf: file) {
-                if let _ = UIImage(data: data) {
-                    logger.log("it's an image")
+        for file in files.sorted(by: { $0.path() < $1.path() }) {
+            logger.log("found \(file)")
+            let fileName = file.lastPathComponent
+            switch fileName {
+            case _ where fileName.hasSuffix("text"):
+                if let data = try? Data(contentsOf: file) {
+                    if let text = String(data: data, encoding: .utf8) {
+                        logger.log("it's a text")
+                        if let tabBarController = window?.rootViewController as? UITabBarController, let mainViewController = (tabBarController.viewControllers?.first as? UINavigationController)?.viewControllers.first as? MainViewController {
+                            mainViewController.showEditor(with: text)
+                        }
+                    }
                 }
+            case _ where fileName.hasSuffix("image"):
+                if let data = try? Data(contentsOf: file) {
+                    if let _ = UIImage(data: data) {
+                        logger.log("it's an image")
+                    }
+                }
+            default:
+                break
             }
+        }
+        clearInbox()
+    }
+    
+    func clearInbox() {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
+            logger.log("no container URL")
+            return
+        }
+        
+        let inboxURL = containerURL.appendingPathComponent("inbox")
+        
+        do {
+            let files = try FileManager.default.contentsOfDirectory(
+                at: inboxURL,
+                includingPropertiesForKeys: nil,
+                options: .skipsHiddenFiles
+            )
+            for file in files {
+                try FileManager.default.removeItem(at: file)
+            }
+            logger.log("Cleaned up \(files.count) files from inbox")
+        } catch {
+            logger.log("Failed to clean up inbox: \(error)")
         }
     }
 }

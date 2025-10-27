@@ -73,8 +73,8 @@ class MainViewController: UIViewController {
     }
     
     @objc
-    func addAction() {
-        let editorViewController = EditorViewController(postText: PostText(postId: -1, content: "", order: 0)) { postText in
+    func addAction(_ content: String = "") {
+        let editorViewController = EditorViewController(postText: PostText(postId: -1, content: content, order: 0)) { postText in
             let result = DataManager.shared.createPost(content: postText.content)
             print(result)
             if result {
@@ -437,5 +437,12 @@ extension MainViewController {
         }
         
         return updates
+    }
+}
+
+extension MainViewController {
+    func showEditor(with text: String) {
+        navigationController?.dismiss(animated: true)
+        addAction(text)
     }
 }
