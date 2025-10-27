@@ -14,59 +14,7 @@ import NaturalLanguage
 struct BoardLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: PinAttributes.self) { context in
-            // Lock screen/banner UI goes here
-            HStack {
-                VStack {
-                    Button(intent: ButtonEmptyIntent()) {
-                        Image(systemName: "pin.fill")
-                    }
-                    .tint(.red)
-                    
-                    Spacer(minLength: 4.0)
-                    
-                    Button(intent: ButtonUnpinIntent()) {
-                        Image(systemName: "pin.slash")
-                    }
-                    .buttonStyle(.borderless)
-                    .tint(.secondary)
-                    
-                    Spacer().frame(height: 4.0)
-                }
-                .padding(12.0)
-                VStack {
-                    Spacer()
-                    AutoSizeText(text: context.state.text ?? "")
-    //                Image("testimage").resizable().scaledToFit()
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                VStack {
-                    Button(intent: ButtonPreviousIntent()) {
-                        Image(systemName: "chevron.up")
-                            .frame(minHeight: 21.0)
-                    }
-                    .tint(.primary)
-                    
-                    Spacer(minLength: 18.0)
-                        .frame(maxHeight: .infinity)
-                    
-                    Text("\(context.state.index + 1)/\(context.state.total)")
-                        .font(Font.footnote)
-                        .foregroundStyle(.secondary)
-                    
-                    Spacer(minLength: 18.0)
-                        .frame(maxHeight: .infinity)
-                    
-                    Button(intent: ButtonNextIntent()) {
-                        Image(systemName: "chevron.down")
-                            .frame(minHeight: 21.0)
-                    }
-                    .tint(.primary)
-                }
-                .padding(12.0)
-            }
-            .activityBackgroundTint(.clear)
-            .activitySystemActionForegroundColor(Color.black)
+            BoardContent(context: context)
         } dynamicIsland: { context in
             DynamicIsland {
                 // Expanded UI goes here.  Compose the expanded UI through
@@ -141,6 +89,7 @@ struct BoardLiveActivity: Widget {
             .widgetURL(URL(string: "http://www.apple.com"))
             .keylineTint(Color.red)
         }
+        .supplementalActivityFamilies([.small])
     }
 }
 
@@ -207,5 +156,99 @@ struct AutoSizeText: View {
 //        }
         
         return attributedString
+    }
+}
+
+struct BoardContent: View {
+    @Environment(\.activityFamily) var activityFamily
+    var context: ActivityViewContext<PinAttributes>
+    
+    var body: some View {
+        switch activityFamily {
+        case .small:
+            BoardSmallView(context: context)
+                .activityBackgroundTint(.red)
+        case .medium:
+            BoardMediumView(context: context)
+                .activityBackgroundTint(.clear)
+        @unknown default:
+            Spacer()
+        }
+    }
+}
+
+struct BoardSmallView: View {
+    var context: ActivityViewContext<PinAttributes>
+
+    var body: some View {
+        HStack {
+            Spacer(minLength: 3.0)
+            VStack {
+                AutoSizeText(text: context.state.text ?? "")
+            }
+            Spacer(minLength: 3.0)
+            Button(intent: ButtonNextIntent()) {
+                Image(systemName: "pin.fill")
+            }
+            .buttonBorderShape(.circle)
+            .tint(.white)
+            Spacer().frame(width: 6.0)
+        }
+    }
+}
+
+struct BoardMediumView: View {
+    var context: ActivityViewContext<PinAttributes>
+    
+    var body: some View {
+        HStack {
+            VStack {
+                Button(intent: ButtonEmptyIntent()) {
+                    Image(systemName: "pin.fill")
+                }
+                .tint(.red)
+                
+                Spacer(minLength: 4.0)
+                
+                Button(intent: ButtonUnpinIntent()) {
+                    Image(systemName: "pin.slash")
+                }
+                .buttonStyle(.borderless)
+                .tint(.secondary)
+                
+                Spacer().frame(height: 4.0)
+            }
+            .padding(12.0)
+            VStack {
+                Spacer()
+                AutoSizeText(text: context.state.text ?? "")
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack {
+                Button(intent: ButtonPreviousIntent()) {
+                    Image(systemName: "chevron.up")
+                        .frame(minHeight: 21.0)
+                }
+                .tint(.primary)
+                
+                Spacer(minLength: 18.0)
+                    .frame(maxHeight: .infinity)
+                
+                Text("\(context.state.index + 1)/\(context.state.total)")
+                    .font(Font.footnote)
+                    .foregroundStyle(.secondary)
+                
+                Spacer(minLength: 18.0)
+                    .frame(maxHeight: .infinity)
+                
+                Button(intent: ButtonNextIntent()) {
+                    Image(systemName: "chevron.down")
+                        .frame(minHeight: 21.0)
+                }
+                .tint(.primary)
+            }
+            .padding(12.0)
+        }
     }
 }
