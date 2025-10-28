@@ -344,7 +344,7 @@ extension MainViewController: PostCellDelegate {
         let currentPageDivider = UIMenu(title: "", options: .displayInline, children: [deleteAction])
         elements.append(currentPageDivider)
         
-        return UIMenu(children: elements)
+        return UIMenu(title: String(format: String(localized: "post.create%@"), post.post.createText), children: elements)
     }
     
     func update(post: Post, isPinned: Bool) {

@@ -67,3 +67,27 @@ extension Post {
         request(for: Post.texts)
     }
 }
+
+let formatter = DateFormatter()
+
+extension Post {
+    var updateText: String {
+        guard let modificationTime = modificationTime else { return "" }
+        let date = Date(timeIntervalSince1970: Double(modificationTime) / 1000.0)
+        
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        
+        return formatter.string(from: date)
+    }
+    
+    var createText: String {
+        guard let creationTime = creationTime else { return "" }
+        let date = Date(timeIntervalSince1970: Double(creationTime) / 1000.0)
+        
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        
+        return formatter.string(from: date)
+    }
+}
