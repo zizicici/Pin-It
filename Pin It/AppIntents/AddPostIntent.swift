@@ -19,6 +19,8 @@ struct AddTextRecordIntent: LiveActivityIntent {
         Summary("intent.post.add.by.text.summary\(\.$content)")
     }
     
+    static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
+    
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
         let result = DataManager.shared.createPost(content: content)

@@ -16,6 +16,8 @@ struct StartIntent: LiveActivityIntent {
         Summary("intent.action.start.summary")
     }
     
+    static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
+    
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
         let result = await LiveActivityManager.shared.start()
@@ -31,6 +33,8 @@ struct EndIntent: LiveActivityIntent {
     static var parameterSummary: some ParameterSummary {
         Summary("intent.action.end.summary")
     }
+    
+    static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
