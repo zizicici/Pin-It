@@ -60,7 +60,7 @@ class MainViewController: UIViewController {
         view.backgroundColor = AppColor.background
         self.title = String(localized: "controller.pin.title")
         
-        let addButton = UIBarButtonItem(image: UIImage(systemName: "plus"), style: .plain, target: self, action: #selector(addAction))
+        let addButton = UIBarButtonItem(image: UIImage(systemName: "plus"), style: .plain, target: self, action: #selector(newAction))
         addButton.tintColor = .systemRed
         self.navigationItem.rightBarButtonItem = addButton
         self.addButton = addButton
@@ -73,7 +73,11 @@ class MainViewController: UIViewController {
     }
     
     @objc
-    func addAction(_ content: String = "") {
+    func newAction() {
+        addAction(content: "")
+    }
+    
+    func addAction(content: String) {
         let editorViewController = EditorViewController(postText: PostText(postId: -1, content: content, order: 0)) { postText in
             let result = DataManager.shared.createPost(content: postText.content)
             print(result)
@@ -443,6 +447,6 @@ extension MainViewController {
 extension MainViewController {
     func showEditor(with text: String) {
         navigationController?.dismiss(animated: true)
-        addAction(text)
+        addAction(content: text)
     }
 }
