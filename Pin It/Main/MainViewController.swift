@@ -60,8 +60,9 @@ class MainViewController: UIViewController {
         view.backgroundColor = AppColor.background
         self.title = String(localized: "controller.pin.title")
         
-        let addButton = UIBarButtonItem(image: UIImage(systemName: "plus"), style: .plain, target: self, action: #selector(newAction))
+        let addButton = UIBarButtonItem(image: UIImage(systemName: "plus"))
         addButton.tintColor = .systemRed
+        addButton.menu = addMenu()
         self.navigationItem.rightBarButtonItem = addButton
         self.addButton = addButton
         
@@ -72,13 +73,18 @@ class MainViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .DatabaseUpdated, object: nil)
     }
     
-    @objc
-    func newAction() {
-        addAction(content: "")
+    func addMenu() -> UIMenu {
+        let textAction = UIAction(title: String(localized: "editor.text"), image: UIImage(systemName: "text.alignleft")) { [weak self] _ in
+            self?.addAction(text: "")
+        }
+        let imageAction = UIAction(title: String(localized: "editor.image"), image: UIImage(systemName: "photo")) { _ in
+            
+        }
+        return UIMenu(children: [textAction, imageAction])
     }
     
-    func addAction(content: String) {
-        let editorViewController = EditorViewController(postText: PostText(postId: -1, content: content, order: 0)) { postText in
+    func addAction(text: String) {
+        let editorViewController = EditorViewController(postText: PostText(postId: -1, content: text, order: 0)) { postText in
             let result = DataManager.shared.createPost(content: postText.content)
             print(result)
             if result {
@@ -447,6 +453,6 @@ extension MainViewController {
 extension MainViewController {
     func showEditor(with text: String) {
         navigationController?.dismiss(animated: true)
-        addAction(content: text)
+        addAction(text: text)
     }
 }
