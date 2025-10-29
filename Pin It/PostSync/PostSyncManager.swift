@@ -11,12 +11,18 @@ import UIKit
 class PostSyncManager: NSObject {
     static let shared = PostSyncManager()
     
+    private var updateDebounce: Debounce<Int>!
+    
     override init() {
         super.init()
         
+        updateDebounce = Debounce(duration: 0.1, block: { [weak self] _ in
+            self?.commitUpdate()
+        })
+        
         syncData()
         
-        NotificationCenter.default.addObserver(self, selector: #selector(syncDatabaseToAppGroup), name: .DatabaseUpdated, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(needSyncDatabaseToAppGroup), name: .DatabaseUpdated, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(syncData), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
     
@@ -39,11 +45,19 @@ class PostSyncManager: NSObject {
     }
     
     @objc
+    private func needSyncDatabaseToAppGroup() {
+        updateDebounce.emit(value: 0)
+    }
+    
     private func syncDatabaseToAppGroup() {
         // Database -> App Group
         let pinnedPosts = DataManager.shared.fetchAllPostDetails(isPinned: true).compactMap { $0.convertToSyncPost() }
         
         try? SyncDataManager.write(SyncPostStorage(posts: pinnedPosts))
+    }
+    
+    private func commitUpdate() {
+        syncDatabaseToAppGroup()
     }
 }
 
