@@ -49,6 +49,26 @@ final class DataManager {
         return result
     }
     
+    private func fetchPostDetail(for id: Int64) -> Post.Detail? {
+        var result: Post.Detail?
+        do {
+            try AppDatabase.shared.reader?.read{ db in
+                let idColumn = Post.Columns.id
+                result = try Post
+                    .including(all: Post.images)
+                    .including(all: Post.texts)
+                    .asRequest(of: Post.Detail.self)
+                    .filter(idColumn == id)
+                    .fetchOne(db)
+            }
+        }
+        catch {
+            print(error)
+        }
+        
+        return result
+    }
+    
     private func getNewOrder(isPinned: Bool) -> Int64 {
         return (fetchLastPost(isPinned: isPinned)?.order ?? -1) + 1
     }
@@ -102,7 +122,18 @@ final class DataManager {
     }
     
     public func delete(post: Post) -> Bool {
-        return AppDatabase.shared.delete(post: post)
+        guard let id = post.id, let detail = fetchPostDetail(for: id) else { return false }
+        
+        let result = AppDatabase.shared.delete(post: post)
+        
+        if result {
+            for image in detail.images {
+                _ = ImageCacheManager.shared.deleteImage(fileName: image.original, type: .original)
+                _ = ImageCacheManager.shared.deleteImage(fileName: image.cropped, type: .processed)
+            }
+        }
+        
+        return result
     }
     
     public func update(posts: [Post]) -> Bool {
