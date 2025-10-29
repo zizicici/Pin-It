@@ -467,6 +467,11 @@ extension MainViewController {
         navigationController?.dismiss(animated: true)
         addAction(text: text)
     }
+    
+    func showEditor(with image: UIImage) {
+        navigationController?.dismiss(animated: true)
+        handle(image, postImage: nil)
+    }
 }
 
 extension MainViewController {

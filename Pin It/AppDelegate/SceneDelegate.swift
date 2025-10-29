@@ -83,7 +83,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             logger.log("no contents")
             return
         }
-        for file in files.sorted(by: { $0.path() < $1.path() }) {
+        if let file = files.sorted(by: { $0.path() < $1.path() }).first {
             logger.log("found \(file)")
             let fileName = file.lastPathComponent
             switch fileName {
@@ -98,8 +98,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 }
             case _ where fileName.hasSuffix("image"):
                 if let data = try? Data(contentsOf: file) {
-                    if let _ = UIImage(data: data) {
+                    if let image = UIImage(data: data) {
                         logger.log("it's an image")
+                        if let tabBarController = window?.rootViewController as? UITabBarController, let mainViewController = (tabBarController.viewControllers?.first as? UINavigationController)?.viewControllers.first as? MainViewController {
+                            mainViewController.showEditor(with: image)
+                        }
                     }
                 }
             default:
