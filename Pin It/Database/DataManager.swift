@@ -121,6 +121,10 @@ final class DataManager {
         return AppDatabase.shared.update(text: text)
     }
     
+    public func update(image: PostImage) -> Bool {
+        return AppDatabase.shared.update(image: image)
+    }
+    
     public func delete(post: Post) -> Bool {
         guard let id = post.id, let detail = fetchPostDetail(for: id) else { return false }
         

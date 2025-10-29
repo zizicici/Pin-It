@@ -15,6 +15,7 @@ class MainViewController: UIViewController {
     private var dataSource: UICollectionViewDiffableDataSource<Section, Item>!
     
     private var currentImage: UIImage?
+    private var currentPostImage: PostImage?
     
     static let sectionHeaderElementKind = "sectionHeaderElementKind"
     
@@ -364,18 +365,25 @@ extension MainViewController: PostCellDelegate {
 
 extension MainViewController {
     func edit(post: Post.Detail) {
-        guard let postText = post.texts.first else { return }
-        let editorViewController = EditorViewController(postText: postText) { postText in
-            let result = DataManager.shared.update(text: postText)
-            print(result)
-            if result {
-                
-            } else {
-                
+        if let postText = post.texts.first {
+            let editorViewController = EditorViewController(postText: postText) { postText in
+                let result = DataManager.shared.update(text: postText)
+                print(result)
+                if result {
+                    
+                } else {
+                    
+                }
             }
+            
+            navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
+        } else if let postImage = post.images.first {
+            if let path = ImageCacheManager.shared.getPath(name: postImage.original, type: .original), let image = UIImage(contentsOfFile: path) {
+                handle(image, postImage: postImage)
+            }
+        } else {
+            //
         }
-        
-        navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
     }
     
     func showDeleteAlert(for post: Post.Detail) {
@@ -472,8 +480,9 @@ extension MainViewController {
         present(picker, animated: ConsideringUser.animated)
     }
     
-    func handle(_ image: UIImage) {
+    func handle(_ image: UIImage, postImage: PostImage?) {
         currentImage = image
+        currentPostImage = postImage
         
         let cropController = CropViewController(croppingStyle: .default, image: image)
         cropController.delegate = self
@@ -492,7 +501,7 @@ extension MainViewController: PHPickerViewControllerDelegate {
         result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] object, error in
             if let image = object as? UIImage {
                 DispatchQueue.main.async {
-                    self?.handle(image)
+                    self?.handle(image, postImage: nil)
                 }
             } else {
                 if error != nil {
@@ -507,15 +516,24 @@ extension MainViewController: CropViewControllerDelegate {
     func cropViewController(_ cropViewController: CropViewController, didCropToImage image: UIImage, withRect cropRect: CGRect, angle: Int) {
         defer {
             currentImage = nil
+            currentPostImage = nil
             
             cropViewController.dismiss(animated: ConsideringUser.animated)
         }
         
         let resizedImage = image.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3)
         
-        guard let currentImage = currentImage, let original = ImageCacheManager.shared.storeImage(currentImage, type: .original), let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) else { return }
-        
-        _ = DataManager.shared.createPost(original: original, processed: processed, rect: cropRect, orientation: angle)
+        if var postImage = currentPostImage {
+            _ = ImageCacheManager.shared.deleteImage(fileName: postImage.cropped, type: .processed)
+            if let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
+                postImage.cropped = processed
+                _ = DataManager.shared.update(image: postImage)
+            }
+        } else {
+            if let currentImage = currentImage, let original = ImageCacheManager.shared.storeImage(currentImage, type: .original), let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
+                _ = DataManager.shared.createPost(original: original, processed: processed, rect: cropRect, orientation: angle)
+            }
+        }
     }
     
     func cropViewController(_ cropViewController: CropViewController, didFinishCancelled cancelled: Bool) {
