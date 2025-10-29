@@ -11,6 +11,28 @@ import SwiftUI
 import AppIntents
 import NaturalLanguage
 
+struct PinContentView: View {
+    var context: ActivityViewContext<PinAttributes>
+    
+    var body: some View {
+        if let text = context.state.text {
+            AutoSizeText(text: text)
+        } else if let imageName = context.state.imageName {
+            if let path = ImageCacheManager.shared.getPath(name: imageName, type: .processed), let image = UIImage(contentsOfFile: path) {
+//                Text(image.debugDescription)
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 10.0))
+            } else {
+                Text("content.error")
+            }
+        } else {
+            Text("content.no")
+        }
+    }
+}
+
 struct BoardLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: PinAttributes.self) { context in
@@ -62,18 +84,12 @@ struct BoardLiveActivity: Widget {
                         .tint(.primary)
                     }
                     .frame(maxHeight: .infinity)
-//                    .background(.white)
                 }
                 DynamicIslandExpandedRegion(.center) {
                     VStack {
-//                            Image("testimage").resizable().scaledToFit()
-                        
-                        AutoSizeText(text: context.state.text ?? "")
-                        Spacer(minLength: 14.0)
-//                        AutoSizeText(text: qianzi)
+                        PinContentView(context: context)
+                        Spacer(minLength: 16.0)
                     }
-//                        .clipShape(RoundedRectangle(cornerRadius: 10.0))
-//                    .background(.orange)
                 }
             } compactLeading: {
                 HStack {
@@ -191,7 +207,7 @@ struct BoardSmallView: View {
         HStack {
             Spacer(minLength: 3.0)
             VStack {
-                AutoSizeText(text: context.state.text ?? "")
+                PinContentView(context: context)
             }
             Spacer(minLength: 3.0)
             Button(intent: ButtonNextIntent()) {
@@ -232,7 +248,7 @@ struct BoardMediumView: View {
             .padding(12.0)
             VStack {
                 Spacer()
-                AutoSizeText(text: context.state.text ?? "")
+                PinContentView(context: context)
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

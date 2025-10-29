@@ -138,7 +138,7 @@ class ImageCacheManager {
         let fileURL = folderURL.appendingPathComponent(fileName)
         
         // 将 UIImage 转换为 Data
-        guard let imageData = image.heicData() else {
+        guard let imageData = image.jpegData(compressionQuality: 0.6) else {
             print("Error: Unable to convert UIImage to HEIC data")
             return nil
         }
@@ -252,5 +252,13 @@ class ImageCacheManager {
         } catch {
             print("Error clearing cache: \(error)")
         }
+    }
+}
+
+extension ImageCacheManager {
+    func getPath(name: String, type: CacheImageType) -> String? {
+        guard let url = getFolderURL(for: type) else { return nil }
+        
+        return url.appending(component: name).path()
     }
 }

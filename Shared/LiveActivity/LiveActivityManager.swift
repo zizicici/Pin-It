@@ -66,7 +66,7 @@ class LiveActivityManager: NSObject {
             let total: Int = posts.count
             let index: Int = 0
             let target = try? PinInfoManager.shared.getPost(by: PinInfo(index: index, total: total))
-            let activityContent = ActivityContent(state: PinAttributes.ContentState(index: index, total: total, text: target?.text), staleDate: nil)
+            let activityContent = ActivityContent(state: PinAttributes.ContentState(index: index, total: total, text: target?.text, imageName: target?.image), staleDate: nil)
             let activityAttributes = PinAttributes(name: "Pin")
             
             do {
@@ -173,7 +173,7 @@ class LiveActivityManager: NSObject {
             newIndex = total - 1
         }
         let target = try? PinInfoManager.shared.getPost(by: PinInfo(index: newIndex, total: total))
-        let activityContent = ActivityContent(state: PinAttributes.ContentState(index: newIndex, total: total, text: target?.text), staleDate: nil)
+        let activityContent = ActivityContent(state: PinAttributes.ContentState(index: newIndex, total: total, text: target?.text, imageName: target?.image), staleDate: nil)
         
         await currentActivity.update(activityContent)
     }

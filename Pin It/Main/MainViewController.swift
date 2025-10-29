@@ -511,7 +511,9 @@ extension MainViewController: CropViewControllerDelegate {
             cropViewController.dismiss(animated: ConsideringUser.animated)
         }
         
-        guard let currentImage = currentImage, let original = ImageCacheManager.shared.storeImage(currentImage, type: .original), let processed = ImageCacheManager.shared.storeImage(image, type: .processed) else { return }
+        let resizedImage = image.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3)
+        
+        guard let currentImage = currentImage, let original = ImageCacheManager.shared.storeImage(currentImage, type: .original), let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) else { return }
         
         _ = DataManager.shared.createPost(original: original, processed: processed, rect: cropRect, orientation: angle)
     }

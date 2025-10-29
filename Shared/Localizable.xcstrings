@@ -200,6 +200,12 @@
         }
       }
     },
+    "content.error" : {
+
+    },
+    "content.no" : {
+
+    },
     "controller.more.title" : {
       "localizations" : {
         "en" : {

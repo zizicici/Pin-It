@@ -153,6 +153,8 @@ class PostView: UIView {
         } else {
             layer.cornerRadius = 16.0
         }
+        
+        layer.masksToBounds = true
     }
     
     required init?(coder: NSCoder) {
@@ -174,7 +176,11 @@ class PostView: UIView {
         if let image = postItem.images.first {
             addImageViewIfNeeded()
             
-            imageView.image = UIImage(contentsOfFile: image.cropped)
+            if let path = ImageCacheManager.shared.getPath(name: image.cropped, type: .processed) {
+                imageView.image = UIImage(contentsOfFile: path)
+            } else {
+                imageView.image = nil
+            }
         }
     }
     
