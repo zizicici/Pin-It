@@ -7,10 +7,14 @@
 
 import UIKit
 import SnapKit
+import PhotosUI
+import CropViewController
 
 class MainViewController: UIViewController {
     private var collectionView: UICollectionView!
     private var dataSource: UICollectionViewDiffableDataSource<Section, Item>!
+    
+    private var currentImage: UIImage?
     
     static let sectionHeaderElementKind = "sectionHeaderElementKind"
     
@@ -78,7 +82,7 @@ class MainViewController: UIViewController {
             self?.addAction(text: "")
         }
         let imageAction = UIAction(title: String(localized: "editor.image"), image: UIImage(systemName: "photo")) { _ in
-            
+            self.pickImage()
         }
         return UIMenu(children: [textAction, imageAction])
     }
@@ -454,5 +458,67 @@ extension MainViewController {
     func showEditor(with text: String) {
         navigationController?.dismiss(animated: true)
         addAction(text: text)
+    }
+}
+
+extension MainViewController {
+    func pickImage() {
+        var configuration = PHPickerConfiguration()
+        configuration.filter = .images
+        configuration.selectionLimit = 1
+        
+        let picker = PHPickerViewController(configuration: configuration)
+        picker.delegate = self
+        present(picker, animated: ConsideringUser.animated)
+    }
+    
+    func handle(_ image: UIImage) {
+        currentImage = image
+        
+        let cropController = CropViewController(croppingStyle: .default, image: image)
+        cropController.delegate = self
+        cropController.title = String(localized: "editor.image.crop")
+        
+        present(cropController, animated: ConsideringUser.animated, completion: nil)
+    }
+}
+
+extension MainViewController: PHPickerViewControllerDelegate {
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        picker.dismiss(animated: ConsideringUser.animated)
+        
+        guard let result = results.first else { return }
+        
+        result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] object, error in
+            if let image = object as? UIImage {
+                DispatchQueue.main.async {
+                    self?.handle(image)
+                }
+            } else {
+                if error != nil {
+                    print(error ?? "")
+                }
+            }
+        }
+    }
+}
+
+extension MainViewController: CropViewControllerDelegate {
+    func cropViewController(_ cropViewController: CropViewController, didCropToImage image: UIImage, withRect cropRect: CGRect, angle: Int) {
+        defer {
+            currentImage = nil
+            
+            cropViewController.dismiss(animated: ConsideringUser.animated)
+        }
+        
+        guard let currentImage = currentImage, let original = ImageCacheManager.shared.storeImage(currentImage, type: .original), let processed = ImageCacheManager.shared.storeImage(image, type: .processed) else { return }
+        
+        _ = DataManager.shared.createPost(original: original, processed: processed, rect: cropRect, orientation: angle)
+    }
+    
+    func cropViewController(_ cropViewController: CropViewController, didFinishCancelled cancelled: Bool) {
+        currentImage = nil
+        
+        cropViewController.dismiss(animated: ConsideringUser.animated)
     }
 }

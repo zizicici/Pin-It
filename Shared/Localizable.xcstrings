@@ -300,6 +300,9 @@
         }
       }
     },
+    "editor.image.crop" : {
+
+    },
     "editor.text" : {
       "localizations" : {
         "en" : {

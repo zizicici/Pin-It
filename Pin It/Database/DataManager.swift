@@ -69,8 +69,19 @@ final class DataManager {
         }
     }
     
-    private func createPost(original: String, cropped: String, rect: CGRect, orientation: Int) -> Bool {
-        return false
+    public func createPost(original: String, processed: String, rect: CGRect, orientation: Int) -> Bool {
+        let newOrder = getNewOrder(isPinned: true)
+        let newPost = Post(isPinned: true, order: newOrder)
+        guard let savedPost = AppDatabase.shared.add(post: newPost), let id = savedPost.id else {
+            return false
+        }
+        let newPostImage = PostImage(postId: id, original: original, cropped: processed, orientation: Int64(orientation), minX: Int64(rect.minX), minY: Int64(rect.minY), maxX: Int64(rect.maxX), maxY: Int64(rect.maxY), order: 0)
+        if !AppDatabase.shared.add(image: newPostImage) {
+            _ = AppDatabase.shared.delete(post: newPost)
+            return false
+        } else {
+            return true
+        }
     }
     
     public func update(post: Post, isPinned: Bool) -> Bool {
