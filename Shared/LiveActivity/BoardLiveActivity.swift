@@ -19,16 +19,27 @@ struct PinContentView: View {
             AutoSizeText(text: text)
         } else if let imageName = context.state.imageName {
             if let path = ImageCacheManager.shared.getPath(name: imageName, type: .processed), let image = UIImage(contentsOfFile: path) {
-//                Text(image.debugDescription)
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 10.0))
             } else {
-                Text("content.error")
+                Text("content.error.load")
             }
         } else {
             Text("content.no")
+        }
+    }
+}
+
+struct PinContentWatchView: View {
+    var context: ActivityViewContext<PinAttributes>
+    
+    var body: some View {
+        if let text = context.state.text {
+            AutoSizeText(text: text)
+        } else {
+            Text("content.error.watch")
         }
     }
 }
@@ -207,7 +218,7 @@ struct BoardSmallView: View {
         HStack {
             Spacer(minLength: 3.0)
             VStack {
-                PinContentView(context: context)
+                PinContentWatchView(context: context)
             }
             Spacer(minLength: 3.0)
             Button(intent: ButtonNextIntent()) {
