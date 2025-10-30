@@ -579,6 +579,22 @@
     "intent.empty.title" : {
 
     },
+    "intent.image" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图片"
+          }
+        }
+      }
+    },
     "intent.next.title" : {
       "localizations" : {
         "en" : {
@@ -591,6 +607,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "下一个"
+          }
+        }
+      }
+    },
+    "intent.post.add.by.image.description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Post by Image"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加图片记录"
+          }
+        }
+      }
+    },
+    "intent.post.add.by.image.summary${content}" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Post with ${content}"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加${content}为记录"
+          }
+        }
+      }
+    },
+    "intent.post.add.by.image.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Post by Text"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加图片记录"
           }
         }
       }
