@@ -25,8 +25,27 @@ struct AddTextRecordIntent: LiveActivityIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
         let result = DataManager.shared.createPost(content: content)
+        await LiveActivityManager.shared.start()
         return .result(value: result)
     }
+}
+
+public enum DisplayMode: String, AppEnum {
+    case full
+    case prominentNumber
+    case top
+    case middle
+    case bottom
+    
+    public static var typeDisplayRepresentation: TypeDisplayRepresentation = "intent.displayMode.type"
+    
+    public static var caseDisplayRepresentations: [Self : DisplayRepresentation] = [
+        .full: "intent.displayMode.case.full",
+        .prominentNumber: "intent.displayMode.case.prominentNumber",
+        .top: "intent.displayMode.case.top",
+        .middle: "intent.displayMode.case.middle",
+        .bottom: "intent.displayMode.case.bottom"
+    ]
 }
 
 struct AddImageRecordIntent: LiveActivityIntent {
@@ -34,11 +53,34 @@ struct AddImageRecordIntent: LiveActivityIntent {
     
     static var description: IntentDescription = IntentDescription("intent.post.add.by.image.description", categoryName: "intent.post.add.category")
     
+    @Parameter(title: "intent.displayMode.type", default: DisplayMode.prominentNumber)
+    var displayMode: DisplayMode
+    
     @Parameter(title: "intent.image", supportedContentTypes: [.image])
     var content: IntentFile
     
+    @Parameter(title: "intent.cropEdges", default: true)
+    var cropEdges: Bool
+    
     static var parameterSummary: some ParameterSummary {
-        Summary("intent.post.add.by.image.summary\(\.$content)")
+        Switch(\.$displayMode) {
+            Case(.prominentNumber) {
+                Summary("intent.post.add.by.image.summary\(\.$content)") {
+                    \.$displayMode
+                }
+            }
+            Case(.full) {
+                Summary("intent.post.add.by.image.summary\(\.$content)") {
+                    \.$displayMode
+                }
+            }
+            DefaultCase {
+                Summary("intent.post.add.by.image.summary\(\.$content)") {
+                    \.$displayMode
+                    \.$cropEdges
+                }
+            }
+        }
     }
     
     static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
@@ -47,15 +89,30 @@ struct AddImageRecordIntent: LiveActivityIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
         print(content.data)
         if let image = UIImage(data: content.data) {
-            let images = ImageSplitter.splitScreenshotVertically(image).reversed()
-            if let original = ImageCacheManager.shared.storeImage(image, type: .original) {
-                let processeds: [String] = images.compactMap({ image in
-                    let resizedImage = image.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3)
-                    return ImageCacheManager.shared.storeImage(resizedImage, type: .processed)
-                })
-                for processed in processeds {
-                    _ = DataManager.shared.createPost(original: original, processed: processed, rect: .zero, orientation: 0)
+            var newImage: UIImage? = nil
+            var imageRect: CGRect = CGRect(origin: .zero, size: image.size)
+            switch displayMode {
+            case .full:
+                newImage = image
+            case .prominentNumber:
+                if let largestNumberInfo = try? TextRecognitionHelper.findLargestNumber(in: image), let rect = largestNumberInfo.largestNumberRect {
+                    imageRect = expandRect(rect, by: .init(width: rect.width / 3, height: rect.height / 3), within: CGRect(origin: .zero, size: image.size))
+                    newImage = ImageCropper.cropImage(image, to: imageRect)
+                } else {
+                    newImage = image
                 }
+            case .top:
+                newImage = ImageCropper.cropImage(image, to: .top, cropEdges: cropEdges)
+            case .middle:
+                newImage = ImageCropper.cropImage(image, to: .middle, cropEdges: cropEdges)
+            case .bottom:
+                newImage = ImageCropper.cropImage(image, to: .bottom, cropEdges: cropEdges)
+            }
+            if let newImage = newImage?.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3), let processed = ImageCacheManager.shared.storeImage(newImage, type: .processed), let original = ImageCacheManager.shared.storeImage(image, type: .original) {
+                _ = DataManager.shared.createPost(original: original, processed: processed, rect: imageRect, orientation: 0)
+                
+                await LiveActivityManager.shared.start()
+                
                 return .result(value: true)
             } else {
                 return .result(value: false)
@@ -63,5 +120,26 @@ struct AddImageRecordIntent: LiveActivityIntent {
         } else {
             return .result(value: false)
         }
+    }
+    
+    func expandRect(_ rect: CGRect, by edges: CGSize, within bounds: CGRect) -> CGRect {
+        var expandedRect = rect
+        
+        let maxLeftExpansion = rect.minX - bounds.minX
+        let maxRightExpansion = bounds.maxX - rect.maxX
+        let maxTopExpansion = rect.minY - bounds.minY
+        let maxBottomExpansion = bounds.maxY - rect.maxY
+        
+        let actualLeftExpansion = min(edges.width, maxLeftExpansion)
+        let actualRightExpansion = min(edges.width, maxRightExpansion)
+        let actualTopExpansion = min(edges.height, maxTopExpansion)
+        let actualBottomExpansion = min(edges.height, maxBottomExpansion)
+        
+        expandedRect.origin.x -= actualLeftExpansion
+        expandedRect.origin.y -= actualTopExpansion
+        expandedRect.size.width += actualLeftExpansion + actualRightExpansion
+        expandedRect.size.height += actualTopExpansion + actualBottomExpansion
+        
+        return expandedRect
     }
 }
