@@ -334,6 +334,17 @@
 				"zh-Hans",
 				"zh-HK",
 				"zh-Hant",
+				ru,
+				ja,
+				es,
+				"pt-PT",
+				"pt-BR",
+				de,
+				fr,
+				"es-419",
+				uk,
+				it,
+				ko,
 			);
 			mainGroup = 1481AAAE2E9D4CFD00E359C9;
 			minimizedProjectReferenceProxies = 1;
@@ -429,8 +440,8 @@
 				DEVELOPMENT_TEAM = KKQQQNKMM6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Pin It/Info.plist";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Allow access to photo library to save photos to your photo library directly when using Pin It";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -468,8 +479,8 @@
 				DEVELOPMENT_TEAM = KKQQQNKMM6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Pin It/Info.plist";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Allow access to photo library to save photos to your photo library directly when using Pin It";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
