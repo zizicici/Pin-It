@@ -1322,10 +1322,76 @@
     },
     "editor.image.crop" : {
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bild anpassen"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adjust Image"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustar imagen"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustar imagen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuster l'image"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regola immagine"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像を調整"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이미지 조정"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustar imagem"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustar imagem"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Настроить изображение"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Налаштувати зображення"
           }
         },
         "zh-Hans" : {
@@ -6521,34 +6587,16 @@
     },
     "promotion.alert.message" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One-time payment. No subsequent fees."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一次性付费，无后续费用。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一次性付費，無後續費用。"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一次性付費，無後續費用。"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Einmalige Zahlung. Keine weiteren Gebühren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One-time payment. No subsequent fees."
           }
         },
         "es" : {
@@ -6610,39 +6658,39 @@
             "state" : "translated",
             "value" : "Одноразовий платіж. Без подальших зборів."
           }
-        }
-      }
-    },
-    "promotion.alert.title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Do you intend to support our growth?"
-          }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你是要支持我们的发展吗？"
+            "value" : "一次性付费，无后续费用。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你是要支持我們的發展嗎？"
+            "value" : "一次性付費，無後續費用。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你是要支持我們的發展嗎？"
+            "value" : "一次性付費，無後續費用。"
           }
-        },
+        }
+      }
+    },
+    "promotion.alert.title" : {
+      "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Möchten Sie unser Wachstum unterstützen?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do you intend to support our growth?"
           }
         },
         "es" : {
@@ -6704,39 +6752,39 @@
             "state" : "translated",
             "value" : "Чи бажаєте підтримати наш розвиток?"
           }
-        }
-      }
-    },
-    "promotion.first" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "- Remove Ads"
-          }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 移除广告文字"
+            "value" : "你是要支持我们的发展吗？"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 移除廣告文字"
+            "value" : "你是要支持我們的發展嗎？"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 移除廣告文字"
+            "value" : "你是要支持我們的發展嗎？"
           }
-        },
+        }
+      }
+    },
+    "promotion.first" : {
+      "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "- Werbung entfernen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- Remove Ads"
           }
         },
         "es" : {
@@ -6798,39 +6846,39 @@
             "state" : "translated",
             "value" : "- Прибрати рекламу"
           }
-        }
-      }
-    },
-    "promotion.future" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "- And more features"
-          }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 以及更多功能"
+            "value" : "- 移除广告文字"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 以及更多功能"
+            "value" : "- 移除廣告文字"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 以及更多功能"
+            "value" : "- 移除廣告文字"
           }
-        },
+        }
+      }
+    },
+    "promotion.future" : {
+      "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "- Und weitere Funktionen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- And more features"
           }
         },
         "es" : {
@@ -6892,39 +6940,39 @@
             "state" : "translated",
             "value" : "- Та інші функції"
           }
-        }
-      }
-    },
-    "promotion.second" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "- Switch between multiple posts"
-          }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 同时钉住多个记录"
+            "value" : "- 以及更多功能"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 同時釘選多個記錄"
+            "value" : "- 以及更多功能"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 同時釘選多個記錄"
+            "value" : "- 以及更多功能"
           }
-        },
+        }
+      }
+    },
+    "promotion.second" : {
+      "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "- Mehrere Beiträge anheften"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- Switch between multiple posts"
           }
         },
         "es" : {
@@ -6986,39 +7034,39 @@
             "state" : "translated",
             "value" : "- Закріплювати кілька записів"
           }
-        }
-      }
-    },
-    "promotion.title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Upgrade to unlock…"
-          }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "支持我们 & 解锁功能："
+            "value" : "- 同时钉住多个记录"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "升級以解鎖："
+            "value" : "- 同時釘選多個記錄"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "升級以解鎖："
+            "value" : "- 同時釘選多個記錄"
           }
-        },
+        }
+      }
+    },
+    "promotion.title" : {
+      "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Upgrade freischalten…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrade to unlock…"
           }
         },
         "es" : {
@@ -7080,39 +7128,39 @@
             "state" : "translated",
             "value" : "Оновити для розблокування…"
           }
-        }
-      }
-    },
-    "shortcuts.title.add" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin Text Post"
-          }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "钉文本记录"
+            "value" : "支持我们 & 解锁功能："
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "釘選文字記錄"
+            "value" : "升級以解鎖："
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "釘選文字記錄"
+            "value" : "升級以解鎖："
           }
-        },
+        }
+      }
+    },
+    "shortcuts.title.add" : {
+      "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Text anheften"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin Text Post"
           }
         },
         "es" : {
@@ -7174,39 +7222,39 @@
             "state" : "translated",
             "value" : "Закріпити текст"
           }
-        }
-      }
-    },
-    "shortcuts.title.start" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show"
-          }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "展开"
+            "value" : "钉文本记录"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "展開"
+            "value" : "釘選文字記錄"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "展開"
+            "value" : "釘選文字記錄"
           }
-        },
+        }
+      }
+    },
+    "shortcuts.title.start" : {
+      "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Anzeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show"
           }
         },
         "es" : {
@@ -7268,39 +7316,39 @@
             "state" : "translated",
             "value" : "Показати"
           }
-        }
-      }
-    },
-    "shortcuts.title.stop" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dismiss"
-          }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "收起"
+            "value" : "展开"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "收起"
+            "value" : "展開"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "收起"
+            "value" : "展開"
           }
-        },
+        }
+      }
+    },
+    "shortcuts.title.stop" : {
+      "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ausblenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss"
           }
         },
         "es" : {
@@ -7362,40 +7410,40 @@
             "state" : "translated",
             "value" : "Сховати"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收起"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收起"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收起"
+          }
         }
       }
     },
     "specifications.item.summary.dateOfProduction" : {
       "comment" : "Date of Production",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Date of Production"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "出厂日期"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "出廠日期"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "出廠日期"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Herstellungsdatum"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date of Production"
           }
         },
         "es" : {
@@ -7457,40 +7505,40 @@
             "state" : "translated",
             "value" : "Дата виробництва"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "出厂日期"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "出廠日期"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "出廠日期"
+          }
         }
       }
     },
     "specifications.item.summary.icp" : {
       "comment" : "ICP Filing Number",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ICP Filing Number"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ICP备案号"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ICP備案號"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ICP備案號"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "ICP-Registrierung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ICP Filing Number"
           }
         },
         "es" : {
@@ -7552,40 +7600,40 @@
             "state" : "translated",
             "value" : "Номер ICP"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ICP备案号"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ICP備案號"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ICP備案號"
+          }
         }
       }
     },
     "specifications.item.summary.manufacturer" : {
       "comment" : "Manufacturer",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Manufacturer"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "制造商"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "製造商"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "製造商"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hersteller"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manufacturer"
           }
         },
         "es" : {
@@ -7647,37 +7695,37 @@
             "state" : "translated",
             "value" : "Виробник"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "制造商"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "製造商"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "製造商"
+          }
         }
       }
     },
     "specifications.item.summary.name" : {
       "comment" : "Name",
       "localizations" : {
-        "en" : {
+        "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Name"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "名称"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "名稱"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "名稱"
-          }
-        },
-        "de" : {
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Name"
@@ -7742,40 +7790,40 @@
             "state" : "translated",
             "value" : "Назва"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名称"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名稱"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名稱"
+          }
         }
       }
     },
     "specifications.item.summary.publisher" : {
       "comment" : "Publisher",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Publisher"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "发行商"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "發行商"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "發行商"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Herausgeber"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Publisher"
           }
         },
         "es" : {
@@ -7837,37 +7885,37 @@
             "state" : "translated",
             "value" : "Видавець"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发行商"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "發行商"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "發行商"
+          }
         }
       }
     },
     "specifications.item.summary.version" : {
       "comment" : "Version",
       "localizations" : {
-        "en" : {
+        "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Version"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "版本"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "版本"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "版本"
-          }
-        },
-        "de" : {
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Version"
@@ -7932,40 +7980,40 @@
             "state" : "translated",
             "value" : "Версія"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "版本"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "版本"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "版本"
+          }
         }
       }
     },
     "specifications.item.thirdParty.footer" : {
       "comment" : "We extend our heartfelt appreciation to all developers of open-source projects.",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We extend our heartfelt appreciation to all developers of open-source projects."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在此向所有开源项目开发者表达感谢与敬意。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在此向所有開源項目開發者表達感謝與敬意。"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在此向所有開源項目開發者表達感謝與敬意。"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unser herzlicher Dank gilt allen Entwicklern von Open-Source-Projekten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We extend our heartfelt appreciation to all developers of open-source projects."
           }
         },
         "es" : {
@@ -8027,40 +8075,40 @@
             "state" : "translated",
             "value" : "Висловлюємо щиру подяку всім розробникам проєктів з відкритим кодом."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在此向所有开源项目开发者表达感谢与敬意。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在此向所有開源項目開發者表達感謝與敬意。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在此向所有開源項目開發者表達感謝與敬意。"
+          }
         }
       }
     },
     "specifications.item.thirdParty.header" : {
       "comment" : "Third Party Framework",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Acknowledgments"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "致谢"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "致謝"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "致謝"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Danksagungen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acknowledgments"
           }
         },
         "es" : {
@@ -8122,39 +8170,39 @@
             "state" : "translated",
             "value" : "Подяки"
           }
-        }
-      }
-    },
-    "widget.start.description" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show Pin It Live Activity only when there are pinned posts."
-          }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "显示钉一下即时动态，前提条件是有钉住的记录。"
+            "value" : "致谢"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "顯示釘一下即時動態，前提條件是有釘住的記錄。"
+            "value" : "致謝"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "顯示釘一下即時動態，前提條件是有釘住的記錄。"
+            "value" : "致謝"
           }
-        },
+        }
+      }
+    },
+    "widget.start.description" : {
+      "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zeige Pin It Live Activity nur bei angehefteten Beiträgen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Pin It Live Activity only when there are pinned posts."
           }
         },
         "es" : {
@@ -8216,39 +8264,39 @@
             "state" : "translated",
             "value" : "Показувати Pin It Live Activity лише за наявності закріплених записів."
           }
-        }
-      }
-    },
-    "widget.start.name" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start Button of Pin It"
-          }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "钉一下的启动按钮"
+            "value" : "显示钉一下即时动态，前提条件是有钉住的记录。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "釘一下的啓動按鈕"
+            "value" : "顯示釘一下即時動態，前提條件是有釘住的記錄。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "釘一下的啓動按鈕"
+            "value" : "顯示釘一下即時動態，前提條件是有釘住的記錄。"
           }
-        },
+        }
+      }
+    },
+    "widget.start.name" : {
+      "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Startknopf von Pin It"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Button of Pin It"
           }
         },
         "es" : {
@@ -8309,6 +8357,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Кнопка запуску Pin It"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "钉一下的启动按钮"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "釘一下的啓動按鈕"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "釘一下的啓動按鈕"
           }
         }
       }
