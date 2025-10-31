@@ -4,12 +4,111 @@
     "Dismiss ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "${applicationName} ausblenden",
+              "${applicationName} schließen"
+            ]
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
             "values" : [
               "Dismiss ${applicationName}",
               "Hide ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Ocultar ${applicationName}",
+              "Descartar ${applicationName}"
+            ]
+          }
+        },
+        "es-419" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Ocultar ${applicationName}",
+              "Cerrar ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Masquer ${applicationName}",
+              "Fermer ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Nascondi ${applicationName}",
+              "Chiudi ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "${applicationName}を非表示",
+              "${applicationName}を閉じる"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "${applicationName} 숨기기",
+              "${applicationName} 닫기"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Ocultar ${applicationName}",
+              "Fechar ${applicationName}"
+            ]
+          }
+        },
+        "pt-PT" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Ocultar ${applicationName}",
+              "Fechar ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Скрыть ${applicationName}",
+              "Закрыть ${applicationName}"
+            ]
+          }
+        },
+        "uk" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Приховати ${applicationName}",
+              "Закрити ${applicationName}"
             ]
           }
         },
@@ -48,6 +147,16 @@
     "New ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Neuer ${applicationName}",
+              "${applicationName} erstellen",
+              "Neuer ${applicationName}-Beitrag"
+            ]
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -55,6 +164,106 @@
               "New ${applicationName}",
               "New ${applicationName} Post",
               "Create ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Nuevo ${applicationName}",
+              "Crear ${applicationName}",
+              "Nueva publicación ${applicationName}"
+            ]
+          }
+        },
+        "es-419" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Nuevo ${applicationName}",
+              "Crear ${applicationName}",
+              "Nueva publicación ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Nouveau ${applicationName}",
+              "Créer ${applicationName}",
+              "Nouvelle publication ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Nuovo ${applicationName}",
+              "Crea ${applicationName}",
+              "Nuovo post ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "新規${applicationName}",
+              "${applicationName}を作成",
+              "新規${applicationName}投稿"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "새 ${applicationName}",
+              "${applicationName} 생성",
+              "새 ${applicationName} 게시물"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Novo ${applicationName}",
+              "Criar ${applicationName}",
+              "Nova publicação ${applicationName}"
+            ]
+          }
+        },
+        "pt-PT" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Novo ${applicationName}",
+              "Criar ${applicationName}",
+              "Nova publicação ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Новый ${applicationName}",
+              "Создать ${applicationName}",
+              "Новая запись ${applicationName}"
+            ]
+          }
+        },
+        "uk" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Новий ${applicationName}",
+              "Створити ${applicationName}",
+              "Новий допис ${applicationName}"
             ]
           }
         },
@@ -105,6 +314,15 @@
     "Show ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "${applicationName} anzeigen",
+              "${applicationName} öffnen"
+            ]
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -112,6 +330,96 @@
               "Show ${applicationName}",
               "Display ${applicationName}",
               "Present ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Mostrar ${applicationName}",
+              "Abrir ${applicationName}"
+            ]
+          }
+        },
+        "es-419" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Mostrar ${applicationName}",
+              "Abrir ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Afficher ${applicationName}",
+              "Ouvrir ${applicationName}"
+            ]
+          }
+        },
+        "it" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Mostra ${applicationName}",
+              "Apri ${applicationName}"
+            ]
+          }
+        },
+        "ja" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "${applicationName}を表示",
+              "${applicationName}を開く"
+            ]
+          }
+        },
+        "ko" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "${applicationName} 표시",
+              "${applicationName} 열기"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Mostrar ${applicationName}",
+              "Abrir ${applicationName}"
+            ]
+          }
+        },
+        "pt-PT" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Mostrar ${applicationName}",
+              "Abrir ${applicationName}"
+            ]
+          }
+        },
+        "ru" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Показать ${applicationName}",
+              "Открыть ${applicationName}"
+            ]
+          }
+        },
+        "uk" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Показати ${applicationName}",
+              "Відкрити ${applicationName}"
             ]
           }
         },
