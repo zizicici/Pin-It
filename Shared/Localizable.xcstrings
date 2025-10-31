@@ -2,7 +2,7 @@
   "sourceLanguage" : "en",
   "strings" : {
     "" : {
-
+      "shouldTranslate" : false
     },
     "%lld/%lld" : {
       "localizations" : {
@@ -189,13 +189,13 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "保存"
+            "value" : "儲存"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "保存"
+            "value" : "儲存"
           }
         }
       }
@@ -213,6 +213,18 @@
             "state" : "translated",
             "value" : "图片加载失败"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圖片載入失敗"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圖片載入失敗"
+          }
         }
       }
     },
@@ -229,6 +241,18 @@
             "state" : "translated",
             "value" : "暂不支持手表上查看图片"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫不支援手錶上檢視圖片"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫不支援手錶上檢視圖片"
+          }
         }
       }
     },
@@ -244,6 +268,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无内容"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無內容"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無內容"
           }
         }
       }
@@ -288,6 +324,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "钉一下"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "釘一下"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "釘一下"
           }
         }
       }
@@ -361,6 +409,18 @@
             "state" : "translated",
             "value" : "调整图片"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "調整圖片"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "調整圖片"
+          }
         }
       }
     },
@@ -381,13 +441,13 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "文本"
+            "value" : "文字"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "文本"
+            "value" : "文字"
           }
         }
       }
@@ -404,6 +464,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请输入文本"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請輸入文字"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請輸入文字"
           }
         }
       }
@@ -477,6 +549,18 @@
             "state" : "translated",
             "value" : "动作"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作"
+          }
         }
       }
     },
@@ -492,6 +576,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "隐藏钉一下即时动态"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隱藏釘一下即時動態"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隱藏釘一下即時動態"
           }
         }
       }
@@ -509,6 +605,18 @@
             "state" : "translated",
             "value" : "隐藏钉一下即时动态"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隱藏釘一下即時動態"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隱藏釘一下即時動態"
+          }
         }
       }
     },
@@ -524,6 +632,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "隐藏钉一下即时动态"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隱藏釘一下即時動態"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隱藏釘一下即時動態"
           }
         }
       }
@@ -541,6 +661,18 @@
             "state" : "translated",
             "value" : "显示钉一下即时动态，前提条件是有钉住的记录。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示釘一下即時動態，前提條件是有釘住的記錄。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示釘一下即時動態，前提條件是有釘住的記錄。"
+          }
         }
       }
     },
@@ -557,6 +689,18 @@
             "state" : "translated",
             "value" : "显示钉一下即时动态"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示釘一下即時動態"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示釘一下即時動態"
+          }
         }
       }
     },
@@ -572,6 +716,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "显示钉一下即时动态"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示釘一下即時動態"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示釘一下即時動態"
           }
         }
       }
@@ -773,7 +929,32 @@
       }
     },
     "intent.empty.title" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empty"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "空"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "空"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "空"
+          }
+        }
+      }
     },
     "intent.image" : {
       "localizations" : {
@@ -787,6 +968,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "图片"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圖片"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圖片"
           }
         }
       }
@@ -804,6 +997,18 @@
             "state" : "translated",
             "value" : "下一个"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一個"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一個"
+          }
         }
       }
     },
@@ -819,6 +1024,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加图片记录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增圖片記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增圖片記錄"
           }
         }
       }
@@ -836,6 +1053,18 @@
             "state" : "translated",
             "value" : "添加${content}为记录"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增${content}為記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增${content}為記錄"
+          }
         }
       }
     },
@@ -844,13 +1073,25 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add Post by Text"
+            "value" : "Add Post by Image"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加图片记录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增圖片記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增圖片記錄"
           }
         }
       }
@@ -868,6 +1109,18 @@
             "state" : "translated",
             "value" : "添加文本记录"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增文字記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增文字記錄"
+          }
         }
       }
     },
@@ -883,6 +1136,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加${content}为记录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增${content}為記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增${content}為記錄"
           }
         }
       }
@@ -900,6 +1165,18 @@
             "state" : "translated",
             "value" : "添加文本记录"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增文字記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增文字記錄"
+          }
         }
       }
     },
@@ -915,6 +1192,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加记录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增記錄"
           }
         }
       }
@@ -932,6 +1221,18 @@
             "state" : "translated",
             "value" : "上一个"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上一個"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上一個"
+          }
         }
       }
     },
@@ -948,6 +1249,18 @@
             "state" : "translated",
             "value" : "文本"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字"
+          }
         }
       }
     },
@@ -963,6 +1276,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "不钉了"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消釘選"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消釘選"
           }
         }
       }
@@ -984,13 +1309,13 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "付费升级"
+            "value" : "付費升級"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "付费升级"
+            "value" : "付費升級"
           }
         }
       }
@@ -1209,13 +1534,13 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "哔哩哔哩"
+            "value" : "嗶哩嗶哩"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "哔哩哔哩"
+            "value" : "嗶哩嗶哩"
           }
         }
       }
@@ -1237,13 +1562,13 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "郵箱"
+            "value" : "電郵"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "郵箱"
+            "value" : "電郵"
           }
         }
       }
@@ -1377,13 +1702,13 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "App君做的App"
+            "value" : "App君的其他 App"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "App君做的App"
+            "value" : "App君的其他 App"
           }
         }
       }
@@ -1457,6 +1782,18 @@
             "state" : "translated",
             "value" : "无记录"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無記錄"
+          }
         }
       }
     },
@@ -1472,6 +1809,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "删除"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除"
           }
         }
       }
@@ -1489,6 +1838,18 @@
             "state" : "translated",
             "value" : "删除这个记录？"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除這個記錄？"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除這個記錄？"
+          }
         }
       }
     },
@@ -1504,6 +1865,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "编辑"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "編輯"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "編輯"
           }
         }
       }
@@ -1521,6 +1894,18 @@
             "state" : "translated",
             "value" : "其他记录"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "其他記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "其他記錄"
+          }
         }
       }
     },
@@ -1536,6 +1921,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "钉住记录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "釘選記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "釘選記錄"
           }
         }
       }
@@ -1629,13 +2026,25 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "移除广告文字"
+            "value" : "- Remove Ads"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "- 移除广告文字"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- 移除廣告文字"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- 移除廣告文字"
           }
         }
       }
@@ -1645,13 +2054,25 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "以及更多功能"
+            "value" : "- And more features"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 以及更多功能…"
+            "value" : "- 以及更多功能"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- 以及更多功能"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- 以及更多功能"
           }
         }
       }
@@ -1661,13 +2082,25 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "可切换超过两个记录"
+            "value" : "- Switch between multiple posts"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "- 同时钉住多个记录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- 同時釘選多個記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- 同時釘選多個記錄"
           }
         }
       }
@@ -1713,6 +2146,18 @@
             "state" : "translated",
             "value" : "钉文本记录"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "釘選文字記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "釘選文字記錄"
+          }
         }
       }
     },
@@ -1729,6 +2174,18 @@
             "state" : "translated",
             "value" : "展开"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "展開"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "展開"
+          }
         }
       }
     },
@@ -1741,6 +2198,18 @@
           }
         },
         "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收起"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收起"
+          }
+        },
+        "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "收起"
