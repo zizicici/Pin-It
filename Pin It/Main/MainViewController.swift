@@ -9,6 +9,7 @@ import UIKit
 import SnapKit
 import PhotosUI
 import CropViewController
+import TipKit
 
 class MainViewController: UIViewController {
     private var collectionView: UICollectionView!
@@ -18,6 +19,8 @@ class MainViewController: UIViewController {
     private var currentPostImage: PostImage?
     
     static let sectionHeaderElementKind = "sectionHeaderElementKind"
+    
+    var addPostTip = AddPostTip()
     
     enum Section: Hashable, Sendable {
         case pinned
@@ -76,6 +79,24 @@ class MainViewController: UIViewController {
         reloadData()
         
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .DatabaseUpdated, object: nil)
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        guard let addButton = addButton else { return }
+        
+        Task { @MainActor in
+            for await shouldDisplay in addPostTip.shouldDisplayUpdates {
+                if shouldDisplay {
+                    let controller = TipUIPopoverViewController(addPostTip, sourceItem: addButton)
+                    controller.view.tintColor = .systemRed
+                    present(controller, animated: true)
+                } else if presentedViewController is TipUIPopoverViewController {
+                    dismiss(animated: true)
+                }
+            }
+        }
     }
     
     func addMenu() -> UIMenu {

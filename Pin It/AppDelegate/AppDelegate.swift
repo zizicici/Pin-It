@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import TipKit
 #if !DEBUG
 import FirebaseCore
 #endif
@@ -18,6 +19,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 #if !DEBUG
         FirebaseApp.configure()
 #endif
+        
+        try? Tips.configure()
         
         _ = AppDatabase.shared
         _ = PinInfoManager.shared
