@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		14558D072E9E8CE1007A67E2 /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 14558D062E9E8CE1007A67E2 /* SnapKit */; };
+		1461E6AB2EB5EC9900E47262 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 1461E6AA2EB5EC9900E47262 /* FirebaseAnalytics */; };
+		1461E6AD2EB5EC9900E47262 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 1461E6AC2EB5EC9900E47262 /* FirebaseCrashlytics */; };
 		147F4C3E2EAE7DAC00F8DD7E /* AppInfo in Frameworks */ = {isa = PBXBuildFile; productRef = 147F4C3D2EAE7DAC00F8DD7E /* AppInfo */; };
 		1481AAF92E9D543400E359C9 /* Box.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1481AAEF2E9D543400E359C9 /* Box.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1481AB062E9D547700E359C9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1481AB052E9D547700E359C9 /* WidgetKit.framework */; };
@@ -173,6 +175,8 @@
 				147F4C3E2EAE7DAC00F8DD7E /* AppInfo in Frameworks */,
 				14A187452EB20CC8008E6492 /* CropViewController in Frameworks */,
 				14558D072E9E8CE1007A67E2 /* SnapKit in Frameworks */,
+				1461E6AD2EB5EC9900E47262 /* FirebaseCrashlytics in Frameworks */,
+				1461E6AB2EB5EC9900E47262 /* FirebaseAnalytics in Frameworks */,
 				14AA37282EA0907300685425 /* GRDB in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -255,6 +259,8 @@
 				14AA37272EA0907300685425 /* GRDB */,
 				147F4C3D2EAE7DAC00F8DD7E /* AppInfo */,
 				14A187442EB20CC8008E6492 /* CropViewController */,
+				1461E6AA2EB5EC9900E47262 /* FirebaseAnalytics */,
+				1461E6AC2EB5EC9900E47262 /* FirebaseCrashlytics */,
 			);
 			productName = "Pin It";
 			productReference = 1481AAB72E9D4CFD00E359C9 /* Pin It.app */;
@@ -353,6 +359,7 @@
 				1477252C2E9F4E8A001A3EBD /* XCRemoteSwiftPackageReference "TOCropViewController" */,
 				14AA37262EA0907300685425 /* XCRemoteSwiftPackageReference "GRDB" */,
 				147F4C3C2EAE7DAC00F8DD7E /* XCRemoteSwiftPackageReference "AppInfo" */,
+				1461E6A92EB5EC9900E47262 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1481AAB82E9D4CFD00E359C9 /* Products */;
@@ -453,6 +460,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -492,6 +500,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -821,6 +830,14 @@
 				minimumVersion = 5.7.1;
 			};
 		};
+		1461E6A92EB5EC9900E47262 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.5.0;
+			};
+		};
 		1477252C2E9F4E8A001A3EBD /* XCRemoteSwiftPackageReference "TOCropViewController" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/TimOliver/TOCropViewController.git";
@@ -852,6 +869,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 14558D052E9E8CE1007A67E2 /* XCRemoteSwiftPackageReference "SnapKit" */;
 			productName = SnapKit;
+		};
+		1461E6AA2EB5EC9900E47262 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1461E6A92EB5EC9900E47262 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		1461E6AC2EB5EC9900E47262 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1461E6A92EB5EC9900E47262 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
 		};
 		147F4C3D2EAE7DAC00F8DD7E /* AppInfo */ = {
 			isa = XCSwiftPackageProductDependency;
