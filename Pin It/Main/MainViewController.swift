@@ -193,18 +193,23 @@ class MainViewController: UIViewController {
         let pinnedPostDetails = DataManager.shared.fetchAllPostDetails(isPinned: true)
         let otherPostDetails = DataManager.shared.fetchAllPostDetails(isPinned: false)
         
-        snapshot.appendSections([.pinned])
-        if pinnedPostDetails.count == 0 {
+        if pinnedPostDetails.count + otherPostDetails.count == 0 {
+            snapshot.appendSections([.pinned])
             snapshot.appendItems([.blank(.pinned)], toSection: .pinned)
         } else {
-            snapshot.appendItems(pinnedPostDetails.map{ .post($0) }, toSection: .pinned)
-        }
-        
-        snapshot.appendSections([.others])
-        if otherPostDetails.count == 0 {
-            snapshot.appendItems([.blank(.others)], toSection: .others)
-        } else {
-            snapshot.appendItems(otherPostDetails.map{ .post($0) }, toSection: .others)
+            snapshot.appendSections([.pinned])
+            if pinnedPostDetails.count == 0 {
+                snapshot.appendItems([.blank(.pinned)], toSection: .pinned)
+            } else {
+                snapshot.appendItems(pinnedPostDetails.map{ .post($0) }, toSection: .pinned)
+            }
+            
+            snapshot.appendSections([.others])
+            if otherPostDetails.count == 0 {
+                snapshot.appendItems([.blank(.others)], toSection: .others)
+            } else {
+                snapshot.appendItems(otherPostDetails.map{ .post($0) }, toSection: .others)
+            }
         }
         
         dataSource.apply(snapshot, animatingDifferences: true)
