@@ -15,19 +15,23 @@ struct PinContentView: View {
     var context: ActivityViewContext<PinAttributes>
     
     var body: some View {
-        if let text = context.state.text {
-            AutoSizeText(text: text)
-        } else if let imageName = context.state.imageName {
-            if let path = ImageCacheManager.shared.getPath(name: imageName, type: .processed), let image = UIImage(contentsOfFile: path) {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: 10.0))
-            } else {
-                Text("content.error.load")
-            }
+        if context.state.total == 0 {
+            AutoSizeText(text: String(localized: "content.no"))
         } else {
-            Text("content.no")
+            if let text = context.state.text {
+                AutoSizeText(text: text)
+            } else if let imageName = context.state.imageName {
+                if let path = ImageCacheManager.shared.getPath(name: imageName, type: .processed), let image = UIImage(contentsOfFile: path) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                } else {
+                    AutoSizeText(text: String(localized: "content.error.load"))
+                }
+            } else {
+                AutoSizeText(text: String(localized: "content.no"))
+            }
         }
     }
 }
@@ -82,7 +86,7 @@ struct BoardLiveActivity: Widget {
                         
                         Spacer(minLength: 18.0)
                         
-                        Text("\(context.state.index + 1)/\(context.state.total)")
+                        Text(context.state.indexString)
                             .font(Font.footnote)
                             .foregroundStyle(.secondary)
                         
@@ -273,7 +277,7 @@ struct BoardMediumView: View {
                 Spacer(minLength: 18.0)
                     .frame(maxHeight: .infinity)
                 
-                Text("\(context.state.index + 1)/\(context.state.total)")
+                Text(context.state.indexString)
                     .font(Font.footnote)
                     .foregroundStyle(.secondary)
                 

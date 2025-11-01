@@ -21,7 +21,7 @@ class LiveActivityManager: NSObject {
     
     static let shared = LiveActivityManager()
     
-    private var currentCount: Int = -1 {
+    private var currentCount: Int = 0 {
         didSet {
             if currentCount >= 1 {
                 status = .running
@@ -59,10 +59,10 @@ class LiveActivityManager: NSObject {
             // Create
             var result: Bool = false
             let posts = (try? PinInfoManager.shared.getPosts()) ?? []
-            guard posts.count >= 0 else {
-                await end()
-                return false
-            }
+//            guard posts.count >= 0 else {
+//                await end()
+//                return false
+//            }
             let total: Int = posts.count
             let index: Int = 0
             let target = try? PinInfoManager.shared.getPost(by: PinInfo(index: index, total: total))
@@ -167,10 +167,16 @@ class LiveActivityManager: NSObject {
         
         let posts = (try? PinInfoManager.shared.getPosts()) ?? []
         let total: Int = posts.count
-        // Fix for last one
         var newIndex = index
-        if index >= total {
-            newIndex = total - 1
+        if total > 0 {
+            if index >= total {
+                // Fix for last one
+                newIndex = total - 1
+            }
+        } else if total == 0 {
+            newIndex = 0
+        } else {
+            
         }
         let target = try? PinInfoManager.shared.getPost(by: PinInfo(index: newIndex, total: total))
         let activityContent = ActivityContent(state: PinAttributes.ContentState(index: newIndex, total: total, text: target?.text, imageName: target?.image), staleDate: nil)

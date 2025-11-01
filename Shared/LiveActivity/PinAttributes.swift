@@ -14,6 +14,14 @@ struct PinAttributes: ActivityAttributes {
         var total: Int
         var text: String?
         var imageName: String?
+        
+        var indexString: String {
+            if total == 0 {
+                return ""
+            } else {
+                return String(format: String(localized: "content.index%d%d"), index + 1, total)                
+            }
+        }
     }
     
     var name: String

@@ -27,16 +27,8 @@ class PinInfoManager: NSObject {
     
     @objc
     private func startPinIfNeeded() {
-        if let syncPostStorage = try? getPosts() {
-            if syncPostStorage.count > 0 {
-                Task {
-                    await LiveActivityManager.shared.start()
-                }
-            } else {
-                Task {
-                    await LiveActivityManager.shared.end()
-                }
-            }
+        Task {
+            await LiveActivityManager.shared.start()
         }
     }
     
