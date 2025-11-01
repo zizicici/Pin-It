@@ -18,18 +18,12 @@ class MoreViewController: UIViewController {
     private var dataSource: DataSource!
     
     enum Section: Hashable {
-        case membership
-        case general
         case contact
         case appjun
         case about
         
         var header: String? {
             switch self {
-            case .membership:
-                return nil
-            case .general:
-                return String(localized: "more.section.general")
             case .contact:
                 return String(localized: "more.section.contact")
             case .appjun:
@@ -45,24 +39,6 @@ class MoreViewController: UIViewController {
     }
     
     enum Item: Hashable {
-        enum GeneralItem: Hashable {
-            case language
-            
-            var title: String {
-                switch self {
-                case .language:
-                    return String(localized: "more.item.settings.language")
-                }
-            }
-            
-            var value: String? {
-                switch self {
-                case .language:
-                    return String(localized: "more.item.settings.language.value")
-                }
-            }
-        }
-        
         enum AboutItem {
             case specifications
             case share
@@ -148,9 +124,6 @@ class MoreViewController: UIViewController {
             }
         }
         
-        case promotion(String)
-        case thanks
-        case settings(GeneralItem)
         case backup
         case contact(ContactItem)
         case appjun(AppJunItem)
@@ -158,10 +131,6 @@ class MoreViewController: UIViewController {
         
         var title: String {
             switch self {
-            case .promotion, .thanks:
-                return ""
-            case .settings(let item):
-                return item.title
             case .backup:
                 return String(localized: "backup.title")
             case .contact(let item):
@@ -230,8 +199,6 @@ class MoreViewController: UIViewController {
         tableView.backgroundColor = AppColor.background
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "reuseIdentifier")
         tableView.register(AppCell.self, forCellReuseIdentifier: NSStringFromClass(AppCell.self))
-        tableView.register(PromotionCell.self, forCellReuseIdentifier: NSStringFromClass(PromotionCell.self))
-        tableView.register(GratefulCell.self, forCellReuseIdentifier: NSStringFromClass(GratefulCell.self))
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 50.0
@@ -248,30 +215,6 @@ class MoreViewController: UIViewController {
             guard let self = self else { return nil }
             guard let identifier = dataSource.itemIdentifier(for: indexPath) else { return nil }
             switch identifier {
-            case .promotion(let price):
-                let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(PromotionCell.self), for: indexPath)
-                if let cell = cell as? PromotionCell {
-                    cell.update(price: price)
-                    cell.purchaseClosure = { [weak self] in
-                        self?.lifetimeAction()
-                    }
-                    cell.restoreClosure = { [weak self] in
-                        self?.restorePurchases()
-                    }
-                }
-                return cell
-            case .thanks:
-                let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(GratefulCell.self), for: indexPath)
-                return cell
-            case .settings(let item):
-                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
-                cell.accessoryType = .disclosureIndicator
-                var content = UIListContentConfiguration.valueCell()
-                content.text = identifier.title
-                content.textProperties.color = .label
-                content.secondaryText = item.value
-                cell.contentConfiguration = content
-                return cell
             case .backup:
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
                 cell.accessoryType = .disclosureIndicator
@@ -316,17 +259,6 @@ class MoreViewController: UIViewController {
     func reloadData() {
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         
-        snapshot.appendSections([.membership])
-        switch User.shared.proTier() {
-        case .lifetime:
-            snapshot.appendItems([.thanks], toSection: .membership)
-        case .none:
-            snapshot.appendItems([.promotion(Store.shared.membershipDisplayPrice() ?? "?.??")], toSection: .membership)
-        }
-        
-        snapshot.appendSections([.general])
-        snapshot.appendItems([.settings(.language)], toSection: .general)
-        
         snapshot.appendSections([.contact])
         snapshot.appendItems([.contact(.email), .contact(.xiaohongshu)], toSection: .contact)
         
@@ -351,15 +283,6 @@ extension MoreViewController: UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
         if let item = dataSource.itemIdentifier(for: indexPath) {
             switch item {
-            case .promotion:
-                showPromotionAlert()
-            case .thanks:
-                break
-            case .settings(let item):
-                switch item {
-                case .language:
-                    jumpToSettings()
-                }
             case .backup:
                 enterBackup()
             case .contact(let item):
@@ -388,22 +311,6 @@ extension MoreViewController: UITableViewDelegate {
 }
 
 extension MoreViewController {
-    func jumpToSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else {
-            return
-        }
-        if UIApplication.shared.canOpenURL(url) {
-            UIApplication.shared.open(url, options: [:])
-        }
-    }
-    
-    func enterSettings<T: SettingsOption>(_ type: T.Type) {
-        let settingsOptionViewController = SettingOptionsViewController<T>()
-        settingsOptionViewController.hidesBottomBarWhenPushed = true
-        
-        navigationController?.pushViewController(settingsOptionViewController, animated: ConsideringUser.pushAnimated)
-    }
-    
     func enterSpecifications() {
         let specificationViewController = SpecificationsViewController()
         specificationViewController.hidesBottomBarWhenPushed = true
@@ -486,63 +393,6 @@ extension MoreViewController {
 extension MoreViewController: SKStoreProductViewControllerDelegate {
     func productViewControllerDidFinish(_ viewController: SKStoreProductViewController) {
         viewController.dismiss(animated: ConsideringUser.animated, completion: nil)
-    }
-}
-
-extension MoreViewController {
-    func showPromotionAlert() {
-        let alertController = UIAlertController(title: String(localized: "promotion.alert.title"), message: String(localized: "promotion.alert.message"), preferredStyle: .alert)
-        
-        let purchaseAction = UIAlertAction(title: String(localized: "membership.purchase"), style: .default) { [weak self] _ in
-            self?.lifetimeAction()
-        }
-        let restoreAction = UIAlertAction(title: String(localized: "membership.restore"), style: .default) { [weak self] _ in
-            self?.restorePurchases()
-        }
-        let cancelAction = UIAlertAction(title: String(localized: "button.cancel"), style: .cancel)
-        
-        alertController.addAction(purchaseAction)
-        alertController.addAction(restoreAction)
-        alertController.addAction(cancelAction)
-        
-        present(alertController, animated: ConsideringUser.animated)
-    }
-    
-    func lifetimeAction() {
-        showOverlayViewController()
-        Task {
-            do {
-                if let _ = try await Store.shared.purchaseLifetimeMembership() {
-                    reloadData()
-                }
-            }
-            catch {
-                showAlert(title: String(localized: "membership.purchases.order.failure", comment: "Order Failure"), message: error.localizedDescription)
-            }
-            
-            hideOverlayViewController()
-        }
-    }
-    
-    func manageAction() {
-        if Store.shared.needRetry {
-            Store.shared.retryRequestProducts()
-        } else {
-            switch User.shared.proTier() {
-            case .lifetime:
-                restorePurchases()
-            case .none:
-                restorePurchases()
-            }
-        }
-    }
-    
-    func restorePurchases() {
-        Task {
-            showOverlayViewController()
-            await Store.shared.sync()
-            hideOverlayViewController()
-        }
     }
 }
 

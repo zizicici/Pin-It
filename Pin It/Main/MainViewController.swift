@@ -165,6 +165,7 @@ class MainViewController: UIViewController {
         collectionView.dragDelegate = self
         collectionView.dropDelegate = self
         collectionView.dragInteractionEnabled = true
+        collectionView.contentInset = .init(top: 20, left: 0, bottom: 0, right: 0)
     }
     
     func configureDataSource() {

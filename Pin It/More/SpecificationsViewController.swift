@@ -73,7 +73,7 @@ class SpecificationsViewController: UIViewController {
                 case .publisher:
                     return "ZIZICICI LIMITED"
                 case .date:
-                    return "2025/10/31"
+                    return "2025/11/11"
                 case .license:
                     return "粤ICP备2025448771号-4A"
                 }
@@ -146,7 +146,7 @@ class SpecificationsViewController: UIViewController {
     
     func configureHierarchy() {
         tableView = UITableView(frame: .zero, style: .insetGrouped)
-        tableView.backgroundColor = .secondarySystemBackground
+        tableView.backgroundColor = .clear
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "reuseIdentifier")
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.rowHeight = UITableView.automaticDimension
