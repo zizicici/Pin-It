@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 
 protocol PinInfoPrivider {
     var pinInfo: PinInfo { get }
@@ -22,13 +23,33 @@ class PinInfoManager: NSObject {
     override init() {
         super.init()
         
-        NotificationCenter.default.addObserver(self, selector: #selector(startPinIfNeeded), name: .SyncDataUpdated, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updatePin), name: .SyncDataUpdated, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updatePin), name: .SettingsUpdate, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(showPinIfNeeded), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
     
     @objc
-    private func startPinIfNeeded() {
+    private func updatePin() {
         Task {
-            await LiveActivityManager.shared.start()
+            switch AutoStartLiveActivity.current {
+            case .withContent:
+                if (try getPosts().count) > 0 {
+                    await LiveActivityManager.shared.start()
+                } else {
+                    await LiveActivityManager.shared.update()
+                }
+            case .appLaunch, .disable:
+                await LiveActivityManager.shared.update()
+            }
+        }
+    }
+    
+    @objc
+    private func showPinIfNeeded() {
+        Task {
+            if AutoStartLiveActivity.current == .appLaunch {
+                await LiveActivityManager.shared.start()
+            }
         }
     }
     

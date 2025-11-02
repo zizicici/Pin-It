@@ -16,7 +16,18 @@ class LiveActivityManager: NSObject {
     enum Status {
         case initial
         case running
-        case end
+        case idle
+        
+        var title: String {
+            switch self {
+            case .initial:
+                return String(localized: "liveActivity.status.initial")
+            case .running:
+                return String(localized: "liveActivity.status.running")
+            case .idle:
+                return String(localized: "liveActivity.status.idle")
+            }
+        }
     }
     
     static let shared = LiveActivityManager()
@@ -26,7 +37,7 @@ class LiveActivityManager: NSObject {
             if currentCount >= 1 {
                 status = .running
             } else {
-                status = .end
+                status = .idle
             }
         }
     }
@@ -51,18 +62,28 @@ class LiveActivityManager: NSObject {
         return ActivityAuthorizationInfo().areActivitiesEnabled
     }
     
+    override init() {
+        super.init()
+        
+        updateStatus()
+    }
+    
     @discardableResult
     func start() async -> Bool {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return false }
         switch Activity<PinAttributes>.activities.count {
         case 0:
             // Create
-            var result: Bool = false
+            var result: Bool
+            
             let posts = (try? PinInfoManager.shared.getPosts()) ?? []
-//            guard posts.count >= 0 else {
-//                await end()
-//                return false
-//            }
+            
+            guard !((posts.count == 0) && (AutoEndLiveActivity.current == .noContent)) else {
+                await end()
+                result = false
+                return result
+            }
+            
             let total: Int = posts.count
             let index: Int = 0
             let target = try? PinInfoManager.shared.getPost(by: PinInfo(index: index, total: total))
@@ -79,13 +100,12 @@ class LiveActivityManager: NSObject {
                 print(error.localizedDescription)
                 result = false
             }
+            
+            updateStatus()
             return result
         case 1:
             // Update
-            await restartIfNeeded()
-            if let position = getCurrentPosition() {
-                await update(index: position.index)
-            }
+            await update()
             return true
         default:
             return false
@@ -120,8 +140,16 @@ class LiveActivityManager: NSObject {
         updateStatus()
     }
     
+    func update() async {
+        await restartIfNeeded()
+        if let position = getCurrentPosition() {
+            await update(index: position.index)
+        }
+        updateStatus()
+    }
+    
     @objc
-    func updateStatus() {
+    private func updateStatus() {
         Task {
             await restartIfNeeded()
             currentCount = Activity<PinAttributes>.activities.count
@@ -167,6 +195,12 @@ class LiveActivityManager: NSObject {
         
         let posts = (try? PinInfoManager.shared.getPosts()) ?? []
         let total: Int = posts.count
+        
+        guard !((posts.count == 0) && (AutoEndLiveActivity.current == .noContent)) else {
+            await end()
+            return
+        }
+        
         var newIndex = index
         if total > 0 {
             if index >= total {

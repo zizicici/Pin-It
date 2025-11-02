@@ -20,6 +20,7 @@ class SettingsViewController: UIViewController {
     enum Section: Hashable {
         case membership
         case general
+        case automatic
         
         var header: String? {
             switch self {
@@ -27,6 +28,8 @@ class SettingsViewController: UIViewController {
                 return nil
             case .general:
                 return String(localized: "more.section.general")
+            case .automatic:
+                return nil
             }
         }
         
@@ -54,16 +57,38 @@ class SettingsViewController: UIViewController {
             }
         }
         
+        enum AutomaticItem: Hashable {
+            case autoStart(AutoStartLiveActivity)
+            case autoEnd(AutoEndLiveActivity)
+
+            var value: String {
+                switch self {
+                case .autoStart(let autoStartLiveActivity):
+                    return autoStartLiveActivity.getName()
+                case .autoEnd(let autoEndLiveActivity):
+                    return autoEndLiveActivity.getName()
+                }
+            }
+        }
+        
         case promotion(String)
         case thanks
-        case settings(GeneralItem)
+        case general(GeneralItem)
+        case automatic(AutomaticItem)
         
         var title: String {
             switch self {
             case .promotion, .thanks:
                 return ""
-            case .settings(let item):
+            case .general(let item):
                 return item.title
+            case .automatic(let item):
+                switch item {
+                case .autoStart:
+                    return AutoStartLiveActivity.getTitle()
+                case .autoEnd:
+                    return AutoEndLiveActivity.getTitle()
+                }
             }
         }
     }
@@ -157,7 +182,16 @@ class SettingsViewController: UIViewController {
             case .thanks:
                 let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(GratefulCell.self), for: indexPath)
                 return cell
-            case .settings(let item):
+            case .general(let item):
+                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                cell.accessoryType = .disclosureIndicator
+                var content = UIListContentConfiguration.valueCell()
+                content.text = identifier.title
+                content.textProperties.color = .label
+                content.secondaryText = item.value
+                cell.contentConfiguration = content
+                return cell
+            case .automatic(let item):
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
                 cell.accessoryType = .disclosureIndicator
                 var content = UIListContentConfiguration.valueCell()
@@ -183,7 +217,10 @@ class SettingsViewController: UIViewController {
         }
         
         snapshot.appendSections([.general])
-        snapshot.appendItems([.settings(.language)], toSection: .general)
+        snapshot.appendItems([.general(.language)], toSection: .general)
+        
+        snapshot.appendSections([.automatic])
+        snapshot.appendItems([.automatic(.autoStart(AutoStartLiveActivity.getValue())), .automatic(.autoEnd(AutoEndLiveActivity.getValue()))], toSection: .automatic)
 
         dataSource.apply(snapshot, animatingDifferences: false)
     }
@@ -198,10 +235,17 @@ extension SettingsViewController: UITableViewDelegate {
                 showPromotionAlert()
             case .thanks:
                 break
-            case .settings(let item):
+            case .general(let item):
                 switch item {
                 case .language:
                     jumpToSettings()
+                }
+            case .automatic(let item):
+                switch item {
+                case .autoStart:
+                    enterSettings(AutoStartLiveActivity.self)
+                case .autoEnd:
+                    enterSettings(AutoEndLiveActivity.self)
                 }
             }
         }

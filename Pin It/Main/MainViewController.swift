@@ -50,6 +50,7 @@ class MainViewController: UIViewController {
         }
     }
     
+    private var stateButton: UIBarButtonItem?
     private var addButton: UIBarButtonItem?
     
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
@@ -66,19 +67,25 @@ class MainViewController: UIViewController {
         super.viewDidLoad()
         
         view.backgroundColor = AppColor.background
-        self.title = String(localized: "controller.pin.title")
+        
+        let stateButton = UIBarButtonItem(image: UIImage(systemName: "play.fill"), style: .plain, target: self, action: #selector(stateAction))
+        stateButton.tintColor = .systemRed
+        navigationItem.leadingItemGroups = [UIBarButtonItemGroup.fixedGroup(items: [.fixedSpace(10), stateButton, .fixedSpace(10)])]
+        self.stateButton = stateButton
         
         let addButton = UIBarButtonItem(image: UIImage(systemName: "plus"))
         addButton.tintColor = .systemRed
         addButton.menu = addMenu()
-        self.navigationItem.rightBarButtonItem = addButton
+        navigationItem.rightBarButtonItem = addButton
         self.addButton = addButton
         
         configureHierarchy()
         configureDataSource()
         reloadData()
+        updateState()
         
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .DatabaseUpdated, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateState), name: .LiveActivityStatusChanged, object: nil)
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -121,6 +128,36 @@ class MainViewController: UIViewController {
         }
         
         navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
+    }
+    
+    @objc
+    func updateState() {
+        navigationItem.title = LiveActivityManager.shared.status.title
+        
+        var imageName = "play.fill"
+        switch LiveActivityManager.shared.status {
+        case .initial:
+            break
+        case .running:
+            imageName = "stop"
+        case .idle:
+            break
+        }
+        stateButton?.image = UIImage(systemName: imageName)
+    }
+    
+    @objc
+    func stateAction() {
+        Task {
+            switch LiveActivityManager.shared.status {
+            case .initial:
+                break
+            case .running:
+                await LiveActivityManager.shared.end()
+            case .idle:
+                await LiveActivityManager.shared.start()
+            }
+        }
     }
     
     func createLayout() -> UICollectionViewLayout {
