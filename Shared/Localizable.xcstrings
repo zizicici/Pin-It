@@ -6214,91 +6214,91 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Entwickler kontaktieren"
+            "value" : "Helfen Sie mit"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Contact Developer"
+            "value" : "Help Improve"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Contactar al desarrollador"
+            "value" : "Ayuda a mejorar"
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Contactar al desarrollador"
+            "value" : "Ayuda a mejorar"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Contacter le développeur"
+            "value" : "Aidez-nous à améliorer"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Contatta lo sviluppatore"
+            "value" : "Aiuta a migliorare"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "開発者に連絡"
+            "value" : "改善に協力"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "개발자 문의"
+            "value" : "개선을 도와주세요"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Contatar desenvolvedor"
+            "value" : "Ajude a melhorar"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Contactar programador"
+            "value" : "Ajude a melhorar"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Связаться с разработчиком"
+            "value" : "Помогите улучшить"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Зв'язатися з розробником"
+            "value" : "Допоможіть покращити"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "联络开发者"
+            "value" : "帮助改进"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "聯絡開發者"
+            "value" : "幫助改進"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "聯絡開發者"
+            "value" : "幫助改進"
           }
         }
       }

@@ -12,20 +12,15 @@ import AppInfo
 import StoreKit
 
 class MoreViewController: UIViewController {
-    static let supportEmail = "pin@zi.ci"
-
     private var tableView: UITableView!
     private var dataSource: DataSource!
     
     enum Section: Hashable {
-        case contact
         case appjun
         case about
         
         var header: String? {
             switch self {
-            case .contact:
-                return String(localized: "more.section.contact")
             case .appjun:
                 return String(localized: "more.section.appjun")
             case .about:
@@ -69,43 +64,6 @@ class MoreViewController: UIViewController {
             }
         }
         
-        enum ContactItem: Hashable, CaseIterable {
-            case email
-            case xiaohongshu
-            case bilibili
-
-            var title: String {
-                switch self {
-                case .email:
-                    return String(localized: "more.item.contact.email")
-                case .xiaohongshu:
-                    return String(localized: "more.item.contact.xiaohongshu")
-                case .bilibili:
-                    return String(localized: "more.item.contact.bilibili")
-                }
-            }
-            
-            var value: String? {
-                switch self {
-                case .email:
-                    return MoreViewController.supportEmail
-                case .bilibili, .xiaohongshu:
-                    return "@App君"
-                }
-            }
-            
-            var image: UIImage? {
-                switch self {
-                case .email:
-                    return UIImage(systemName: "envelope")
-                case .xiaohongshu:
-                    return UIImage(systemName: "book.closed")
-                case .bilibili:
-                    return UIImage(systemName: "play.tv")
-                }
-            }
-        }
-        
         enum AppJunItem: Hashable {
             case otherApps(AppInfo.App)
             
@@ -125,7 +83,6 @@ class MoreViewController: UIViewController {
         }
         
         case backup
-        case contact(ContactItem)
         case appjun(AppJunItem)
         case about(AboutItem)
         
@@ -133,8 +90,6 @@ class MoreViewController: UIViewController {
             switch self {
             case .backup:
                 return String(localized: "backup.title")
-            case .contact(let item):
-                return item.title
             case .appjun(let item):
                 return item.title
             case .about(let item):
@@ -223,15 +178,6 @@ class MoreViewController: UIViewController {
                 content.textProperties.color = .label
                 cell.contentConfiguration = content
                 return cell
-            case .contact(let item):
-                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
-                cell.accessoryType = .disclosureIndicator
-                var content = UIListContentConfiguration.valueCell()
-                content.text = identifier.title
-                content.textProperties.color = .label
-                content.secondaryText = item.value
-                cell.contentConfiguration = content
-                return cell
             case .appjun(let item):
                 switch item {
                 case .otherApps(let app):
@@ -259,9 +205,6 @@ class MoreViewController: UIViewController {
     func reloadData() {
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         
-        snapshot.appendSections([.contact])
-        snapshot.appendItems([.contact(.email), .contact(.xiaohongshu)], toSection: .contact)
-        
         snapshot.appendSections([.appjun])
         var appItems: [Item] = [.appjun(.otherApps(.offDay)), .appjun(.otherApps(.tagDay)), .appjun(.otherApps(.moontake)), .appjun(.otherApps(.coconut)), .appjun(.otherApps(.lemon)), .appjun(.otherApps(.pigeon))]
         if Language.type() == .zh {
@@ -285,8 +228,6 @@ extension MoreViewController: UITableViewDelegate {
             switch item {
             case .backup:
                 enterBackup()
-            case .contact(let item):
-                handle(contactItem: item)
             case .appjun(let item):
                 switch item {
                 case .otherApps(let app):
@@ -397,7 +338,7 @@ extension MoreViewController: SKStoreProductViewControllerDelegate {
 }
 
 extension UIViewController {
-    func handle(contactItem: MoreViewController.Item.ContactItem) {
+    func handle(contactItem: SettingsViewController.Item.ContactItem) {
         switch contactItem {
         case .email:
             sendEmailToCustomerSupport()
@@ -409,7 +350,7 @@ extension UIViewController {
     }
     
     func sendEmailToCustomerSupport() {
-        let recipient = MoreViewController.supportEmail
+        let recipient = SettingsViewController.supportEmail
         
         guard let emailUrlString = "mailto:\(recipient)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let emailUrl = URL(string: emailUrlString) else {

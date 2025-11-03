@@ -22,6 +22,7 @@ class SettingsViewController: UIViewController {
         case general
         case automatic
         case action
+        case contact
         
         var header: String? {
             switch self {
@@ -33,6 +34,8 @@ class SettingsViewController: UIViewController {
                 return nil
             case .action:
                 return nil
+            case .contact:
+                return String(localized: "more.section.contact")
             }
         }
         
@@ -85,11 +88,49 @@ class SettingsViewController: UIViewController {
             }
         }
         
+        enum ContactItem: Hashable, CaseIterable {
+            case email
+            case xiaohongshu
+            case bilibili
+
+            var title: String {
+                switch self {
+                case .email:
+                    return String(localized: "more.item.contact.email")
+                case .xiaohongshu:
+                    return String(localized: "more.item.contact.xiaohongshu")
+                case .bilibili:
+                    return String(localized: "more.item.contact.bilibili")
+                }
+            }
+            
+            var value: String? {
+                switch self {
+                case .email:
+                    return SettingsViewController.supportEmail
+                case .bilibili, .xiaohongshu:
+                    return "@App君"
+                }
+            }
+            
+            var image: UIImage? {
+                switch self {
+                case .email:
+                    return UIImage(systemName: "envelope")
+                case .xiaohongshu:
+                    return UIImage(systemName: "book.closed")
+                case .bilibili:
+                    return UIImage(systemName: "play.tv")
+                }
+            }
+        }
+        
         case promotion(String)
         case thanks
         case general(GeneralItem)
         case automatic(AutomaticItem)
         case action(ActionItem)
+        case contact(ContactItem)
         
         var title: String {
             switch self {
@@ -109,6 +150,8 @@ class SettingsViewController: UIViewController {
                 case .maxPinned:
                     return MaxPinnedPosts.getTitle()
                 }
+            case .contact(let item):
+                return item.title
             }
         }
     }
@@ -229,6 +272,15 @@ class SettingsViewController: UIViewController {
                 content.secondaryText = item.value
                 cell.contentConfiguration = content
                 return cell
+            case .contact(let item):
+                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                cell.accessoryType = .disclosureIndicator
+                var content = UIListContentConfiguration.valueCell()
+                content.text = identifier.title
+                content.textProperties.color = .label
+                content.secondaryText = item.value
+                cell.contentConfiguration = content
+                return cell
             }
         }
     }
@@ -253,6 +305,9 @@ class SettingsViewController: UIViewController {
         
         snapshot.appendSections([.automatic])
         snapshot.appendItems([.automatic(.autoStart(AutoStartLiveActivity.getValue())), .automatic(.autoEnd(AutoEndLiveActivity.getValue()))], toSection: .automatic)
+        
+        snapshot.appendSections([.contact])
+        snapshot.appendItems([.contact(.email), .contact(.xiaohongshu)], toSection: .contact)
 
         dataSource.apply(snapshot, animatingDifferences: false)
     }
@@ -284,6 +339,8 @@ extension SettingsViewController: UITableViewDelegate {
                 case .maxPinned:
                     enterSettings(MaxPinnedPosts.self)
                 }
+            case .contact(let item):
+                handle(contactItem: item)
             }
         }
     }
