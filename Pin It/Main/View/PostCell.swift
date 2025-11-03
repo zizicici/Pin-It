@@ -176,7 +176,7 @@ class PostView: UIView {
         if let image = postItem.images.first {
             addImageViewIfNeeded()
             
-            if let path = ImageCacheManager.shared.getPath(name: image.cropped, type: .processed) {
+            if let path = ImageCacheManager.shared.getPath(name: image.processed, type: .processed) {
                 imageView.image = UIImage(contentsOfFile: path)
             } else {
                 imageView.image = nil

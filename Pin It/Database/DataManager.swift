@@ -84,7 +84,7 @@ final class DataManager {
         guard let postId = post.id, let detail = fetchPostDetail(for: postId) else {
             return false
         }
-        let newPostImage = PostImage(postId: postId, original: original, cropped: processed, orientation: Int64(orientation), minX: Int64(rect.minX), minY: Int64(rect.minY), maxX: Int64(rect.maxX), maxY: Int64(rect.maxY), order: detail.maxOrder + 1)
+        let newPostImage = PostImage(postId: postId, original: original, processed: processed, orientation: Int64(orientation), minX: Int64(rect.minX), minY: Int64(rect.minY), maxX: Int64(rect.maxX), maxY: Int64(rect.maxY), order: detail.maxOrder + 1)
         let result = AppDatabase.shared.add(image: newPostImage)
         
         return result
@@ -128,7 +128,7 @@ final class DataManager {
         guard let savedPost = AppDatabase.shared.add(post: newPost), let id = savedPost.id else {
             return nil
         }
-        let newPostImage = PostImage(postId: id, original: original, cropped: processed, orientation: Int64(orientation), minX: Int64(rect.minX), minY: Int64(rect.minY), maxX: Int64(rect.maxX), maxY: Int64(rect.maxY), order: 0)
+        let newPostImage = PostImage(postId: id, original: original, processed: processed, orientation: Int64(orientation), minX: Int64(rect.minX), minY: Int64(rect.minY), maxX: Int64(rect.maxX), maxY: Int64(rect.maxY), order: 0)
         if !AppDatabase.shared.add(image: newPostImage) {
             _ = AppDatabase.shared.delete(post: newPost)
             return nil
@@ -183,7 +183,7 @@ final class DataManager {
         if result {
             for image in detail.images {
                 _ = ImageCacheManager.shared.deleteImage(fileName: image.original, type: .original)
-                _ = ImageCacheManager.shared.deleteImage(fileName: image.cropped, type: .processed)
+                _ = ImageCacheManager.shared.deleteImage(fileName: image.processed, type: .processed)
             }
         }
         

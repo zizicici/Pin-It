@@ -591,9 +591,9 @@ extension MainViewController: CropViewControllerDelegate {
         let resizedImage = image.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3)
         
         if var postImage = currentPostImage {
-            _ = ImageCacheManager.shared.deleteImage(fileName: postImage.cropped, type: .processed)
+            _ = ImageCacheManager.shared.deleteImage(fileName: postImage.processed, type: .processed)
             if let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
-                postImage.cropped = processed
+                postImage.processed = processed
                 _ = DataManager.shared.update(image: postImage)
             }
         } else {

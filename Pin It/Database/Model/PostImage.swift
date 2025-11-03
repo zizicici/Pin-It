@@ -13,7 +13,7 @@ struct PostImage: Identifiable, Hashable, Codable {
     
     var postId: Int64
     var original: String
-    var cropped: String
+    var processed: String
     var orientation: Int64
     var minX: Int64
     var minY: Int64
@@ -27,7 +27,7 @@ struct PostImage: Identifiable, Hashable, Codable {
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, postId = "post_id", original, cropped, orientation, minX = "min_x", minY = "min_y", maxX = "max_x", maxY = "max_y", order
+        case id, postId = "post_id", original, processed, orientation, minX = "min_x", minY = "min_y", maxX = "max_x", maxY = "max_y", order
     }
 }
 

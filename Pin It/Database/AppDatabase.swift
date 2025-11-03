@@ -54,7 +54,7 @@ final class AppDatabase {
                     .references("post", onDelete: .cascade)
                 
                 table.column("original", .text).notNull()
-                table.column("cropped", .text).notNull()
+                table.column("processed", .text).notNull()
                 table.column("orientation", .integer).notNull()
                 table.column("min_x", .integer).notNull()
                 table.column("min_y", .integer).notNull()
