@@ -75,6 +75,14 @@ final class DataManager {
     
     public func createPost(content: String, isPinned: Bool = true) -> Bool {
         // Fetch Last Post
+        switch MaxPinnedPosts.current {
+        case .unlimited:
+            break
+        case .one:
+            if isPinned {
+                _ = unpinAllPinnedPosts()
+            }
+        }
         let newOrder = getNewOrder(isPinned: true)
         let newPost = Post(isPinned: isPinned, order: newOrder)
         guard let savedPost = AppDatabase.shared.add(post: newPost), let id = savedPost.id else {
@@ -89,8 +97,16 @@ final class DataManager {
         }
     }
     
-    public func createPost(original: String, processed: String, rect: CGRect, orientation: Int) -> Bool {
-        let newOrder = getNewOrder(isPinned: true)
+    public func createPost(original: String, processed: String, rect: CGRect, orientation: Int, isPinned: Bool = true) -> Bool {
+        switch MaxPinnedPosts.current {
+        case .unlimited:
+            break
+        case .one:
+            if isPinned {
+                _ = unpinAllPinnedPosts()
+            }
+        }
+        let newOrder = getNewOrder(isPinned: isPinned)
         let newPost = Post(isPinned: true, order: newOrder)
         guard let savedPost = AppDatabase.shared.add(post: newPost), let id = savedPost.id else {
             return false
@@ -105,10 +121,27 @@ final class DataManager {
     }
     
     public func update(post: Post, isPinned: Bool) -> Bool {
-        let newOrder = getNewOrder(isPinned: isPinned)
+        switch MaxPinnedPosts.current {
+        case .unlimited:
+            return updatePost(post, isPinned: isPinned, order: getNewOrder(isPinned: isPinned))
+        case .one:
+            if isPinned {
+                _ = unpinAllPinnedPosts()
+            }
+            let order: Int64 = isPinned ? 0 : getNewOrder(isPinned: isPinned)
+            return updatePost(post, isPinned: isPinned, order: order)
+        }
+    }
+    
+    private func unpinAllPinnedPosts() -> Bool {
+        let pinnedPostIds = fetchAllPostDetails(isPinned: true).compactMap { $0.post.id }
+        return update(postIds: pinnedPostIds, isPinned: false)
+    }
+    
+    private func updatePost(_ post: Post, isPinned: Bool, order: Int64) -> Bool {
         var newPost = post
         newPost.isPinned = isPinned
-        newPost.order = newOrder
+        newPost.order = order
         return AppDatabase.shared.update(post: newPost)
     }
     

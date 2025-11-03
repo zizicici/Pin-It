@@ -13,6 +13,7 @@ extension UserDefaults {
         case BackupFolder = "com.zizicici.pin.settings.BackupFolder"
         case AutoStartLiveActivity = "com.zizicici.pin.settings.AutoStartLiveActivity"
         case AutoEndLiveActivity = "com.zizicici.pin.settings.AutoEndLiveActivity"
+        case MaxPinnedPosts = "com.zizicici.pin.settings.MaxPinnedPosts"
     }
 }
 
@@ -176,5 +177,33 @@ extension AutoEndLiveActivity: UserDefaultSettable {
     
     static func getTitle() -> String {
         return String(localized: "settings.autoEndLiveActivity.title")
+    }
+}
+
+enum MaxPinnedPosts: Int, CaseIterable, Codable {
+    case unlimited = 0
+    case one
+}
+
+extension MaxPinnedPosts: UserDefaultSettable {
+    static func getKey() -> UserDefaults.Settings {
+        .MaxPinnedPosts
+    }
+    
+    static var defaultOption: Self {
+        return .one
+    }
+    
+    func getName() -> String {
+        switch self {
+        case .unlimited:
+            return String(localized: "settings.maxPinnedPosts.unlimited")
+        case .one:
+            return String(localized: "settings.maxPinnedPosts.one")
+        }
+    }
+    
+    static func getTitle() -> String {
+        return String(localized: "settings.maxPinnedPosts.title")
     }
 }

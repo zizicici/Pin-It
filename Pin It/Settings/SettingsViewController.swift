@@ -21,6 +21,7 @@ class SettingsViewController: UIViewController {
         case membership
         case general
         case automatic
+        case action
         
         var header: String? {
             switch self {
@@ -29,6 +30,8 @@ class SettingsViewController: UIViewController {
             case .general:
                 return String(localized: "more.section.general")
             case .automatic:
+                return nil
+            case .action:
                 return nil
             }
         }
@@ -71,10 +74,22 @@ class SettingsViewController: UIViewController {
             }
         }
         
+        enum ActionItem: Hashable {
+            case maxPinned(MaxPinnedPosts)
+            
+            var value: String {
+                switch self {
+                case .maxPinned(let maxPinnedPosts):
+                    return maxPinnedPosts.getName()
+                }
+            }
+        }
+        
         case promotion(String)
         case thanks
         case general(GeneralItem)
         case automatic(AutomaticItem)
+        case action(ActionItem)
         
         var title: String {
             switch self {
@@ -88,6 +103,11 @@ class SettingsViewController: UIViewController {
                     return AutoStartLiveActivity.getTitle()
                 case .autoEnd:
                     return AutoEndLiveActivity.getTitle()
+                }
+            case .action(let item):
+                switch item {
+                case .maxPinned:
+                    return MaxPinnedPosts.getTitle()
                 }
             }
         }
@@ -200,6 +220,15 @@ class SettingsViewController: UIViewController {
                 content.secondaryText = item.value
                 cell.contentConfiguration = content
                 return cell
+            case .action(let item):
+                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                cell.accessoryType = .disclosureIndicator
+                var content = UIListContentConfiguration.valueCell()
+                content.text = identifier.title
+                content.textProperties.color = .label
+                content.secondaryText = item.value
+                cell.contentConfiguration = content
+                return cell
             }
         }
     }
@@ -218,6 +247,9 @@ class SettingsViewController: UIViewController {
         
         snapshot.appendSections([.general])
         snapshot.appendItems([.general(.language)], toSection: .general)
+        
+        snapshot.appendSections([.action])
+        snapshot.appendItems([.action(.maxPinned(MaxPinnedPosts.getValue()))], toSection: .action)
         
         snapshot.appendSections([.automatic])
         snapshot.appendItems([.automatic(.autoStart(AutoStartLiveActivity.getValue())), .automatic(.autoEnd(AutoEndLiveActivity.getValue()))], toSection: .automatic)
@@ -246,6 +278,11 @@ extension SettingsViewController: UITableViewDelegate {
                     enterSettings(AutoStartLiveActivity.self)
                 case .autoEnd:
                     enterSettings(AutoEndLiveActivity.self)
+                }
+            case .action(let item):
+                switch item {
+                case .maxPinned:
+                    enterSettings(MaxPinnedPosts.self)
                 }
             }
         }
