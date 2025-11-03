@@ -25,6 +25,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _ = AppDatabase.shared
         _ = PinInfoManager.shared
         _ = PostSyncManager.shared
+        _ = OnboardingManager.shared
         
         return true
     }

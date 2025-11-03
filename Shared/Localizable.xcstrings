@@ -6303,6 +6303,194 @@
         }
       }
     },
+    "onboarding.message.1" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Beispiel-Datensatz wird auf dem Sperrbildschirm und in Live-Aktivitäten in der Dynamic Island angezeigt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This sample record will appear on the Lock Screen and in Live Activities in the Dynamic Island."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este registro de ejemplo aparecerá en la pantalla de bloqueo y en las Actividades en vivo de la Dynamic Island."
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este registro de ejemplo aparecerá en la pantalla de bloqueo y en las Actividades en vivo de la Dynamic Island."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cet enregistrement d'exemple apparaîtra sur l'écran verrouillé et dans les Activités en direct de la Dynamic Island."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo record di esempio verrà visualizzato sulla Schermata di blocco e nelle Attività in tempo reale della Dynamic Island."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このサンプルレコードは、ロック画面とダイナミックアイランドのライブアクティビティに表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 샘플 기록은 잠금 화면 및 다이내믹 아일랜드의 라이브 액티비티에 표시됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este registro de exemplo será exibido na Tela de Bloqueio e nas Atividades ao Vivo da Dynamic Island."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este registo de exemplo será exibido no Ecrã de Bloqueio e nas Atividades em Direto da Dynamic Island."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Эта примерная запись будет отображаться на экране блокировки и в режиме «Живых активностей» в Dynamic Island."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цей приклад запису відображатиметься на екрані блокування та в активностях у реальному часі в Dynamic Island."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这条示例记录，将显示在锁屏界面和灵动岛的实时活动中"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這則範例記錄，將顯示在鎖定畫面與動態島的即時動態中"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這則範例記錄，將顯示在鎖定畫面與動態島的即時動態中"
+          }
+        }
+      }
+    },
+    "onboarding.message.2" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tippe auf die Stecknadelschaltfläche neben einer Nachricht, um ihren Status umzuschalten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the pin button next to a message to toggle its state."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca el botón de fijar junto a un mensaje para cambiar su estado."
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca el botón de fijar junto a un mensaje para cambiar su estado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appuie sur le bouton d’épinglage à côté d’un message pour changer son état."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocca il pulsante di appuntamento accanto a un messaggio per cambiarne lo stato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メッセージ横のピンボタンをタップして、ステータスを切り替えます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메시지 옆의 고정 버튼을 탭하여 상태를 전환하십시오."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toque no botão de fixar ao lado de uma mensagem para alternar o estado."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toque no botão de afixar ao lado de uma mensagem para alternar o estado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите на кнопку-булавку рядом с сообщением, чтобы переключить его состояние."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Торкніться кнопки-шпильки поряд із повідомленням, щоб змінити його стан."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击消息旁的图钉按钮，可以使其切换状态"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "點按訊息旁的圖釘按鈕，即可切換其狀態"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "點按訊息旁的圖釘按鈕，即可切換其狀態"
+          }
+        }
+      }
+    },
     "pin.blank" : {
       "localizations" : {
         "de" : {

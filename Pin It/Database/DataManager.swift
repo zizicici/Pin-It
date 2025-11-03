@@ -73,10 +73,10 @@ final class DataManager {
         return (fetchLastPost(isPinned: isPinned)?.order ?? -1) + 1
     }
     
-    public func createPost(content: String) -> Bool {
+    public func createPost(content: String, isPinned: Bool = true) -> Bool {
         // Fetch Last Post
         let newOrder = getNewOrder(isPinned: true)
-        let newPost = Post(isPinned: true, order: newOrder)
+        let newPost = Post(isPinned: isPinned, order: newOrder)
         guard let savedPost = AppDatabase.shared.add(post: newPost), let id = savedPost.id else {
             return false
         }
