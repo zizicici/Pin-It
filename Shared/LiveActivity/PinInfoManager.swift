@@ -25,7 +25,18 @@ class PinInfoManager: NSObject {
         
         NotificationCenter.default.addObserver(self, selector: #selector(updatePin), name: .SyncDataUpdated, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(updatePin), name: .SettingsUpdate, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(restartPin), name: .LifetimeMembership, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(showPinIfNeeded), name: UIApplication.didBecomeActiveNotification, object: nil)
+    }
+    
+    @objc
+    private func restartPin() {
+        Task {
+            if LiveActivityManager.shared.status == .running {
+                await LiveActivityManager.shared.end()
+                await LiveActivityManager.shared.start()
+            }
+        }
     }
     
     @objc
