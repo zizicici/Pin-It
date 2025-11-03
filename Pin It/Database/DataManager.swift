@@ -73,7 +73,24 @@ final class DataManager {
         return (fetchLastPost(isPinned: isPinned)?.order ?? -1) + 1
     }
     
-    public func createPost(content: String, isPinned: Bool = true) -> Bool {
+    public func createBlankPost(isPinned: Bool) -> Post? {
+        let newOrder = getNewOrder(isPinned: true)
+        let newPost = Post(isPinned: isPinned, order: newOrder)
+        
+        return AppDatabase.shared.add(post: newPost)
+    }
+    
+    public func appendImage(original: String, processed: String, rect: CGRect, orientation: Int, to post: Post) -> Bool {
+        guard let postId = post.id, let detail = fetchPostDetail(for: postId) else {
+            return false
+        }
+        let newPostImage = PostImage(postId: postId, original: original, cropped: processed, orientation: Int64(orientation), minX: Int64(rect.minX), minY: Int64(rect.minY), maxX: Int64(rect.maxX), maxY: Int64(rect.maxY), order: detail.maxOrder + 1)
+        let result = AppDatabase.shared.add(image: newPostImage)
+        
+        return result
+    }
+    
+    public func createPost(content: String, isPinned: Bool = true) -> Post? {
         // Fetch Last Post
         switch MaxPinnedPosts.current {
         case .unlimited:
@@ -86,18 +103,18 @@ final class DataManager {
         let newOrder = getNewOrder(isPinned: true)
         let newPost = Post(isPinned: isPinned, order: newOrder)
         guard let savedPost = AppDatabase.shared.add(post: newPost), let id = savedPost.id else {
-            return false
+            return nil
         }
         let newPostText = PostText(postId: id, content: content, order: 0)
         if !AppDatabase.shared.add(text: newPostText) {
             _ = AppDatabase.shared.delete(post: newPost)
-            return false
+            return nil
         } else {
-            return true
+            return savedPost
         }
     }
     
-    public func createPost(original: String, processed: String, rect: CGRect, orientation: Int, isPinned: Bool = true) -> Bool {
+    public func createPost(original: String, processed: String, rect: CGRect, orientation: Int, isPinned: Bool = true) -> Post? {
         switch MaxPinnedPosts.current {
         case .unlimited:
             break
@@ -109,14 +126,14 @@ final class DataManager {
         let newOrder = getNewOrder(isPinned: isPinned)
         let newPost = Post(isPinned: true, order: newOrder)
         guard let savedPost = AppDatabase.shared.add(post: newPost), let id = savedPost.id else {
-            return false
+            return nil
         }
         let newPostImage = PostImage(postId: id, original: original, cropped: processed, orientation: Int64(orientation), minX: Int64(rect.minX), minY: Int64(rect.minY), maxX: Int64(rect.maxX), maxY: Int64(rect.maxY), order: 0)
         if !AppDatabase.shared.add(image: newPostImage) {
             _ = AppDatabase.shared.delete(post: newPost)
-            return false
+            return nil
         } else {
-            return true
+            return savedPost
         }
     }
     

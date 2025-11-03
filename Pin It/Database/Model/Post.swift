@@ -17,6 +17,12 @@ struct Post: Identifiable, Hashable, Codable {
         var title: String {
             return texts.first?.content ?? ""
         }
+        
+        var maxOrder: Int64 {
+            let imagesMax = images.max(by: { $0.order < $1.order })?.order ?? 0
+            let textsMax = texts.max(by: { $0.order < $1.order })?.order ?? 0
+            return max(imagesMax, textsMax)
+        }
     }
     
     var id: Int64?

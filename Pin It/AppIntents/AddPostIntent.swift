@@ -24,7 +24,7 @@ struct AddTextRecordIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        if DataManager.shared.createPost(content: content) {
+        if DataManager.shared.createPost(content: content) != nil {
             return .result(value: true)
         } else {
             return .result(value: false)
@@ -89,8 +89,11 @@ struct AddImageRecordIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        print(content.data)
         if let image = UIImage(data: content.data) {
+            guard let post = DataManager.shared.createBlankPost(isPinned: true) else {
+                return .result(value: false)
+            }
+            
             var newImage: UIImage? = nil
             var imageRect: CGRect = CGRect(origin: .zero, size: image.size)
             switch displayMode {
@@ -111,7 +114,7 @@ struct AddImageRecordIntent: LiveActivityIntent {
                 newImage = ImageCropper.cropImage(image, to: .bottom, cropEdges: cropEdges)
             }
             if let newImage = newImage?.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3), let processed = ImageCacheManager.shared.storeImage(newImage, type: .processed), let original = ImageCacheManager.shared.storeImage(image, type: .original) {
-                _ = DataManager.shared.createPost(original: original, processed: processed, rect: imageRect, orientation: 0)
+                _ = DataManager.shared.appendImage(original: original, processed: processed, rect: imageRect, orientation: 0, to: post)
                 return .result(value: true)
             } else {
                 return .result(value: false)

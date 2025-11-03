@@ -122,13 +122,7 @@ class MainViewController: UIViewController {
     
     func addAction(text: String) {
         let editorViewController = EditorViewController(postText: PostText(postId: -1, content: text, order: 0)) { postText in
-            let result = DataManager.shared.createPost(content: postText.content)
-            print(result)
-            if result {
-                
-            } else {
-                
-            }
+            _ = DataManager.shared.createPost(content: postText.content)
         }
         
         navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
