@@ -124,6 +124,8 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AppIntents/StartIntent.swift,
+				Extension/AppColor.swift,
+				Resource/Assets.xcassets,
 				Settings/Settings.swift,
 			);
 			target = 1481AB022E9D547700E359C9 /* Board */;

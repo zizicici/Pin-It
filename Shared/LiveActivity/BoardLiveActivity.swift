@@ -207,8 +207,15 @@ struct BoardContent: View {
             BoardSmallView(context: context)
                 .activityBackgroundTint(.red)
         case .medium:
-            BoardMediumView(context: context)
-                .activityBackgroundTint(.clear)
+            if #available(iOS 26.0, *) {
+                BoardMediumView(context: context)
+                    .activityBackgroundTint(.clear)
+            } else {
+                BoardMediumView(context: context)
+                    .background(Color("WidgetBackgroundColor"))
+                    .activityBackgroundTint(.clear)
+                    .activitySystemActionForegroundColor(Color.black)
+            }
         @unknown default:
             Spacer()
         }
