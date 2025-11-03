@@ -289,11 +289,14 @@ class SettingsViewController: UIViewController {
     func reloadData() {
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         
-        snapshot.appendSections([.membership])
         switch User.shared.proTier() {
         case .lifetime:
-            snapshot.appendItems([.thanks], toSection: .membership)
+            if ThanksEntryState.current != .hidden {
+                snapshot.appendSections([.membership])
+                snapshot.appendItems([.thanks], toSection: .membership)
+            }
         case .none:
+            snapshot.appendSections([.membership])
             snapshot.appendItems([.promotion(Store.shared.membershipDisplayPrice() ?? "?.??")], toSection: .membership)
         }
         
@@ -321,7 +324,7 @@ extension SettingsViewController: UITableViewDelegate {
             case .promotion:
                 showPromotionAlert()
             case .thanks:
-                break
+                showThanksAlert()
             case .general(let item):
                 switch item {
                 case .language:
@@ -378,6 +381,20 @@ extension SettingsViewController {
         
         alertController.addAction(purchaseAction)
         alertController.addAction(restoreAction)
+        alertController.addAction(cancelAction)
+        
+        present(alertController, animated: ConsideringUser.animated)
+    }
+    
+    func showThanksAlert() {
+        let alertController = UIAlertController(title: String(localized: "thanks.alert.title"), message: String(localized: "thanks.alert.message"), preferredStyle: .alert)
+        
+        let removeAction = UIAlertAction(title: String(localized: "button.delete"), style: .destructive) { _ in
+            try? ThanksEntryState.setCurrent(.hidden)
+        }
+        let cancelAction = UIAlertAction(title: String(localized: "button.cancel"), style: .cancel)
+        
+        alertController.addAction(removeAction)
         alertController.addAction(cancelAction)
         
         present(alertController, animated: ConsideringUser.animated)

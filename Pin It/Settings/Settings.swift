@@ -14,6 +14,7 @@ extension UserDefaults {
         case AutoStartLiveActivity = "com.zizicici.pin.settings.AutoStartLiveActivity"
         case AutoEndLiveActivity = "com.zizicici.pin.settings.AutoEndLiveActivity"
         case MaxPinnedPosts = "com.zizicici.pin.settings.MaxPinnedPosts"
+        case ThanksEntryState = "com.zizicici.pin.settings.ThanksEntryState"
     }
 }
 
@@ -46,7 +47,7 @@ extension SettingsOption {
         if type(of: lhs) != type(of: rhs) {
             return false
         } else {
-            return lhs.getName() == rhs.getName()
+            return lhs.hashValue == rhs.hashValue
         }
     }
 }
@@ -111,7 +112,7 @@ extension AutoBackup: UserDefaultSettable {
     }
     
     func getName() -> String {
-        return ""
+        return "\(rawValue)"
     }
     
     static func getTitle() -> String {
@@ -229,6 +230,33 @@ extension MaxPinnedPosts: UserDefaultSettable {
                 setValue(value)
             }
         }
+    }
+}
+
+enum ThanksEntryState: Int, CaseIterable, Codable {
+    case hidden = 0
+    case display
+}
+
+extension ThanksEntryState: UserDefaultSettable {
+    static func getKey() -> UserDefaults.Settings {
+        .ThanksEntryState
+    }
+    
+    static var defaultOption: Self {
+        return .display
+    }
+    
+    func getName() -> String {
+        return "\(rawValue)"
+    }
+    
+    static func getTitle() -> String {
+        return ""
+    }
+    
+    static func setCurrent(_ value: Self) throws {
+        setValue(value)
     }
 }
 
