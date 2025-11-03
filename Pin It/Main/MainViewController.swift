@@ -70,7 +70,11 @@ class MainViewController: UIViewController {
         
         let stateButton = UIBarButtonItem(image: UIImage(systemName: "play.fill"), style: .plain, target: self, action: #selector(stateAction))
         stateButton.tintColor = .systemRed
-        navigationItem.leadingItemGroups = [UIBarButtonItemGroup.fixedGroup(items: [.fixedSpace(10), stateButton, .fixedSpace(10)])]
+        if #available(iOS 26.0, *) {
+            navigationItem.leadingItemGroups = [UIBarButtonItemGroup.fixedGroup(items: [.fixedSpace(10), stateButton, .fixedSpace(10)])]
+        } else {
+            navigationItem.leftBarButtonItem = stateButton
+        }
         self.stateButton = stateButton
         
         let addButton = UIBarButtonItem(image: UIImage(systemName: "plus"))
