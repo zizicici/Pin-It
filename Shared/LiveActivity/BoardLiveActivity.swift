@@ -280,8 +280,10 @@ struct BoardMediumView: View {
             VStack {
                 if User.shared.proTier() == .lifetime {
                     Spacer()
+                        .frame(minHeight: 16.0)
                     PinContentView(context: context)
                     Spacer()
+                        .frame(minHeight: 16.0)
                 } else {
                     Spacer()
                         .frame(height: 16.0)
