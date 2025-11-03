@@ -13,9 +13,7 @@ struct ButtonEmptyIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        let posts = try? PinInfoManager.shared.getPosts()
-        print(posts)
-        print("ButtonIntent perform()")
+        print("ButtonEmptyIntent perform()")
         
         return .result(value: true)
     }

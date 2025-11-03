@@ -49,6 +49,8 @@ struct PinContentWatchView: View {
 }
 
 struct BoardLiveActivity: Widget {
+    static let url = "https://pin.zizicici.com/widget"
+    
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: PinAttributes.self) { context in
             BoardContent(context: context)
@@ -103,7 +105,14 @@ struct BoardLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.center) {
                     VStack {
                         PinContentView(context: context)
-                        Spacer(minLength: 16.0)
+                        if User.shared.proTier() == .lifetime {
+                            Spacer(minLength: 16.0)
+                        } else {
+                            Text("advertising.banner")
+                                .foregroundStyle(.secondary.opacity(0.8))
+                                .scaleEffect(0.8)
+                                .frame(height: 16.0)
+                        }
                     }
                 }
             } compactLeading: {
@@ -124,7 +133,7 @@ struct BoardLiveActivity: Widget {
                     .rotationEffect(Angle.degrees(-45.0))
                 Spacer().frame(width: 20.0)
             }
-            .widgetURL(URL(string: "http://www.apple.com"))
+            .widgetURL(URL(string: Self.url))
             .keylineTint(Color.red)
         }
         .supplementalActivityFamilies([.small])
@@ -269,9 +278,21 @@ struct BoardMediumView: View {
             }
             .padding(12.0)
             VStack {
-                Spacer()
-                PinContentView(context: context)
-                Spacer()
+                if User.shared.proTier() == .lifetime {
+                    Spacer()
+                    PinContentView(context: context)
+                    Spacer()
+                } else {
+                    Spacer()
+                        .frame(height: 16.0)
+                    PinContentView(context: context)
+                    Text("advertising.banner")
+                        .foregroundStyle(.secondary.opacity(0.8))
+                        .scaleEffect(0.8)
+                        .frame(height: 10.0)
+                    Spacer()
+                        .frame(height: 16.0)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             VStack {

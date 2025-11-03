@@ -4,6 +4,100 @@
     "" : {
       "shouldTranslate" : false
     },
+    "advertising.banner" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unterstützen Sie uns (=｀ω´=)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support Us (=｀ω´=)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apóyanos (=｀ω´=)"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apóyanos (=｀ω´=)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soutenez-nous (=｀ω´=)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supportaci (=｀ω´=)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "応援してください (=｀ω´=)"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "후원하기 (=｀ω´=)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apoie-nos (=｀ω´=)"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apoie-nos (=｀ω´=)"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Поддержите нас (=｀ω´=)"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Підтримайте нас (=｀ω´=)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "支持我们 (=｀ω´=)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "支持我們 (=｀ω´=)"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "支持我們 (=｀ω´=)"
+          }
+        }
+      }
+    },
     "backup.title" : {
       "localizations" : {
         "de" : {
@@ -7436,91 +7530,91 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Werbung entfernen"
+            "value" : "- Support-Banner entfernen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Remove Ads"
+            "value" : "- Remove Support Banner"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Quitar anuncios"
+            "value" : "- Eliminar banner de apoyo"
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Quitar anuncios"
+            "value" : "- Quitar banner de apoyo"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Supprimer les pubs"
+            "value" : "- Supprimer la bannière de soutien"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Rimuovi annunci"
+            "value" : "- Rimuovi banner di supporto"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 広告を削除"
+            "value" : "- サポートバナーを削除"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 광고 제거"
+            "value" : "- 지원 배너 제거"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Remover anúncios"
+            "value" : "- Remover banner de apoio"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Remover anúncios"
+            "value" : "- Remover banner de suporte"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Убрать рекламу"
+            "value" : "- Удалить баннер поддержки"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Прибрати рекламу"
+            "value" : "- Видалити банер підтримки"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 移除广告文字"
+            "value" : "- 移除支持文本栏"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 移除廣告文字"
+            "value" : "- 移除支援橫幅"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 移除廣告文字"
+            "value" : "- 移除支援橫幅"
           }
         }
       }

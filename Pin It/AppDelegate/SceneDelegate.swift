@@ -27,15 +27,17 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.rootViewController = tabbarController
         window?.makeKeyAndVisible()
         
-        if let _ = connectionOptions.urlContexts.first {
+        if let context = connectionOptions.urlContexts.first {
             logger.log("\(#function)")
-            handleURLContext()
+            handle(context)
+            handleInbox()
         }
     }
     
     func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
         logger.log("\(#function)")
-        handleURLContext()
+        handle(contexts.first)
+        handleInbox()
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -65,8 +67,24 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
     }
+    
+    func handle(_ context: UIOpenURLContext?) {
+        guard let context = context else { return }
+        if context.url.absoluteString == BoardLiveActivity.url {
+            guard let tabbarController = window?.rootViewController as? UITabBarController else { return }
+            
+            switch User.shared.proTier() {
+            case .lifetime:
+                tabbarController.selectedViewController = tabbarController.viewControllers?
+                    .first { ($0 as? UINavigationController)?.viewControllers.first is MainViewController }
+            case .none:
+                tabbarController.selectedViewController = tabbarController.viewControllers?
+                    .first { ($0 as? UINavigationController)?.viewControllers.first is SettingsViewController }
+            }
+        }
+    }
 
-    func handleURLContext() {
+    func handleInbox() {
         logger.log("\(#function)")
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
             logger.log("no container URL")
