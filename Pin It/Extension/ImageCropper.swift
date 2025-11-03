@@ -21,8 +21,6 @@ class ImageCropper {
     ///   - rect: 裁切区域（相对于图片坐标系）
     /// - Returns: 裁切后的图片
     static func cropImage(_ image: UIImage, to rect: CGRect) -> UIImage? {
-        guard let cgImage = image.cgImage else { return nil }
-        
         let scale = image.scale
         let scaledRect = CGRect(
             x: rect.origin.x * scale,
@@ -31,8 +29,19 @@ class ImageCropper {
             height: rect.height * scale
         )
         
-        guard let croppedCGImage = cgImage.cropping(to: scaledRect) else { return nil }
-        return UIImage(cgImage: croppedCGImage, scale: scale, orientation: image.imageOrientation)
+        UIGraphicsBeginImageContextWithOptions(rect.size, false, scale)
+        defer { UIGraphicsEndImageContext() }
+        
+        let drawRect = CGRect(
+            x: -scaledRect.origin.x,
+            y: -scaledRect.origin.y,
+            width: image.size.width * scale,
+            height: image.size.height * scale
+        )
+        
+        image.draw(in: drawRect)
+        
+        return UIGraphicsGetImageFromCurrentImageContext()
     }
     
     /// 根据指定位置裁切图片的三分之一部分
