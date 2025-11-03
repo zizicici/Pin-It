@@ -102,9 +102,9 @@ class MainViewController: UIViewController {
                 if shouldDisplay {
                     let controller = TipUIPopoverViewController(addPostTip, sourceItem: addButton)
                     controller.view.tintColor = .systemRed
-                    present(controller, animated: true)
+                    present(controller, animated: ConsideringUser.animated)
                 } else if presentedViewController is TipUIPopoverViewController {
-                    dismiss(animated: true)
+                    dismiss(animated: ConsideringUser.animated)
                 }
             }
         }
@@ -526,12 +526,12 @@ extension MainViewController {
 
 extension MainViewController {
     func showEditor(with text: String) {
-        navigationController?.dismiss(animated: true)
+        navigationController?.dismiss(animated: ConsideringUser.animated)
         addAction(text: text)
     }
     
     func showEditor(with image: UIImage) {
-        navigationController?.dismiss(animated: true)
+        navigationController?.dismiss(animated: ConsideringUser.animated)
         handle(image, postImage: nil)
     }
 }

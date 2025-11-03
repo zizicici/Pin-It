@@ -21,7 +21,7 @@ extension UIViewController {
         let cancelAction = UIAlertAction(title: String(localized: "button.ok"), style: .cancel)
         alertController.addAction(cancelAction)
 
-        present(alertController, animated: true, completion: nil)
+        present(alertController, animated: ConsideringUser.animated, completion: nil)
     }
 }
 
