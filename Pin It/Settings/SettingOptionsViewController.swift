@@ -103,7 +103,14 @@ class SettingOptionsViewController<T: SettingsOption>: UIViewController, UITable
         guard let identifier = dataSource.itemIdentifier(for: indexPath) else { return }
         switch identifier {
         case .option(let item, _):
-            T.current = item
+            do {
+                try T.setCurrent(item)
+            }
+            catch {
+                if let error = (error as? SettingsError) {
+                    showAlert(title: String(localized: "settings.fail.title"), message: error.message)
+                }
+            }
         }
         
         self.reloadData()

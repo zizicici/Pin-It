@@ -27,7 +27,8 @@ protocol SettingsOption: Hashable, Equatable {
     static func getFooter() -> String?
     static func getTitle() -> String
     static func getOptions() -> [Self]
-    static var current: Self { get set}
+    static var current: Self { get }
+    static func setCurrent(_ value: Self) throws
 }
 
 extension SettingsOption {
@@ -78,9 +79,6 @@ extension UserDefaultSettable where Self: RawRepresentable, Self.RawValue == Int
         get {
             return getValue()
         }
-        set {
-            setValue(newValue)
-        }
     }
 }
 
@@ -119,6 +117,10 @@ extension AutoBackup: UserDefaultSettable {
     static func getTitle() -> String {
         return ""
     }
+    
+    static func setCurrent(_ value: AutoBackup) throws {
+        setValue(value)
+    }
 }
 
 enum AutoStartLiveActivity: Int, CaseIterable, Codable {
@@ -150,6 +152,10 @@ extension AutoStartLiveActivity: UserDefaultSettable {
     static func getTitle() -> String {
         return String(localized: "settings.autoStartLiveActivity.title")
     }
+    
+    static func setCurrent(_ value: AutoStartLiveActivity) throws {
+        setValue(value)
+    }
 }
 
 enum AutoEndLiveActivity: Int, CaseIterable, Codable {
@@ -178,6 +184,10 @@ extension AutoEndLiveActivity: UserDefaultSettable {
     static func getTitle() -> String {
         return String(localized: "settings.autoEndLiveActivity.title")
     }
+    
+    static func setCurrent(_ value: AutoEndLiveActivity) throws {
+        setValue(value)
+    }
 }
 
 enum MaxPinnedPosts: Int, CaseIterable, Codable {
@@ -205,5 +215,30 @@ extension MaxPinnedPosts: UserDefaultSettable {
     
     static func getTitle() -> String {
         return String(localized: "settings.maxPinnedPosts.title")
+    }
+    
+    static func setCurrent(_ value: MaxPinnedPosts) throws {
+        switch User.shared.proTier() {
+        case .lifetime:
+            setValue(value)
+        case .none:
+            switch value {
+            case .unlimited:
+                throw SettingsError.needsPro
+            case .one:
+                setValue(value)
+            }
+        }
+    }
+}
+
+enum SettingsError: Swift.Error {
+    case needsPro
+    
+    var message: String {
+        switch self {
+        case .needsPro:
+            return String(localized: "error.needsPro.message")
+        }
     }
 }
