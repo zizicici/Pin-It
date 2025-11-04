@@ -225,11 +225,101 @@ class PromotionCell: UITableViewCell {
         
         // Button Part
         contentView.addSubview(purchaseButton)
-        purchaseButton.snp.makeConstraints { make in
-            make.top.equalTo(contentView).inset(20.0)
-            make.trailing.equalTo(contentView).inset(20.0)
-            make.height.greaterThanOrEqualTo(40.0)
+        contentView.addSubview(restoreButton)
+        
+        // Text Part
+        contentView.addSubview(topLabel)
+        contentView.addSubview(firstItemLabel)
+        contentView.addSubview(secondItemLabel)
+        contentView.addSubview(thirdItemLabel)
+        
+        
+        switch Language.type() {
+        case .zh, .ja, .ko:
+            purchaseButton.snp.makeConstraints { make in
+                make.top.equalTo(contentView).inset(20.0)
+                make.trailing.equalTo(contentView).inset(20.0)
+                make.height.greaterThanOrEqualTo(40.0)
+            }
+            
+            restoreButton.snp.makeConstraints { make in
+                make.bottom.equalTo(contentView).inset(20)
+                make.trailing.lessThanOrEqualTo(contentView).inset(18)
+                make.centerX.equalTo(purchaseButton).priority(.medium)
+                make.top.greaterThanOrEqualTo(purchaseButton.snp.bottom).offset(10)
+            }
+            restoreButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+            
+            topLabel.snp.makeConstraints { make in
+                make.top.equalTo(contentView).inset(20)
+                make.leading.equalTo(contentView).inset(20)
+                make.trailing.equalTo(purchaseButton.snp.leading).offset(-10)
+            }
+            topLabel.setContentHuggingPriority(.defaultLow, for: .vertical)
+            
+            firstItemLabel.snp.makeConstraints { make in
+                make.top.equalTo(topLabel.snp.bottom).offset(12)
+                make.leading.equalTo(contentView).inset(22)
+                make.trailing.equalTo(purchaseButton.snp.leading).offset(-10)
+            }
+            firstItemLabel.setContentHuggingPriority(.required, for: .vertical)
+            
+            secondItemLabel.snp.makeConstraints { make in
+                make.top.equalTo(firstItemLabel.snp.bottom).offset(8)
+                make.leading.equalTo(contentView).inset(22)
+                make.trailing.equalTo(purchaseButton.snp.leading).offset(-10)
+            }
+            secondItemLabel.setContentHuggingPriority(.required, for: .vertical)
+            
+            thirdItemLabel.snp.makeConstraints { make in
+                make.top.equalTo(secondItemLabel.snp.bottom).offset(8)
+                make.leading.equalTo(contentView).inset(22)
+                make.bottom.equalTo(contentView).inset(20)
+                make.trailing.equalTo(restoreButton.snp.leading).offset(-4)
+            }
+            thirdItemLabel.setContentHuggingPriority(.required, for: .vertical)
+        default:
+            topLabel.snp.makeConstraints { make in
+                make.top.equalTo(contentView).inset(20)
+                make.leading.equalTo(contentView).inset(24)
+                make.trailing.equalTo(contentView).inset(24)
+            }
+            topLabel.setContentHuggingPriority(.defaultLow, for: .vertical)
+            
+            firstItemLabel.snp.makeConstraints { make in
+                make.top.equalTo(topLabel.snp.bottom).offset(12)
+                make.leading.equalTo(contentView).inset(24)
+                make.trailing.equalTo(contentView).inset(24)
+            }
+            firstItemLabel.setContentHuggingPriority(.required, for: .vertical)
+            
+            secondItemLabel.snp.makeConstraints { make in
+                make.top.equalTo(firstItemLabel.snp.bottom).offset(8)
+                make.leading.equalTo(contentView).inset(24)
+                make.trailing.equalTo(contentView).inset(24)
+            }
+            secondItemLabel.setContentHuggingPriority(.required, for: .vertical)
+            
+            thirdItemLabel.snp.makeConstraints { make in
+                make.top.equalTo(secondItemLabel.snp.bottom).offset(8)
+                make.leading.equalTo(contentView).inset(24)
+                make.trailing.equalTo(contentView).inset(24)
+            }
+            thirdItemLabel.setContentHuggingPriority(.required, for: .vertical)
+            
+            purchaseButton.snp.makeConstraints { make in
+                make.top.equalTo(thirdItemLabel.snp.bottom).offset(10.0)
+                make.trailing.equalTo(contentView).inset(20.0)
+                make.height.greaterThanOrEqualTo(40.0)
+                make.bottom.equalTo(contentView).inset(20)
+            }
+            
+            restoreButton.snp.makeConstraints { make in
+                make.centerY.equalTo(purchaseButton)
+                make.leading.equalTo(contentView).inset(20)
+            }
         }
+        
         purchaseButton.addTarget(self, action: #selector(purchaseAction), for: .touchUpInside)
         
         purchaseButton.configurationUpdateHandler = { [weak self] button in
@@ -239,49 +329,7 @@ class PromotionCell: UITableViewCell {
             button.configuration = config
         }
         
-        contentView.addSubview(restoreButton)
-        restoreButton.snp.makeConstraints { make in
-            make.bottom.equalTo(contentView).inset(20)
-            make.trailing.lessThanOrEqualTo(contentView).inset(18)
-            make.centerX.equalTo(purchaseButton).priority(.medium)
-            make.top.greaterThanOrEqualTo(purchaseButton.snp.bottom).offset(10)
-        }
-        restoreButton.setContentCompressionResistancePriority(.required, for: .horizontal)
         restoreButton.addTarget(self, action: #selector(restoreAction), for: .touchUpInside)
-        
-        // Text Part
-        contentView.addSubview(topLabel)
-        topLabel.snp.makeConstraints { make in
-            make.top.equalTo(contentView).inset(20)
-            make.leading.equalTo(contentView).inset(20)
-            make.trailing.equalTo(purchaseButton.snp.leading).offset(-10)
-        }
-        topLabel.setContentHuggingPriority(.defaultLow, for: .vertical)
-        
-        contentView.addSubview(firstItemLabel)
-        firstItemLabel.snp.makeConstraints { make in
-            make.top.equalTo(topLabel.snp.bottom).offset(12)
-            make.leading.equalTo(contentView).inset(22)
-            make.trailing.equalTo(purchaseButton.snp.leading).offset(-10)
-        }
-        firstItemLabel.setContentHuggingPriority(.required, for: .vertical)
-        
-        contentView.addSubview(secondItemLabel)
-        secondItemLabel.snp.makeConstraints { make in
-            make.top.equalTo(firstItemLabel.snp.bottom).offset(8)
-            make.leading.equalTo(contentView).inset(22)
-            make.trailing.equalTo(purchaseButton.snp.leading).offset(-10)
-        }
-        secondItemLabel.setContentHuggingPriority(.required, for: .vertical)
-        
-        contentView.addSubview(thirdItemLabel)
-        thirdItemLabel.snp.makeConstraints { make in
-            make.top.equalTo(secondItemLabel.snp.bottom).offset(8)
-            make.leading.equalTo(contentView).inset(22)
-            make.bottom.equalTo(contentView).inset(20)
-            make.trailing.equalTo(restoreButton.snp.leading).offset(-4)
-        }
-        thirdItemLabel.setContentHuggingPriority(.required, for: .vertical)
         
         let view = UIView()
         selectedBackgroundView = view

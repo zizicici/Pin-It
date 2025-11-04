@@ -383,14 +383,20 @@ struct Language {
         case zh
         case en
         case ja
+        case ko
     }
     
-    static func type() -> LanguageType {
-        switch String(localized: "more.item.settings.language.value") {
-        case "简体中文", "繁體中文", "繁體中文（香港）":
-            return .zh
-        case "日本語":
+    static func type() -> LanguageType? {
+        guard let preferredLocalization = Bundle.main.preferredLocalizations.first else {
+            return nil
+        }
+        switch preferredLocalization {
+        case "ko":
+            return .ko
+        case "ja":
             return .ja
+        case "zh-Hans", "zh-Hant", "zh-HK":
+            return .zh
         default:
             return .en
         }

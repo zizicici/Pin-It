@@ -7906,73 +7906,73 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Upgrade freischalten…"
+            "value" : "Upgrade freischalten:"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Upgrade to unlock…"
+            "value" : "Upgrade to unlock:"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Actualizar para desbloquear…"
+            "value" : "Actualizar para desbloquear:"
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Actualizar para desbloquear…"
+            "value" : "Actualizar para desbloquear:"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Améliorer pour débloquer…"
+            "value" : "Améliorer pour débloquer:"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aggiorna per sbloccare…"
+            "value" : "Aggiorna per sbloccare:"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "アップグレードで解除…"
+            "value" : "アップグレードで解除"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "업그레이드로 잠금 해제…"
+            "value" : "업그레이드로 잠금 해제"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Atualizar para desbloquear…"
+            "value" : "Atualizar para desbloquear:"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Atualizar para desbloquear…"
+            "value" : "Atualizar para desbloquear:"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Обновить для разблокировки…"
+            "value" : "Обновить для разблокировали:"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Оновити для розблокування…"
+            "value" : "Оновити для розблокування:"
           }
         },
         "zh-Hans" : {
@@ -7984,13 +7984,13 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "升級以解鎖："
+            "value" : "支持我們 & 解鎖功能："
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "升級以解鎖："
+            "value" : "支持我們 & 解鎖功能："
           }
         }
       }
