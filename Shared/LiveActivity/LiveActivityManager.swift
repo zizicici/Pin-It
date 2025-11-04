@@ -69,36 +69,51 @@ class LiveActivityManager: NSObject {
     }
     
     @discardableResult
-    func start() async -> Bool {
+    func start(fastMode: Bool = false) async -> Bool {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return false }
         switch Activity<PinAttributes>.activities.count {
         case 0:
             // Create
             var result: Bool
-            
-            let posts = (try? PinInfoManager.shared.getPosts()) ?? []
-            
-            guard !((posts.count == 0) && (AutoEndLiveActivity.current == .noContent)) else {
-                await end()
-                result = false
-                return result
-            }
-            
-            let total: Int = posts.count
-            let index: Int = 0
-            let target = try? PinInfoManager.shared.getPost(by: PinInfo(index: index, total: total))
-            let activityContent = ActivityContent(state: PinAttributes.ContentState(index: index, total: total, text: target?.text, imageName: target?.image), staleDate: nil)
-            let activityAttributes = PinAttributes(name: "Pin")
-            
-            do {
-                let activity = try Activity.request(attributes: activityAttributes, content: activityContent)
-                startDate = Date()
-                print(activity)
-                result = true
-            }
-            catch {
-                print(error.localizedDescription)
-                result = false
+
+            if fastMode {
+                let activityContent = ActivityContent(state: PinAttributes.ContentState.placeholder, staleDate: nil)
+                let activityAttributes = PinAttributes(name: "Pin")
+                do {
+                    let activity = try Activity.request(attributes: activityAttributes, content: activityContent)
+                    startDate = Date()
+                    print(activity)
+                    result = true
+                }
+                catch {
+                    print(error.localizedDescription)
+                    result = false
+                }
+            } else {
+                let posts = (try? PinInfoManager.shared.getPosts()) ?? []
+                
+                guard !((posts.count == 0) && (AutoEndLiveActivity.current == .noContent)) else {
+                    await end()
+                    result = false
+                    return result
+                }
+                
+                let total: Int = posts.count
+                let index: Int = 0
+                let target = try? PinInfoManager.shared.getPost(by: PinInfo(index: index, total: total))
+                let activityContent = ActivityContent(state: PinAttributes.ContentState(index: index, total: total, text: target?.text, imageName: target?.image), staleDate: nil)
+                let activityAttributes = PinAttributes(name: "Pin")
+                
+                do {
+                    let activity = try Activity.request(attributes: activityAttributes, content: activityContent)
+                    startDate = Date()
+                    print(activity)
+                    result = true
+                }
+                catch {
+                    print(error.localizedDescription)
+                    result = false
+                }
             }
             
             updateStatus()
