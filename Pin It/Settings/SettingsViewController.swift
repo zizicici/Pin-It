@@ -23,6 +23,7 @@ class SettingsViewController: UIViewController {
         case automatic
         case action
         case contact
+        case shortcuts
         
         var header: String? {
             switch self {
@@ -36,6 +37,8 @@ class SettingsViewController: UIViewController {
                 return nil
             case .contact:
                 return String(localized: "more.section.contact")
+            case .shortcuts:
+                return String(localized: "more.section.shortcuts")
             }
         }
         
@@ -125,12 +128,54 @@ class SettingsViewController: UIViewController {
             }
         }
         
+        enum ShortcutsItem: Hashable {
+            case first
+            case second
+            
+            var title: String {
+                switch self {
+                case .first:
+                    return String(localized: "shortcuts.1.title")
+                case .second:
+                    return String(localized: "shortcuts.2.title")
+                }
+            }
+            
+            var subtitle: String {
+                switch self {
+                case .first:
+                    return String(localized: "shortcuts.1.subtitle")
+                case .second:
+                    return String(localized: "shortcuts.2.subtitle")
+                }
+            }
+            
+            var url: String {
+                switch self {
+                case .first:
+                    return String(localized: "shortcuts.1.url")
+                case .second:
+                    return String(localized: "shortcuts.2.url")
+                }
+            }
+            
+            var image: UIImage? {
+                switch self {
+                case .first:
+                    return UIImage(systemName: "square.and.arrow.up.circle.fill")
+                case .second:
+                    return UIImage(systemName: "camera.viewfinder")
+                }
+            }
+        }
+        
         case promotion(String)
         case thanks
         case general(GeneralItem)
         case automatic(AutomaticItem)
         case action(ActionItem)
         case contact(ContactItem)
+        case shortcuts(ShortcutsItem)
         
         var title: String {
             switch self {
@@ -151,6 +196,8 @@ class SettingsViewController: UIViewController {
                     return MaxPinnedPosts.getTitle()
                 }
             case .contact(let item):
+                return item.title
+            case .shortcuts(let item):
                 return item.title
             }
         }
@@ -281,6 +328,16 @@ class SettingsViewController: UIViewController {
                 content.secondaryText = item.value
                 cell.contentConfiguration = content
                 return cell
+            case .shortcuts(let item):
+                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                cell.accessoryType = .disclosureIndicator
+                var content = UIListContentConfiguration.subtitleCell()
+                content.text = identifier.title
+                content.textProperties.color = .label
+                content.secondaryText = item.subtitle
+                content.image = item.image
+                cell.contentConfiguration = content
+                return cell
             }
         }
     }
@@ -311,6 +368,9 @@ class SettingsViewController: UIViewController {
         
         snapshot.appendSections([.contact])
         snapshot.appendItems([.contact(.email), .contact(.xiaohongshu)], toSection: .contact)
+        
+        snapshot.appendSections([.shortcuts])
+        snapshot.appendItems([.shortcuts(.first), .shortcuts(.second)], toSection: .shortcuts)
 
         dataSource.apply(snapshot, animatingDifferences: false)
     }
@@ -344,6 +404,8 @@ extension SettingsViewController: UITableViewDelegate {
                 }
             case .contact(let item):
                 handle(contactItem: item)
+            case .shortcuts(let item):
+                handle(shortcutsItem: item)
             }
         }
     }
@@ -435,5 +497,14 @@ extension SettingsViewController {
             await Store.shared.sync()
             hideOverlayViewController()
         }
+    }
+}
+
+extension SettingsViewController {
+    func handle(shortcutsItem: Item.ShortcutsItem) {
+        guard let shortcutsURL = URL(string: shortcutsItem.url) else {
+            return
+        }
+        UIApplication.shared.open(shortcutsURL, options: [:], completionHandler: nil)
     }
 }
