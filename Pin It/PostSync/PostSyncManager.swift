@@ -64,6 +64,11 @@ class PostSyncManager: NSObject {
 extension Post.Detail {
     func convertToSyncPost() -> SyncPost? {
         guard let id = post.id else { return nil }
-        return .init(id: id, text: texts.first?.content, image: images.first?.processed)
+        
+        var syncText: String?
+        if let content = texts.first?.content {
+            syncText = String(content.prefix(500))
+        }
+        return .init(id: id, text: syncText, image: images.first?.processed)
     }
 }
