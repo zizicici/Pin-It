@@ -273,7 +273,7 @@ extension MoreViewController {
     }
     
     func openPrivacyPolicy() {
-        if let url = URL(string: "https://zizicici.medium.com/privacy-policy-for-tag-day-app-e284ee9f654c") {
+        if let url = URL(string: "https://zizicici.medium.com/privacy-policy-for-pin-it-app-c7215143c58c") {
             openSF(with: url)
         }
     }
