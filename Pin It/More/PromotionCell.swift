@@ -279,6 +279,16 @@ class PromotionCell: UITableViewCell {
             }
             thirdItemLabel.setContentHuggingPriority(.required, for: .vertical)
         default:
+            let imageView = UIImageView(image: UIImage(systemName: "pin.fill"))
+            imageView.tintColor = .white.withAlphaComponent(0.5)
+            imageView.transform = .init(rotationAngle: .pi / 4.0)
+            contentView.addSubview(imageView)
+            imageView.snp.makeConstraints { make in
+                make.top.equalTo(contentView).inset(24)
+                make.trailing.equalTo(contentView).inset(20)
+                make.height.width.equalTo(40.0)
+            }
+            
             topLabel.snp.makeConstraints { make in
                 make.top.equalTo(contentView).inset(20)
                 make.leading.equalTo(contentView).inset(24)
