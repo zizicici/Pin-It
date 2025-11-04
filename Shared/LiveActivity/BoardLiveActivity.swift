@@ -146,7 +146,7 @@ struct AutoSizeText: View {
     var body: some View {
         ViewThatFits(in: .vertical) {
             // 尝试不同的字体大小，系统会自动选择最适合的
-            ForEach([36, 28, 20, 16, 12, 10, 8], id: \.self) { fontSize in
+            ForEach([36, 32, 28, 24, 20, 18, 16, 14, 12, 10, 8], id: \.self) { fontSize in
                 VStack {
                     Spacer(minLength: 0.0)
                     // 使用高亮处理后的文本
@@ -280,10 +280,10 @@ struct BoardMediumView: View {
             VStack {
                 if User.shared.proTier() == .lifetime {
                     Spacer()
-                        .frame(minHeight: 16.0)
+                        .frame(height: 24.0)
                     PinContentView(context: context)
                     Spacer()
-                        .frame(minHeight: 16.0)
+                        .frame(height: 24.0)
                 } else {
                     Spacer()
                         .frame(height: 16.0)
