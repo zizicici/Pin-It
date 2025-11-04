@@ -7812,91 +7812,91 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Und weitere Funktionen"
+            "value" : "- Zukünftige Funktionen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- And more features"
+            "value" : "- Future features"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Y más funciones"
+            "value" : "- Funciones futuras"
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Y más funciones"
+            "value" : "- Funciones futuras"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Et plus de fonctionnalités"
+            "value" : "- Fonctionnalités futures"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- E altre funzioni"
+            "value" : "- Funzionalità future"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- その他の機能"
+            "value" : "- 将来の機能"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 기타 기능"
+            "value" : "- 향후 기능"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- E mais recursos"
+            "value" : "- Recursos futuros"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- E mais funcionalidades"
+            "value" : "- Funcionalidades futuras"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- И другие функции"
+            "value" : "- Будущие функции"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Та інші функції"
+            "value" : "- Майбутні функції"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 以及更多功能"
+            "value" : "- 未来版本功能"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 以及更多功能"
+            "value" : "- 未來版本功能"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 以及更多功能"
+            "value" : "- 未來版本功能"
           }
         }
       }
@@ -7912,7 +7912,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Switch between multiple posts"
+            "value" : "- Support multiple pinned posts"
           }
         },
         "es" : {
@@ -7942,7 +7942,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- 複数の記録をピン留め"
+            "value" : "- 複数の投稿をピン留め"
           }
         },
         "ko" : {
@@ -11052,7 +11052,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ピン留めされた記録がある場合のみピンイットライブアクティビティを表示"
+            "value" : "ピン留めされた投稿がある場合のみピンイットライブアクティビティを表示"
           }
         },
         "ko" : {
