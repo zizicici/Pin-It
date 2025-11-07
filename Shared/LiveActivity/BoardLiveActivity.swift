@@ -238,7 +238,11 @@ struct BoardSmallView: View {
         HStack {
             Spacer(minLength: 3.0)
             VStack {
+                Spacer()
+                    .frame(height: 3.0)
                 PinContentWatchView(context: context)
+                Spacer()
+                    .frame(height: 3.0)
             }
             Spacer(minLength: 3.0)
             Button(intent: ButtonNextIntent()) {
