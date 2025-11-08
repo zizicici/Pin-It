@@ -111,13 +111,41 @@ class MainViewController: UIViewController {
     }
     
     func addMenu() -> UIMenu {
+        var elements: [UIMenuElement] = []
+        
         let textAction = UIAction(title: String(localized: "editor.text"), image: UIImage(systemName: "text.alignleft")) { [weak self] _ in
             self?.addAction(text: "")
         }
         let imageAction = UIAction(title: String(localized: "editor.image"), image: UIImage(systemName: "photo")) { _ in
             self.pickImage()
         }
-        return UIMenu(children: [textAction, imageAction])
+        
+        elements.append(textAction)
+        elements.append(imageAction)
+
+        if UIPasteboard.general.hasImages || UIPasteboard.general.hasStrings {
+            let pasteboardAction = UIAction(title: String(localized: "editor.pasteboard"), image: UIImage(systemName: "doc.on.clipboard")) { [weak self] _ in
+                if UIPasteboard.general.hasStrings {
+                    if let text = UIPasteboard.general.string {
+                        self?.showEditor(with: text)
+                    } else {
+                        self?.showPasteboardAlert()
+                    }
+                } else if UIPasteboard.general.hasImages {
+                    if let image = UIPasteboard.general.image {
+                        self?.showEditor(with: image)
+                    } else {
+                        self?.showPasteboardAlert()
+                    }
+                }
+            }
+            
+            let currentPageDivider = UIMenu(title: "", options: .displayInline, children: [pasteboardAction])
+            
+            elements.append(currentPageDivider)
+        }
+        
+        return UIMenu(children: elements)
     }
     
     func addAction(text: String) {
@@ -568,6 +596,32 @@ extension MainViewController {
         }
         
         return updates
+    }
+}
+
+extension MainViewController {
+    func showPasteboardAlert() {
+        let alertController = UIAlertController(title: String(localized: "pin.pasteboard.alert.title"), message: String(localized: "pin.pasteboard.alert.message"), preferredStyle: .alert)
+        
+        let checkAction = UIAlertAction(title: String(localized: "pin.pasteboard.alert.action"), style: .default) { [weak self] _ in
+            self?.jumpToSettings()
+        }
+        
+        let cancelAction = UIAlertAction(title: String(localized: "button.cancel"), style: .cancel)
+        
+        alertController.addAction(checkAction)
+        alertController.addAction(cancelAction)
+
+        present(alertController, animated: ConsideringUser.animated, completion: nil)
+    }
+    
+    func jumpToSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else {
+            return
+        }
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url, options: [:])
+        }
     }
 }
 
