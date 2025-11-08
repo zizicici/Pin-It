@@ -50,7 +50,7 @@ class ImageCropper {
     ///   - position: 裁切位置（顶部、中间、底部）
     ///   - cropEdges: 是否裁切边缘
     /// - Returns: 裁切后的图片
-    static func cropImage(_ image: UIImage, to position: CropPosition, cropEdges: Bool) -> UIImage? {
+    static func cropImage(_ image: UIImage, to position: CropPosition, cropEdges: Bool) -> (UIImage, CGRect)? {
         let imageSize = image.size
         
         // 计算裁切区域（一次性计算，避免多次裁切）
@@ -105,6 +105,10 @@ class ImageCropper {
             }
         }()
         
-        return cropImage(image, to: cropRect)
+        if let cropImage = cropImage(image, to: cropRect) {
+            return (cropImage, cropRect)
+        } else {
+            return nil
+        }
     }
 }

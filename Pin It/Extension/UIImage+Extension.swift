@@ -37,3 +37,54 @@ extension UIImage {
         return resizedImage ?? self
     }
 }
+
+extension UIImage {
+    /// 使用变换矩阵旋转图片
+    /// - Parameter degrees: 旋转角度
+    /// - Returns: 旋转后的图片
+    func rotatedByDegrees(_ degrees: Int) -> UIImage? {
+        guard let cgImage = self.cgImage else { return nil }
+        
+        guard degrees != 0 else { return self }
+        
+        let degrees = degrees % 360
+        let radians = CGFloat(degrees) * .pi / 180.0
+        
+        var transform = CGAffineTransform.identity
+        
+        switch degrees {
+        case 90:
+            transform = transform.translatedBy(x: 0, y: -self.size.height)
+        case 180:
+            transform = transform.translatedBy(x: -self.size.width, y: -self.size.height)
+        case 270:
+            transform = transform.translatedBy(x: -self.size.width, y: 0)
+        default:
+            return nil
+        }
+        
+        transform = transform.rotated(by: radians)
+        
+        let rotatedSize: CGSize
+        if degrees == 90 || degrees == 270 {
+            rotatedSize = CGSize(width: self.size.height, height: self.size.width)
+        } else {
+            rotatedSize = self.size
+        }
+        
+        UIGraphicsBeginImageContextWithOptions(rotatedSize, false, self.scale)
+        guard let context = UIGraphicsGetCurrentContext() else { return nil }
+        
+        context.translateBy(x: rotatedSize.width / 2, y: rotatedSize.height / 2)
+        context.concatenate(transform)
+        context.translateBy(x: -self.size.width / 2, y: -self.size.height / 2)
+        
+        let rect = CGRect(origin: .zero, size: self.size)
+        context.draw(cgImage, in: rect)
+        
+        let rotatedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return rotatedImage
+    }
+}

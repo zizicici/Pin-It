@@ -410,7 +410,31 @@ extension MainViewController: PostCellDelegate {
         let editAction = UIAction(title: String(localized: "pin.edit"), image: UIImage(systemName: "pencil")) { [weak self] _ in
             self?.edit(post: post)
         }
+        
         elements.append(editAction)
+        
+        if post.texts.first != nil {
+            let copyAction = UIAction(title: String(localized: "pin.copy"), image: UIImage(systemName: "doc.on.clipboard")) { [weak self] _ in
+                self?.copyText(from: post)
+            }
+            
+            elements.append(copyAction)
+        }
+        
+        if post.images.first != nil {
+            let copyOriginalAction = UIAction(title: String(localized: "pin.copy.original"), image: UIImage(systemName: "photo")) { [weak self] _ in
+                self?.copyImage(from: post, isOriginal: true)
+            }
+            
+            let copyProcessedAction = UIAction(title: String(localized: "pin.copy.processed"), image: UIImage(systemName: "photo.circle")) { [weak self] _ in
+                self?.copyImage(from: post, isOriginal: false)
+            }
+            
+            let currentPageDivider = UIMenu(title: String(localized: "pin.copy"), image: UIImage(systemName: "doc.on.clipboard"), options: [], children: [copyOriginalAction, copyProcessedAction])
+
+            elements.append(currentPageDivider)
+        }
+        
         let deleteAction = UIAction(title: String(localized: "pin.delete"), image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
             self?.showDeleteAlert(for: post)
         }
@@ -462,6 +486,29 @@ extension MainViewController {
     
     func delete(post: Post) {
         _ = DataManager.shared.delete(post: post)
+    }
+    
+    func copyText(from postDetail: Post.Detail) {
+        guard let first = postDetail.texts.first?.content else { return }
+        UIPasteboard.general.string = first
+    }
+    
+    func copyImage(from postDetail: Post.Detail, isOriginal: Bool) {
+        guard let postImage = postDetail.images.first else { return }
+        guard let originalImage = ImageCacheManager.shared.retrieveImage(fileName: postImage.original, type: .original) else { return }
+
+        if isOriginal {
+            UIPasteboard.general.image = originalImage
+        } else {
+            // Need Calculator
+            if postImage.rect == .zero {
+                UIPasteboard.general.image = originalImage
+            } else {
+                if let rotateImage = originalImage.rotatedByDegrees(Int(postImage.orientation)), let processedImage = ImageCropper.cropImage(rotateImage, to: postImage.rect) {
+                    UIPasteboard.general.image = processedImage
+                }
+            }
+        }
     }
 }
 
@@ -594,6 +641,11 @@ extension MainViewController: CropViewControllerDelegate {
             _ = ImageCacheManager.shared.deleteImage(fileName: postImage.processed, type: .processed)
             if let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
                 postImage.processed = processed
+                postImage.orientation = Int64(angle)
+                postImage.minX = Int64(cropRect.minX)
+                postImage.minY = Int64(cropRect.minY)
+                postImage.maxX = Int64(cropRect.maxX)
+                postImage.maxY = Int64(cropRect.maxY)
                 _ = DataManager.shared.update(image: postImage)
             }
         } else {

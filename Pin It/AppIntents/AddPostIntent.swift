@@ -112,11 +112,20 @@ struct AddImageRecordIntent: LiveActivityIntent {
                     newImage = image
                 }
             case .top:
-                newImage = ImageCropper.cropImage(image, to: .top, cropEdges: cropEdges)
+                if let result = ImageCropper.cropImage(image, to: .top, cropEdges: cropEdges) {
+                    newImage = result.0
+                    imageRect = result.1
+                }
             case .middle:
-                newImage = ImageCropper.cropImage(image, to: .middle, cropEdges: cropEdges)
+                if let result = ImageCropper.cropImage(image, to: .middle, cropEdges: cropEdges) {
+                    newImage = result.0
+                    imageRect = result.1
+                }
             case .bottom:
-                newImage = ImageCropper.cropImage(image, to: .bottom, cropEdges: cropEdges)
+                if let result = ImageCropper.cropImage(image, to: .bottom, cropEdges: cropEdges) {
+                    newImage = result.0
+                    imageRect = result.1
+                }
             }
             if let newImage = newImage?.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3), let processed = ImageCacheManager.shared.storeImage(newImage, type: .processed), let original = ImageCacheManager.shared.storeImage(image, type: .original) {
                 _ = DataManager.shared.appendImage(original: original, processed: processed, rect: imageRect, orientation: 0, to: post)

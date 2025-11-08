@@ -44,3 +44,18 @@ extension PostImage: FetchableRecord {
 extension PostImage: MutablePersistableRecord {
     
 }
+
+extension PostImage {
+    var rect: CGRect {
+        return CGRect.init(
+            origin: CGPoint(
+                x: Int(minX),
+                y: Int(minY)
+            ),
+            size: CGSize(
+                width: Int(maxX - minX),
+                height: Int(maxY - minY)
+            )
+        )
+    }
+}
