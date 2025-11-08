@@ -136,7 +136,18 @@ struct BoardLiveActivity: Widget {
             .widgetURL(URL(string: Self.url))
             .keylineTint(Color.red)
         }
-        .supplementalActivityFamilies([.small])
+        .compatibleSupplementalActivityFamilies()
+    }
+}
+
+extension WidgetConfiguration {
+    @MainActor
+    public func compatibleSupplementalActivityFamilies() -> some WidgetConfiguration {
+        if #available(iOS 18.0, *) {
+            return self.supplementalActivityFamilies([.small])
+        } else {
+            return self
+        }
     }
 }
 
@@ -207,6 +218,23 @@ struct AutoSizeText: View {
 }
 
 struct BoardContent: View {
+    var context: ActivityViewContext<PinAttributes>
+    
+    var body: some View {
+        if #available(iOS 18.0, *) {
+            BoardContentForiOS18AndAbove(context: context)
+        } else {
+            // 对于iOS 17.0以下，我们显示中等尺寸
+            BoardMediumView(context: context)
+                .background(Color("WidgetBackgroundColor"))
+                .activityBackgroundTint(.clear)
+                .activitySystemActionForegroundColor(Color.black)
+        }
+    }
+}
+
+@available(iOS 18.0, *)
+struct BoardContentForiOS18AndAbove: View {
     @Environment(\.activityFamily) var activityFamily
     var context: ActivityViewContext<PinAttributes>
     

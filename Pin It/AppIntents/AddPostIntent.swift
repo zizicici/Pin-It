@@ -52,6 +52,7 @@ public enum DisplayMode: String, AppEnum {
     ]
 }
 
+@available(iOS 18.0, *)
 struct AddImageRecordIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "intent.post.add.by.image.title"
     
