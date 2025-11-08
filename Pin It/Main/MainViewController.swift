@@ -475,26 +475,66 @@ extension MainViewController: PostCellDelegate {
     func update(post: Post, isPinned: Bool) {
         _ = DataManager.shared.update(post: post, isPinned: isPinned  )
     }
+    
+    func tap(for post: Post.Detail) {
+        if let text = post.texts.first {
+            enterDetail(for: text)
+        } else if let image = post.images.first {
+            enterDetail(for: image)
+        }
+    }
+}
+
+extension MainViewController {
+    func enterDetail(for text: PostText) {
+        navigationController?.dismiss(animated: ConsideringUser.animated)
+        
+        let textDetail = TextDetailViewController(textInfo: text)
+        textDetail.editClosure = { [weak self] postText in
+            self?.enterEditor(for: postText)
+        }
+        
+        navigationController?.present(UINavigationController(rootViewController: textDetail), animated: ConsideringUser.animated)
+    }
+    
+    func enterDetail(for image: PostImage) {
+        navigationController?.dismiss(animated: ConsideringUser.animated)
+        
+        let imageDetail = ImageDetailViewController(imageInfo: image)
+        imageDetail.editClosure = { [weak self] postImage in
+            self?.enterEditor(for: postImage)
+        }
+        
+        navigationController?.present(UINavigationController(rootViewController: imageDetail), animated: ConsideringUser.animated)
+    }
+    
+    func enterEditor(for postText: PostText) {
+        let editorViewController = EditorViewController(postText: postText) { postText in
+            let result = DataManager.shared.update(text: postText)
+            print(result)
+            if result {
+                
+            } else {
+                
+            }
+        }
+        
+        navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
+    }
+    
+    func enterEditor(for postImage: PostImage) {
+        if let path = ImageCacheManager.shared.getPath(name: postImage.original, type: .original), let image = UIImage(contentsOfFile: path) {
+            handle(image, postImage: postImage)
+        }
+    }
 }
 
 extension MainViewController {
     func edit(post: Post.Detail) {
         if let postText = post.texts.first {
-            let editorViewController = EditorViewController(postText: postText) { postText in
-                let result = DataManager.shared.update(text: postText)
-                print(result)
-                if result {
-                    
-                } else {
-                    
-                }
-            }
-            
-            navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
+            enterEditor(for: postText)
         } else if let postImage = post.images.first {
-            if let path = ImageCacheManager.shared.getPath(name: postImage.original, type: .original), let image = UIImage(contentsOfFile: path) {
-                handle(image, postImage: postImage)
-            }
+            enterEditor(for: postImage)
         } else {
             //
         }

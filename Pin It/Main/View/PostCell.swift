@@ -22,6 +22,7 @@ private extension UICellConfigurationState {
 protocol PostCellDelegate: NSObjectProtocol {
     func getMoreButtonMenu(for post: Post.Detail) -> UIMenu
     func update(post: Post, isPinned: Bool)
+    func tap(for post: Post.Detail)
 }
 
 class PostBaseCell: UICollectionViewCell {
@@ -90,6 +91,8 @@ class PostCell: PostBaseCell {
         }
         
         pinButton.addTarget(self, action: #selector(pinAction), for: .touchUpInside)
+        
+        postView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapAction)))
     }
     
     override func updateConfiguration(using state: UICellConfigurationState) {
@@ -120,6 +123,12 @@ class PostCell: PostBaseCell {
         if let postItem = configurationState.postItem {
             delegate?.update(post: postItem.post, isPinned: !postItem.post.isPinned)
         }
+    }
+    
+    @objc
+    private func tapAction() {
+        guard let postItem = configurationState.postItem else { return }
+        delegate?.tap(for: postItem)
     }
 }
 

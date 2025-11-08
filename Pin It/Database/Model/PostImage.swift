@@ -59,3 +59,13 @@ extension PostImage {
         )
     }
 }
+
+extension PostImage {
+    var originalURL: URL? {
+        if let path = ImageCacheManager.shared.getPath(name: original, type: .original) {
+            return URL(filePath: path)
+        } else {
+            return nil
+        }
+    }
+}
