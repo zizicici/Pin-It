@@ -131,6 +131,7 @@ class SettingsViewController: UIViewController {
         enum ShortcutsItem: Hashable {
             case first
             case second
+            case ai
             
             var title: String {
                 switch self {
@@ -138,6 +139,8 @@ class SettingsViewController: UIViewController {
                     return String(localized: "shortcuts.1.title")
                 case .second:
                     return String(localized: "shortcuts.2.title")
+                case .ai:
+                    return String(localized: "shortcuts.3.title")
                 }
             }
             
@@ -147,6 +150,8 @@ class SettingsViewController: UIViewController {
                     return String(localized: "shortcuts.1.subtitle")
                 case .second:
                     return String(localized: "shortcuts.2.subtitle")
+                case .ai:
+                    return String(localized: "shortcuts.3.subtitle")
                 }
             }
             
@@ -156,6 +161,8 @@ class SettingsViewController: UIViewController {
                     return String(localized: "shortcuts.1.url")
                 case .second:
                     return String(localized: "shortcuts.2.url")
+                case .ai:
+                    return String(localized: "shortcuts.3.url")
                 }
             }
             
@@ -165,6 +172,8 @@ class SettingsViewController: UIViewController {
                     return UIImage(systemName: "square.and.arrow.up.circle.fill")
                 case .second:
                     return UIImage(systemName: "camera.viewfinder")
+                case .ai:
+                    return UIImage(systemName: "star.circle.fill")
                 }
             }
         }
@@ -370,7 +379,11 @@ class SettingsViewController: UIViewController {
         snapshot.appendItems([.contact(.email), .contact(.xiaohongshu)], toSection: .contact)
         
         snapshot.appendSections([.shortcuts])
-        snapshot.appendItems([.shortcuts(.first), .shortcuts(.second)], toSection: .shortcuts)
+        if Language.type() == .zh {
+            snapshot.appendItems([.shortcuts(.first), .shortcuts(.second), .shortcuts(.ai)], toSection: .shortcuts)
+        } else {
+            snapshot.appendItems([.shortcuts(.first), .shortcuts(.second)], toSection: .shortcuts)
+        }
 
         dataSource.apply(snapshot, animatingDifferences: false)
     }
