@@ -132,6 +132,10 @@ class MoreViewController: UIViewController {
         
         navigationController?.navigationBar.tintColor = .systemRed
         
+        let shareButton = UIBarButtonItem(image: UIImage(systemName: "square.and.arrow.up"), style: .plain, target: self, action: #selector(shareApp))
+        shareButton.tintColor = .systemRed
+        navigationItem.rightBarButtonItem = shareButton
+        
         configureHierarchy()
         configureDataSource()
         reloadData()
@@ -214,9 +218,8 @@ class MoreViewController: UIViewController {
         snapshot.appendItems(appItems, toSection: .appjun)
         
         snapshot.appendSections([.about])
-//        snapshot.appendItems([.about(.specifications), .about(.share), .about(.review), .about(.eula), .about(.privacyPolicy)], toSection: .about)
-        snapshot.appendItems([.about(.specifications), .about(.eula), .about(.privacyPolicy)], toSection: .about)
-
+        snapshot.appendItems([.about(.specifications), .about(.share), .about(.review), .about(.eula), .about(.privacyPolicy)], toSection: .about)
+        
         dataSource.apply(snapshot, animatingDifferences: false)
     }
 }
@@ -322,6 +325,7 @@ extension MoreViewController {
         }
     }
     
+    @objc
     func shareApp() {
         if let url = URL(string: "https://apps.apple.com/app/id6753946385") {
             let controller = UIActivityViewController(activityItems: [url], applicationActivities: nil)
