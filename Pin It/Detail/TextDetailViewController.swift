@@ -74,6 +74,11 @@ class TextDetailViewController: UIViewController {
             value: UIFont.preferredFont(forTextStyle: .title1),
             range: NSRange(location: 0, length: attributedString.length)
         )
+        attributedString.addAttribute(
+            .foregroundColor,
+            value: UIColor.text,
+            range: NSRange(location: 0, length: attributedString.length)
+        )
         
         textView.attributedText = attributedString
     }
