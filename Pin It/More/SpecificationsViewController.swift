@@ -73,7 +73,7 @@ class SpecificationsViewController: UIViewController {
                 case .publisher:
                     return "ZIZICICI LIMITED"
                 case .date:
-                    return "2025/11/08"
+                    return "2025/11/10"
                 case .license:
                     return "粤ICP备2025448771号-4A"
                 }
@@ -101,7 +101,11 @@ class SpecificationsViewController: UIViewController {
                     name: "TOCropViewController",
                     version: "3.1.0"
                 )
-                return [SnapKit, GRDB, TOCropViewController]
+                let Kingfisher = ThirdParty(
+                    urlString: "https://github.com/onevcat/Kingfisher",
+                    name: "Kingfisher",
+                    version: "8.6.1")
+                return [SnapKit, GRDB, TOCropViewController, Kingfisher]
             }()
         }
         
