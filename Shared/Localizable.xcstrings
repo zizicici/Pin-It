@@ -4972,19 +4972,19 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "获取所有被钉住的记录，这个操作可能很耗时"
+            "value" : "获取所有钉住的记录，这个操作可能很耗时"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "獲取所有被釘住的記錄，這個操作可能很耗時"
+            "value" : "獲取所有釘住的記錄，這個操作可能很耗時"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "獲取所有被釘住的記錄，這個操作可能很耗時"
+            "value" : "獲取所有釘住的記錄，這個操作可能很耗時"
           }
         }
       }
@@ -5066,19 +5066,19 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "获取所有被钉住的记录"
+            "value" : "获取所有钉住的记录"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "獲取所有被釘住的記錄"
+            "value" : "獲取所有釘住的記錄"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "獲取所有被釘住的記錄"
+            "value" : "獲取所有釘住的記錄"
           }
         }
       }
@@ -5254,19 +5254,19 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "获取当前被钉住的记录，可能为空"
+            "value" : "获取当前钉住的记录，可能为空"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "獲取當前被釘住的記錄，可能爲空"
+            "value" : "獲取當前釘住的記錄，可能爲空"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "獲取當前被釘住的記錄，可能爲空"
+            "value" : "獲取當前釘住的記錄，可能爲空"
           }
         }
       }
@@ -5348,19 +5348,19 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "获取当前被钉住的记录"
+            "value" : "获取当前钉住的记录"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "獲取當前被釘住的記錄"
+            "value" : "獲取當前釘住的記錄"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "獲取當前被釘住的記錄"
+            "value" : "獲取當前釘住的記錄"
           }
         }
       }
@@ -5442,19 +5442,19 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "获取当前被钉住的记录"
+            "value" : "获取当前钉住的记录"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "獲取當前被釘住的記錄"
+            "value" : "獲取當前釘住的記錄"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "獲取當前被釘住的記錄"
+            "value" : "獲取當前釘住的記錄"
           }
         }
       }
