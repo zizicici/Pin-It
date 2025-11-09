@@ -11664,96 +11664,378 @@
         }
       }
     },
-    "shortcuts.pasteboard.subtitle" : {
+    "shortcuts.copy.subtitle" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Text/Bild aus Zwischenablage anheften"
+            "value" : "Pin It -> Zwischenablage"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin Text/Image from Pasteboard"
+            "value" : "Pin It -> Pasteboard"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fijar texto/imagen del portapapeles"
+            "value" : "Pin It -> Portapapeles"
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fijar texto/imagen del portapapeles"
+            "value" : "Pin It -> Portapapeles"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Épingler texte/image du presse-papiers"
+            "value" : "Pin It -> Presse-papiers"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fissa testo/immagine dagli appunti"
+            "value" : "Pin It -> Appunti"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "クリップボードからテキスト/画像をピン留め"
+            "value" : "ピンイット -> クリップボード"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "클립보드에서 텍스트/이미지 고정"
+            "value" : "핀잇 -> 클립보드"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fixar texto/imagem da área de transferência"
+            "value" : "Pin It -> Área de transferência"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fixar texto/imagem da área de transferência"
+            "value" : "Pin It -> Área de transferência"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Закрепить текст/изображение из буфера обмена"
+            "value" : "Pin It -> Буфер обмена"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Закріпити текст/зображення з буфера обміну"
+            "value" : "Pin It -> Буфер обміну"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "从剪贴板上获取文字或图片"
+            "value" : "钉一下 -> 剪贴板"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "從剪貼簿上獲取文字或圖片"
+            "value" : "釘一下 -> 剪貼板"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "從剪貼簿上獲取文字或圖片"
+            "value" : "釘一下 -> 剪貼板"
+          }
+        }
+      }
+    },
+    "shortcuts.copy.title" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktuellen Angehefteten kopieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Current Pinned"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar actual fijado"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar actual fijado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copier l'actuel épinglé"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia corrente fissato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のピン留めをコピー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "현재 고정된 항목 복사"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar atual fixado"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar atual fixado"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Копировать текущий закрепленный"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Копіювати поточний закріплений"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复制当前钉住的"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "複製當前釘住的"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "複製當前釘住的"
+          }
+        }
+      }
+    },
+    "shortcuts.copy.url" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/bfd48e81ff1a47dbb57ceeb90f2b2e4a"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/bfd48e81ff1a47dbb57ceeb90f2b2e4a"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/bfd48e81ff1a47dbb57ceeb90f2b2e4a"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/bfd48e81ff1a47dbb57ceeb90f2b2e4a"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/bfd48e81ff1a47dbb57ceeb90f2b2e4a"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/bfd48e81ff1a47dbb57ceeb90f2b2e4a"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/bfd48e81ff1a47dbb57ceeb90f2b2e4a"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/bfd48e81ff1a47dbb57ceeb90f2b2e4a"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/bfd48e81ff1a47dbb57ceeb90f2b2e4a"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/bfd48e81ff1a47dbb57ceeb90f2b2e4a"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/bfd48e81ff1a47dbb57ceeb90f2b2e4a"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/bfd48e81ff1a47dbb57ceeb90f2b2e4a"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/37558fc727ff4d6791ca16f1a4e109a9"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/37558fc727ff4d6791ca16f1a4e109a9"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/37558fc727ff4d6791ca16f1a4e109a9"
+          }
+        }
+      }
+    },
+    "shortcuts.pasteboard.subtitle" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zwischenablage -> Pin It"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pasteboard -> Pin It"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Portapapeles -> Pin It"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Portapapeles -> Pin It"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Presse-papiers -> Pin It"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appunti -> Pin It"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クリップボード -> ピンイット"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "클립보드 -> 핀잇"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Área de transferência -> Pin It"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Área de transferência -> Pin It"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Буфер обмена -> Pin It"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Буфер обміну -> Pin It"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "剪贴板 -> 钉一下"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "剪貼板 -> 釘一下"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "剪貼板 -> 釘一下"
           }
         }
       }

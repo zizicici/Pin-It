@@ -133,6 +133,7 @@ class SettingsViewController: UIViewController {
             case second
             case ai
             case pasteboard
+            case copy
             
             var title: String {
                 switch self {
@@ -144,6 +145,8 @@ class SettingsViewController: UIViewController {
                     return String(localized: "shortcuts.3.title")
                 case .pasteboard:
                     return String(localized: "shortcuts.pasteboard.title")
+                case .copy:
+                    return String(localized: "shortcuts.copy.title")
                 }
             }
             
@@ -157,6 +160,8 @@ class SettingsViewController: UIViewController {
                     return String(localized: "shortcuts.3.subtitle")
                 case .pasteboard:
                     return String(localized: "shortcuts.pasteboard.subtitle")
+                case .copy:
+                    return String(localized: "shortcuts.copy.subtitle")
                 }
             }
             
@@ -170,6 +175,8 @@ class SettingsViewController: UIViewController {
                     return String(localized: "shortcuts.3.url")
                 case .pasteboard:
                     return String(localized: "shortcuts.pasteboard.url")
+                case .copy:
+                    return String(localized: "shortcuts.copy.url")
                 }
             }
             
@@ -183,6 +190,8 @@ class SettingsViewController: UIViewController {
                     return UIImage(systemName: "star.circle.fill")
                 case .pasteboard:
                     return UIImage(systemName: "doc.circle")
+                case .copy:
+                    return UIImage(systemName: "doc.circle.fill")
                 }
             }
         }
@@ -389,9 +398,9 @@ class SettingsViewController: UIViewController {
         
         snapshot.appendSections([.shortcuts])
         if Language.type() == .zh {
-            snapshot.appendItems([.shortcuts(.first), .shortcuts(.second), .shortcuts(.ai), .shortcuts(.pasteboard)], toSection: .shortcuts)
+            snapshot.appendItems([.shortcuts(.first), .shortcuts(.second), .shortcuts(.ai), .shortcuts(.pasteboard), .shortcuts(.copy)], toSection: .shortcuts)
         } else {
-            snapshot.appendItems([.shortcuts(.first), .shortcuts(.second), .shortcuts(.pasteboard)], toSection: .shortcuts)
+            snapshot.appendItems([.shortcuts(.first), .shortcuts(.second), .shortcuts(.pasteboard), .shortcuts(.copy)], toSection: .shortcuts)
         }
 
         dataSource.apply(snapshot, animatingDifferences: false)
