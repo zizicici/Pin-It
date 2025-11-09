@@ -49,6 +49,26 @@ final class DataManager {
         return result
     }
     
+    func fetchPostDetail(for ids: [Int64]) -> [Post.Detail] {
+        var result: [Post.Detail] = []
+        do {
+            try AppDatabase.shared.reader?.read{ db in
+                let idColumn = Post.Columns.id
+                result = try Post
+                    .including(all: Post.images)
+                    .including(all: Post.texts)
+                    .asRequest(of: Post.Detail.self)
+                    .filter(ids.contains(idColumn))
+                    .fetchAll(db)
+            }
+        }
+        catch {
+            print(error)
+        }
+        
+        return result
+    }
+    
     private func fetchPostDetail(for id: Int64) -> Post.Detail? {
         var result: Post.Detail?
         do {

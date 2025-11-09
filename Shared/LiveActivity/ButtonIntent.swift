@@ -28,7 +28,9 @@ struct ButtonEmptyIntent: LiveActivityIntent {
 }
 
 struct ButtonPreviousIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "intent.previous.title"
+    static var title: LocalizedStringResource = "intent.action.previous.title"
+    
+    static var description: IntentDescription = IntentDescription("intent.action.previous.title", categoryName: "intent.action.category")
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
@@ -38,16 +40,16 @@ struct ButtonPreviousIntent: LiveActivityIntent {
     }
 
     static var parameterSummary: some ParameterSummary {
-        Summary("")
+        Summary("intent.action.previous.title")
     }
     
     static var openAppWhenRun: Bool = false
-    
-    static var isDiscoverable: Bool = false
 }
 
 struct ButtonNextIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "intent.next.title"
+    static var title: LocalizedStringResource = "intent.action.next.title"
+    
+    static var description: IntentDescription = IntentDescription("intent.action.next.title", categoryName: "intent.action.category")
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
@@ -57,16 +59,16 @@ struct ButtonNextIntent: LiveActivityIntent {
     }
 
     static var parameterSummary: some ParameterSummary {
-        Summary("")
+        Summary("intent.action.next.title")
     }
     
     static var openAppWhenRun: Bool = false
-    
-    static var isDiscoverable: Bool = false
 }
 
 struct ButtonUnpinIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "intent.unpin.title"
+    static var title: LocalizedStringResource = "intent.action.unpin.title"
+    
+    static var description: IntentDescription = IntentDescription("intent.action.unpin.title", categoryName: "intent.action.category")
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
@@ -76,10 +78,8 @@ struct ButtonUnpinIntent: LiveActivityIntent {
     }
 
     static var parameterSummary: some ParameterSummary {
-        Summary("")
+        Summary("intent.action.unpin.title")
     }
     
     static var openAppWhenRun: Bool = false
-    
-    static var isDiscoverable: Bool = false
 }

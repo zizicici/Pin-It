@@ -92,12 +92,18 @@ class PinInfoManager: NSObject {
         }
     }
     
+    public func getCurrentPost() async -> SyncPost? {
+        guard let pinInfo = LiveActivityManager.shared.getCurrentPosition() else { return nil }
+        guard let post = try? getPost(by: pinInfo) else { return nil }
+        
+        return post
+    }
+    
     public func unpinCurrentPost() async {
-        guard let pinInfo = LiveActivityManager.shared.getCurrentPosition() else { return }
-        guard let post = try? getPost(by: pinInfo) else { return }
+        guard let currentPost = await getCurrentPost() else { return }
         
         var actionStorage = (try? SyncDataManager.read(SyncActionStorage.self)) ?? SyncActionStorage(actions: [])
-        actionStorage.actions.append(SyncAction(id: post.id, actionType: .unpin))
+        actionStorage.actions.append(SyncAction(id: currentPost.id, actionType: .unpin))
         
         try? SyncDataManager.write(actionStorage)
     }
