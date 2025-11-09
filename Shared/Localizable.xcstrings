@@ -4051,91 +4051,91 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beitrag mit ${content}"
+            "value" : "Bildbeitrag mit ${content} hinzufügen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add Post with ${content}"
+            "value" : "Add Image Post with ${content}"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Añadir con ${content}"
+            "value" : "Añadir publicación de imagen con ${content}"
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Agregar con ${content}"
+            "value" : "Añadir publicación de imagen con ${content}"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajouter avec ${content}"
+            "value" : "Ajouter une publication image avec ${content}"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aggiungi con ${content}"
+            "value" : "Aggiungi post immagine con ${content}"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "${content}で追加"
+            "value" : "${content}の画像投稿を追加"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "${content}(으)로 추가"
+            "value" : "${content} 이미지 게시물 추가"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Adicionar com ${content}"
+            "value" : "Adicionar post de imagem com ${content}"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Adicionar com ${content}"
+            "value" : "Adicionar publicação de imagem com ${content}"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Добавить с ${content}"
+            "value" : "Добавить пост с изображением ${content}"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Додати з ${content}"
+            "value" : "Додати допис із зображенням ${content}"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "添加${content}为记录"
+            "value" : "添加${content}为图片记录"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "新增${content}為記錄"
+            "value" : "添加${content}爲圖片記錄"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "新增${content}為記錄"
+            "value" : "添加${content}爲圖片記錄"
           }
         }
       }
@@ -4333,91 +4333,91 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beitrag mit ${content}"
+            "value" : "Textbeitrag mit ${content} hinzufügen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add Post with ${content}"
+            "value" : "Add Text Post with ${content}"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Añadir con ${content}"
+            "value" : "Añadir publicación de texto con ${content}"
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Agregar con ${content}"
+            "value" : "Añadir publicación de texto con ${content}"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajouter avec ${content}"
+            "value" : "Ajouter une publication texte avec ${content}"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aggiungi con ${content}"
+            "value" : "Aggiungi post di testo con ${content}"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "${content}で追加"
+            "value" : "${content}のテキスト投稿を追加"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "${content}(으)로 추가"
+            "value" : "${content} 텍스트 게시물 추가"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Adicionar com ${content}"
+            "value" : "Adicionar post de texto com ${content}"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Adicionar com ${content}"
+            "value" : "Adicionar publicação de texto com ${content}"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Добавить с ${content}"
+            "value" : "Добавить текстовый пост с ${content}"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Додати з ${content}"
+            "value" : "Додати текстовий допис з ${content}"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "添加${content}为记录"
+            "value" : "添加${content}为文字记录"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "新增${content}為記錄"
+            "value" : "添加${content}爲文字記錄"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "新增${content}為記錄"
+            "value" : "添加${content}爲文字記錄"
           }
         }
       }
