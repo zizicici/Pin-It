@@ -213,4 +213,23 @@ final class DataManager {
     public func update(posts: [Post]) -> Bool {
         return AppDatabase.shared.update(posts: posts)
     }
+    
+    public func deleteAllUnpins() -> Bool {
+        let details = fetchAllPostDetails(isPinned: false)
+        let ids = details.compactMap { detail in
+            return detail.post.id
+        }
+        let images = details.compactMap{ $0.images }.flatMap{ $0 }
+        
+        let result = AppDatabase.shared.deletePosts(by: ids)
+        
+        if result {
+            for image in images {
+                _ = ImageCacheManager.shared.deleteImage(fileName: image.original, type: .original)
+                _ = ImageCacheManager.shared.deleteImage(fileName: image.processed, type: .processed)
+            }
+        }
+        
+        return result
+    }
 }

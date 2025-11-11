@@ -71,20 +71,20 @@ class PostCell: PostBaseCell {
         contentView.addSubview(postView)
         postView.snp.makeConstraints { make in
             make.leading.equalTo(contentView).inset(0.0)
-            make.top.bottom.equalTo(contentView)
+            make.top.bottom.equalTo(contentView).inset(10.0)
             make.trailing.equalTo(contentView).inset(54.0)
         }
         
         contentView.addSubview(pinButton)
         pinButton.snp.makeConstraints { make in
-            make.top.equalTo(contentView).inset(6.0)
+            make.top.equalTo(contentView).inset(16.0)
             make.trailing.equalTo(contentView)
             make.width.height.equalTo(44.0)
         }
         
         contentView.addSubview(moreButton)
         moreButton.snp.makeConstraints { make in
-            make.bottom.equalTo(contentView).inset(6.0)
+            make.bottom.equalTo(contentView).inset(16.0)
             make.trailing.equalTo(contentView)
             make.width.height.equalTo(44.0)
             make.top.equalTo(pinButton.snp.bottom).offset(4.0)

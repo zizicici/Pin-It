@@ -138,6 +138,20 @@ extension AppDatabase {
         NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
         return true
     }
+    
+    func deletePosts(by ids: [Int64]) -> Bool {
+        do {
+            _ = try dbWriter?.write{ db in
+                try Post.deleteAll(db, ids: ids)
+            }
+        }
+        catch {
+            print(error)
+            return false
+        }
+        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        return true
+    }
 }
 
 extension AppDatabase {

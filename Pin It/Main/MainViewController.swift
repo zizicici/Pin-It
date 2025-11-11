@@ -86,6 +86,7 @@ class MainViewController: UIViewController {
         let minusButton = UIBarButtonItem(image: UIImage(systemName: "minus"))
         minusButton.tintColor = .systemRed
         self.minusButton = minusButton
+        self.minusButton?.menu = minusMenu()
         
         if #available(iOS 26.0, *) {
             minusButton.sharesBackground = false
@@ -175,6 +176,18 @@ class MainViewController: UIViewController {
         navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
     }
     
+    func minusMenu() -> UIMenu {
+        var elements: [UIMenuElement] = []
+        
+        let deleteUnpinsAction = UIAction(title: String(localized: "pin.delete.unpins"), image: UIImage(systemName: "rectangle.stack.badge.minus"), attributes: .destructive) { [weak self] _ in
+            self?.showDeleteAllUnpinsAlert()
+        }
+        
+        elements.append(deleteUnpinsAction)
+        
+        return UIMenu(children: elements)
+    }
+    
     @objc
     func updateState() {
         if #available(iOS 26.0, *) {
@@ -211,32 +224,68 @@ class MainViewController: UIViewController {
     }
     
     func createLayout() -> UICollectionViewLayout {
-        let config = UICollectionViewCompositionalLayoutConfiguration()
-        config.scrollDirection = .vertical
-        
-        let layout = UICollectionViewCompositionalLayout(sectionProvider: { index, environment in
-            let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
-                                                 heightDimension: .estimated(100))
-            let item = NSCollectionLayoutItem(layoutSize: itemSize)
-
-            let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
-                                                  heightDimension: .estimated(100))
-            let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize,
-                                                             subitems: [item])
-
-            let section = NSCollectionLayoutSection(group: group)
-            section.interGroupSpacing = 20.0
-            section.contentInsets = NSDirectionalEdgeInsets(top: 4.0, leading: 16.0, bottom: 20.0, trailing: 16.0)
+        let layout = UICollectionViewCompositionalLayout() { sectionIndex, layoutEnvironment in
             
-            let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
-                                                         heightDimension: .estimated(100))
-            let sectionHeader = NSCollectionLayoutBoundarySupplementaryItem(
-                layoutSize: headerSize,
-                elementKind: Self.sectionHeaderElementKind, alignment: .top)
-            section.boundarySupplementaryItems = [sectionHeader]
+            var configuration = UICollectionLayoutListConfiguration(appearance: .insetGrouped)
+            configuration.headerMode = sectionIndex == 0 ? .supplementary : .none
+            
+            configuration.showsSeparators = false
+            
+            configuration.leadingSwipeActionsConfigurationProvider = { [weak self] (indexPath) in
+                guard let self = self else { return nil }
+                guard let item = self.dataSource.itemIdentifier(for: indexPath), case .post(let detail) = item else {
+                    return nil
+                }
+                
+                if detail.post.isPinned {
+                    let unpinAction = UIContextualAction(style: .normal, title: String(localized: "pin.unpin")) { [weak self] (action, view, completion) in
+                        self?.update(post: detail.post, isPinned: false)
+                        
+                        completion(true)
+                    }
+                    unpinAction.backgroundColor = .systemGray
+                    
+                    return UISwipeActionsConfiguration(actions: [unpinAction])
+                } else {
+                    let pinAction = UIContextualAction(style: .normal, title: String(localized: "pin.pin")) { [weak self] (action, view, completion) in
+                        self?.update(post: detail.post, isPinned: true)
+
+                        completion(true)
+                    }
+                    pinAction.backgroundColor = .systemRed
+                    
+                    return UISwipeActionsConfiguration(actions: [pinAction])
+                }
+
+            }
+            
+            configuration.trailingSwipeActionsConfigurationProvider = { [weak self] (indexPath) in
+                guard let self = self else { return nil }
+                guard let item = self.dataSource.itemIdentifier(for: indexPath), case .post(let detail) = item else {
+                    return nil
+                }
+                
+                let deleteAction = UIContextualAction(style: .destructive, title: String(localized: "pin.delete")) { [weak self] (action, view, completion) in
+                    self?.showDeleteAlert(for: detail)
+                    
+                    completion(true)
+                }
+                
+                return UISwipeActionsConfiguration(actions: [deleteAction])
+            }
+            
+            let section = NSCollectionLayoutSection.list(using: configuration,
+                                                         layoutEnvironment: layoutEnvironment)
+            
+                        let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
+                                                                     heightDimension: .estimated(100))
+                        let sectionHeader = NSCollectionLayoutBoundarySupplementaryItem(
+                            layoutSize: headerSize,
+                            elementKind: Self.sectionHeaderElementKind, alignment: .top)
+                        section.boundarySupplementaryItems = [sectionHeader]
             
             return section
-        }, configuration: config)
+        }
         
         return layout
     }
@@ -578,6 +627,18 @@ extension MainViewController {
     
     func delete(post: Post) {
         _ = DataManager.shared.delete(post: post)
+    }
+    
+    func showDeleteAllUnpinsAlert() {
+        let alertController = UIAlertController(title: String(localized: "pin.delete.allUnpins.alert.title"), message: nil, preferredStyle: .alert)
+        let deleteAction = UIAlertAction(title: String(localized: "button.delete"), style: .destructive) { _ in
+            alertController.dismiss(animated: ConsideringUser.animated)
+            _ = DataManager.shared.deleteAllUnpins()
+        }
+        let cancelAction = UIAlertAction(title: String(localized: "button.cancel"), style: .cancel)
+        alertController.addAction(deleteAction)
+        alertController.addAction(cancelAction)
+        present(alertController, animated: ConsideringUser.animated)
     }
     
     func copyText(from postDetail: Post.Detail) {
