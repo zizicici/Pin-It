@@ -88,6 +88,8 @@ class MainViewController: UIViewController {
         reloadData()
         updateState()
         
+        NotificationCenter.default.addObserver(self, selector: #selector(updateAddMenu), name: UIPasteboard.changedNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateAddMenu), name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .DatabaseUpdated, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(updateState), name: .LiveActivityStatusChanged, object: nil)
     }
@@ -108,6 +110,11 @@ class MainViewController: UIViewController {
                 }
             }
         }
+    }
+    
+    @objc
+    func updateAddMenu() {
+        self.addButton?.menu = addMenu()
     }
     
     func addMenu() -> UIMenu {
