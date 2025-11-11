@@ -30,7 +30,7 @@ class HeaderReuseView: UICollectionReusableView {
         titleLabel.snp.makeConstraints { make in
             make.top.equalTo(self).inset(8)
             make.bottom.equalTo(self).inset(8)
-            make.leading.trailing.equalTo(self).inset(20)
+            make.leading.trailing.equalTo(self).inset(16)
         }
     }
     

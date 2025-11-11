@@ -52,6 +52,7 @@ class MainViewController: UIViewController {
     
     private var stateButton: UIBarButtonItem?
     private var addButton: UIBarButtonItem?
+    private var minusButton: UIBarButtonItem?
     
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
@@ -71,7 +72,7 @@ class MainViewController: UIViewController {
         let stateButton = UIBarButtonItem(image: UIImage(systemName: "play.fill"), style: .plain, target: self, action: #selector(stateAction))
         stateButton.tintColor = .systemRed
         if #available(iOS 26.0, *) {
-            navigationItem.leadingItemGroups = [UIBarButtonItemGroup.fixedGroup(items: [.fixedSpace(10), stateButton, .fixedSpace(10)])]
+            navigationItem.leadingItemGroups = [UIBarButtonItemGroup.fixedGroup(items: [.fixedSpace(12), stateButton, .fixedSpace(12)])]
         } else {
             navigationItem.leftBarButtonItem = stateButton
         }
@@ -79,9 +80,20 @@ class MainViewController: UIViewController {
         
         let addButton = UIBarButtonItem(image: UIImage(systemName: "plus"))
         addButton.tintColor = .systemRed
-        addButton.menu = addMenu()
-        navigationItem.rightBarButtonItem = addButton
         self.addButton = addButton
+        updateAddMenu()
+        
+        let minusButton = UIBarButtonItem(image: UIImage(systemName: "minus"))
+        minusButton.tintColor = .systemRed
+        self.minusButton = minusButton
+        
+        if #available(iOS 26.0, *) {
+            minusButton.sharesBackground = false
+            addButton.sharesBackground = false
+            navigationItem.trailingItemGroups = [UIBarButtonItemGroup.fixedGroup(items: [minusButton]), UIBarButtonItemGroup.fixedGroup(items: [addButton])]
+        } else {
+            navigationItem.rightBarButtonItems = [minusButton, addButton]
+        }
         
         configureHierarchy()
         configureDataSource()
@@ -165,7 +177,12 @@ class MainViewController: UIViewController {
     
     @objc
     func updateState() {
-        navigationItem.title = LiveActivityManager.shared.status.title
+        if #available(iOS 26.0, *) {
+            navigationItem.title = String(localized: "controller.pin.title")
+            navigationItem.subtitle = LiveActivityManager.shared.status.title
+        } else {
+            navigationItem.title = LiveActivityManager.shared.status.title
+        }
         
         var imageName = "play.fill"
         switch LiveActivityManager.shared.status {
@@ -209,7 +226,7 @@ class MainViewController: UIViewController {
 
             let section = NSCollectionLayoutSection(group: group)
             section.interGroupSpacing = 20.0
-            section.contentInsets = NSDirectionalEdgeInsets(top: 10.0, leading: 16.0, bottom: 20.0, trailing: 16.0)
+            section.contentInsets = NSDirectionalEdgeInsets(top: 4.0, leading: 16.0, bottom: 20.0, trailing: 16.0)
             
             let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
                                                          heightDimension: .estimated(100))

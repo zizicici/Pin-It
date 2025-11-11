@@ -70,7 +70,7 @@ class PostCell: PostBaseCell {
         
         contentView.addSubview(postView)
         postView.snp.makeConstraints { make in
-            make.leading.equalTo(contentView).inset(12.0)
+            make.leading.equalTo(contentView).inset(0.0)
             make.top.bottom.equalTo(contentView)
             make.trailing.equalTo(contentView).inset(54.0)
         }
