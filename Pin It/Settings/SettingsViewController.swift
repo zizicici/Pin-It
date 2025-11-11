@@ -82,11 +82,14 @@ class SettingsViewController: UIViewController {
         
         enum ActionItem: Hashable {
             case maxPinned(MaxPinnedPosts)
+            case deletionConfirm(DeleteOperationConfirmation)
             
             var value: String {
                 switch self {
                 case .maxPinned(let maxPinnedPosts):
                     return maxPinnedPosts.getName()
+                case .deletionConfirm(let item):
+                    return item.getName()
                 }
             }
         }
@@ -221,6 +224,8 @@ class SettingsViewController: UIViewController {
                 switch item {
                 case .maxPinned:
                     return MaxPinnedPosts.getTitle()
+                case .deletionConfirm:
+                    return DeleteOperationConfirmation.getTitle()
                 }
             case .contact(let item):
                 return item.title
@@ -388,7 +393,7 @@ class SettingsViewController: UIViewController {
         snapshot.appendItems([.general(.language)], toSection: .general)
         
         snapshot.appendSections([.action])
-        snapshot.appendItems([.action(.maxPinned(MaxPinnedPosts.getValue()))], toSection: .action)
+        snapshot.appendItems([.action(.maxPinned(MaxPinnedPosts.getValue())), .action(.deletionConfirm(DeleteOperationConfirmation.getValue()))], toSection: .action)
         
         snapshot.appendSections([.automatic])
         snapshot.appendItems([.automatic(.autoStart(AutoStartLiveActivity.getValue())), .automatic(.autoEnd(AutoEndLiveActivity.getValue()))], toSection: .automatic)
@@ -432,6 +437,8 @@ extension SettingsViewController: UITableViewDelegate {
                 switch item {
                 case .maxPinned:
                     enterSettings(MaxPinnedPosts.self)
+                case .deletionConfirm:
+                    enterSettings(DeleteOperationConfirmation.self)
                 }
             case .contact(let item):
                 handle(contactItem: item)

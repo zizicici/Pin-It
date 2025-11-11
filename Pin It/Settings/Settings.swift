@@ -15,6 +15,7 @@ extension UserDefaults {
         case AutoEndLiveActivity = "com.zizicici.pin.settings.AutoEndLiveActivity"
         case MaxPinnedPosts = "com.zizicici.pin.settings.MaxPinnedPosts"
         case ThanksEntryState = "com.zizicici.pin.settings.ThanksEntryState"
+        case DeleteOperationConfirmation = "com.zizicici.pin.settings.DeleteOperationConfirmation"
     }
 }
 
@@ -66,7 +67,7 @@ extension UserDefaultSettable where Self: RawRepresentable, Self.RawValue == Int
         }
     }
     
-    static func setValue(_ value: Self) {
+    fileprivate static func setValue(_ value: Self) {
         UserDefaults(suiteName: appGroupId)?.set(value.rawValue, forKey: getKey().rawValue)
         UserDefaults(suiteName: appGroupId)?.synchronize()
         NotificationCenter.default.post(name: NSNotification.Name.SettingsUpdate, object: nil)
@@ -253,6 +254,41 @@ extension ThanksEntryState: UserDefaultSettable {
     
     static func getTitle() -> String {
         return ""
+    }
+    
+    static func setCurrent(_ value: Self) throws {
+        setValue(value)
+    }
+}
+
+enum DeleteOperationConfirmation: Int, CaseIterable, Codable {
+    case enable = 0
+    case disable
+    case disableUntilAppBackgrounds
+}
+
+extension DeleteOperationConfirmation: UserDefaultSettable {
+    static func getKey() -> UserDefaults.Settings {
+        .DeleteOperationConfirmation
+    }
+    
+    static var defaultOption: Self {
+        return .enable
+    }
+    
+    func getName() -> String {
+        switch self {
+        case .enable:
+            return String(localized: "settings.enable")
+        case .disable:
+            return String(localized: "settings.disable")
+        case .disableUntilAppBackgrounds:
+            return String(localized: "settings.deleteOperationConfirmation.disableUntilAppBackgrounds")
+        }
+    }
+    
+    static func getTitle() -> String {
+        return String(localized: "settings.deleteOperationConfirmation.title")
     }
     
     static func setCurrent(_ value: Self) throws {

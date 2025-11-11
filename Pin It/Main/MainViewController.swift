@@ -86,7 +86,7 @@ class MainViewController: UIViewController {
         let minusButton = UIBarButtonItem(image: UIImage(systemName: "minus"))
         minusButton.tintColor = .systemRed
         self.minusButton = minusButton
-        self.minusButton?.menu = minusMenu()
+        updateMinusMenu()
         
         if #available(iOS 26.0, *) {
             minusButton.sharesBackground = false
@@ -103,6 +103,7 @@ class MainViewController: UIViewController {
         
         NotificationCenter.default.addObserver(self, selector: #selector(updateAddMenu), name: UIPasteboard.changedNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(updateAddMenu), name: UIApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateMinusMenu), name: .SettingsUpdate, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .DatabaseUpdated, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(updateState), name: .LiveActivityStatusChanged, object: nil)
     }
@@ -176,8 +177,23 @@ class MainViewController: UIViewController {
         navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
     }
     
+    @objc
+    func updateMinusMenu() {
+        self.minusButton?.menu = minusMenu()
+    }
+    
     func minusMenu() -> UIMenu {
         var elements: [UIMenuElement] = []
+        
+        let children: [UIAction] = DeleteOperationConfirmation.allCases.map { setting in
+            return .init(title: setting.getName(), state: DeleteOperationConfirmation.current == setting ? .on : .off) { _ in
+                try? DeleteOperationConfirmation.setCurrent(setting)
+            }
+        }
+        
+        let currentPageDivider = UIMenu(title: DeleteOperationConfirmation.getTitle(), subtitle: DeleteOperationConfirmation.current.getName(), image: UIImage(systemName: "minus.circle"), children: children)
+        
+        elements.append(currentPageDivider)
         
         let deleteUnpinsAction = UIAction(title: String(localized: "pin.delete.unpins"), image: UIImage(systemName: "rectangle.stack.badge.minus"), attributes: .destructive) { [weak self] _ in
             self?.showDeleteAllUnpinsAlert()
@@ -267,7 +283,7 @@ class MainViewController: UIViewController {
                 }
                 
                 let deleteAction = UIContextualAction(style: .destructive, title: String(localized: "pin.delete")) { [weak self] (action, view, completion) in
-                    self?.showDeleteAlert(for: detail)
+                    self?.deleteAction(for: detail)
                     
                     completion(true)
                 }
@@ -538,7 +554,7 @@ extension MainViewController: PostCellDelegate {
         }
         
         let deleteAction = UIAction(title: String(localized: "pin.delete"), image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
-            self?.showDeleteAlert(for: post)
+            self?.deleteAction(for: post)
         }
         let currentPageDivider = UIMenu(title: "", options: .displayInline, children: [deleteAction])
         elements.append(currentPageDivider)
@@ -611,6 +627,15 @@ extension MainViewController {
             enterEditor(for: postImage)
         } else {
             //
+        }
+    }
+    
+    func deleteAction(for post: Post.Detail) {
+        switch DeleteOperationConfirmation.current {
+        case .enable:
+            showDeleteAlert(for: post)
+        case .disable, .disableUntilAppBackgrounds:
+            delete(post: post.post)
         }
     }
     
