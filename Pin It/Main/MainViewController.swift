@@ -198,8 +198,9 @@ class MainViewController: UIViewController {
         let deleteUnpinsAction = UIAction(title: String(localized: "pin.delete.unpins"), image: UIImage(systemName: "rectangle.stack.badge.minus"), attributes: .destructive) { [weak self] _ in
             self?.showDeleteAllUnpinsAlert()
         }
+        let deletePageDivider = UIMenu(title: "", options: .displayInline, children: [deleteUnpinsAction])
         
-        elements.append(deleteUnpinsAction)
+        elements.append(deletePageDivider)
         
         return UIMenu(children: elements)
     }
