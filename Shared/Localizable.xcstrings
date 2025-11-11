@@ -9,6 +9,12 @@
     },
     "advertising.banner" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ادعمنا (=｀ω´=)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -103,6 +109,12 @@
     },
     "backup.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النسخ الاحتياطي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -197,6 +209,12 @@
     },
     "button.cancel" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إلغاء"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -291,6 +309,12 @@
     },
     "button.close" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إغلاق"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -385,6 +409,12 @@
     },
     "button.delete" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -479,6 +509,12 @@
     },
     "button.done" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -573,6 +609,12 @@
     },
     "button.ok" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "موافق"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -667,6 +709,12 @@
     },
     "button.save" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حفظ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -761,6 +809,12 @@
     },
     "content.error.load" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فشل تحميل الصورة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -855,6 +909,12 @@
     },
     "content.error.watch" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الصور غير مدعومة على الساعة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -949,6 +1009,12 @@
     },
     "content.index%d%d" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%2$d/%1$d"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1043,6 +1109,12 @@
     },
     "content.loading" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جاري التحميل…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1137,6 +1209,12 @@
     },
     "content.no" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد محتوى"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1231,6 +1309,12 @@
     },
     "controller.more.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المزيد"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1325,6 +1409,12 @@
     },
     "controller.pin.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin It"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1419,6 +1509,12 @@
     },
     "controller.settings.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإعدادات"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1513,6 +1609,12 @@
     },
     "controller.specifications.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المواصفات"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1607,6 +1709,12 @@
     },
     "editor.image" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صورة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1701,6 +1809,12 @@
     },
     "editor.image.crop" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ضبط الصورة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1795,6 +1909,12 @@
     },
     "editor.pasteboard" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحافظة الحالية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1889,6 +2009,12 @@
     },
     "editor.text" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نص"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1983,6 +2109,12 @@
     },
     "editor.text.placeholder" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أدخل النص"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2077,6 +2209,12 @@
     },
     "error.needsPro.message" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اشترِ الإصدار Pro من الإعدادات لتفعيل هذا الخيار"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2171,6 +2309,12 @@
     },
     "grateful.content" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نرجو أن تستمتع بالتجربة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2265,6 +2409,12 @@
     },
     "grateful.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شكراً لدعمك"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2359,6 +2509,12 @@
     },
     "intent.action.category" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إجراء"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2453,6 +2609,12 @@
     },
     "intent.action.end.description" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إخفاء النشاط المباشر لـ Pin It"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2547,6 +2709,12 @@
     },
     "intent.action.end.summary" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إخفاء Pin It"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2641,6 +2809,12 @@
     },
     "intent.action.end.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إخفاء Pin It"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2735,6 +2909,12 @@
     },
     "intent.action.next.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الانتقال إلى المنشور المثبت التالي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2829,6 +3009,12 @@
     },
     "intent.action.previous.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الانتقال إلى المنشور المثبت السابق"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2923,6 +3109,12 @@
     },
     "intent.action.start.description" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اعرض النشاط المباشر لـ Pin It فقط عندما توجد منشورات مثبتة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3017,6 +3209,12 @@
     },
     "intent.action.start.summary" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عرض Pin It"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3111,6 +3309,12 @@
     },
     "intent.action.start.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عرض Pin It"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3205,6 +3409,12 @@
     },
     "intent.action.unpin.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إلغاء تثبيت المنشور الحالي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3299,6 +3509,12 @@
     },
     "intent.cropEdges" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قص الحواف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3393,6 +3609,12 @@
     },
     "intent.displayMode.case.bottom" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الثلث السفلي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3487,6 +3709,12 @@
     },
     "intent.displayMode.case.full" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كامل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3581,6 +3809,12 @@
     },
     "intent.displayMode.case.middle" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الثلث الأوسط"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3675,6 +3909,12 @@
     },
     "intent.displayMode.case.prominentNumber" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الرقم الأبرز"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3769,6 +4009,12 @@
     },
     "intent.displayMode.case.top" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الثلث العلوي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3863,6 +4109,12 @@
     },
     "intent.displayMode.type" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وضع العرض"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3957,6 +4209,12 @@
     },
     "intent.empty.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فارغ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4051,6 +4309,12 @@
     },
     "intent.image" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صورة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4145,6 +4409,12 @@
     },
     "intent.post.add.by.image.description" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة منشور بصورة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4239,6 +4509,12 @@
     },
     "intent.post.add.by.image.summary${content}" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة منشور صورة بـ ${content}"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4333,6 +4609,12 @@
     },
     "intent.post.add.by.image.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة منشور بصورة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4427,6 +4709,12 @@
     },
     "intent.post.add.by.text.description" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة منشور بنص"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4521,6 +4809,12 @@
     },
     "intent.post.add.by.text.summary${content}" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة منشور نصي بـ ${content}"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4615,6 +4909,12 @@
     },
     "intent.post.add.by.text.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة منشور بنص"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4709,6 +5009,12 @@
     },
     "intent.post.add.category" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة منشور"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4803,6 +5109,12 @@
     },
     "intent.post.empty" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منشور فارغ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4897,6 +5209,12 @@
     },
     "intent.post.get.all.description" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحصول على جميع المنشورات المثبتة، قد يتطلب وقتاً طويلاً"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4991,6 +5309,12 @@
     },
     "intent.post.get.all.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحصول على جميع المنشورات المثبتة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5085,6 +5409,12 @@
     },
     "intent.post.get.category" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحصول على منشور"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5179,6 +5509,12 @@
     },
     "intent.post.get.current.description" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحصول على المنشور المثبت الحالي، قد يكون فارغاً"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5273,6 +5609,12 @@
     },
     "intent.post.get.current.summary" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحصول على المنشور المثبت الحالي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5367,6 +5709,12 @@
     },
     "intent.post.get.current.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحصول على المنشور المثبت الحالي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5461,6 +5809,12 @@
     },
     "intent.post.image" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منشور صورة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5555,6 +5909,12 @@
     },
     "intent.post.originalImageValue" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محتوى الصورة الأصلي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5649,6 +6009,12 @@
     },
     "intent.post.textValue" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المحتوى النصي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5743,6 +6109,12 @@
     },
     "intent.post.type" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منشور Pin It"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5837,6 +6209,12 @@
     },
     "intent.text" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نص"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5931,6 +6309,12 @@
     },
     "liveActivity.status.idle" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير نشط"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6025,6 +6409,12 @@
     },
     "liveActivity.status.initial" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جاري الإعداد"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6119,6 +6509,12 @@
     },
     "liveActivity.status.running" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نشط"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6213,6 +6609,12 @@
     },
     "membership.purchase" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شراء Pro"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6308,6 +6710,12 @@
     "membership.purchases.order.failure" : {
       "comment" : "Order Failure",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فشل في الطلب"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6402,6 +6810,12 @@
     },
     "membership.restore" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استعادة الشراء"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6496,6 +6910,12 @@
     },
     "more.item.about.eula" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اتفاقية الترخيص"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6590,6 +7010,12 @@
     },
     "more.item.about.privacyPolicy" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سياسة الخصوصية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6684,6 +7110,12 @@
     },
     "more.item.about.review" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كتابة تقييم"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6778,6 +7210,12 @@
     },
     "more.item.about.share" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مشاركة التطبيق"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6872,6 +7310,12 @@
     },
     "more.item.about.specifications" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المواصفات"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6966,6 +7410,12 @@
     },
     "more.item.contact.bilibili" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "bilibili"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7060,6 +7510,12 @@
     },
     "more.item.contact.email" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "البريد الإلكتروني"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7154,6 +7610,12 @@
     },
     "more.item.contact.xiaohongshu" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Red Note"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7248,6 +7710,12 @@
     },
     "more.item.settings.language" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اللغة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7342,6 +7810,12 @@
     },
     "more.item.settings.language.value" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإنجليزية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7436,6 +7910,12 @@
     },
     "more.section.about" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حول"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7530,6 +8010,12 @@
     },
     "more.section.appjun" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تطبيقات من AppJun"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7624,6 +8110,12 @@
     },
     "more.section.contact" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المساعدة في التحسين"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7718,6 +8210,12 @@
     },
     "more.section.general" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عام"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7812,6 +8310,12 @@
     },
     "more.section.shortcuts" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اكتشف الإمكانيات"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7906,6 +8410,12 @@
     },
     "onboarding.message.1" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "س تظهر هذه العينة في شاشة القفل والنشاط المباشر في الجزيرة الديناميكية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8000,6 +8510,12 @@
     },
     "onboarding.message.2" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انقر على زر الدبوس بجوار الرسالة لتبديل حالتها"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8094,6 +8610,12 @@
     },
     "pin.blank" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فارغ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8188,6 +8710,12 @@
     },
     "pin.copy" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نسخ إلى الحافظة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8282,6 +8810,12 @@
     },
     "pin.copy.original" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الصورة الأصلية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8376,6 +8910,12 @@
     },
     "pin.copy.processed" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الصورة المعالجة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8470,6 +9010,12 @@
     },
     "pin.delete" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8564,6 +9110,12 @@
     },
     "pin.delete.alert.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف هذا المنشور؟"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8658,6 +9210,12 @@
     },
     "pin.delete.allUnpins.alert.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف جميع المنشورات غير المثبتة؟"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8752,6 +9310,12 @@
     },
     "pin.delete.unpins" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف جميع المنشورات غير المثبتة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8846,6 +9410,12 @@
     },
     "pin.edit" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحرير"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8940,6 +9510,12 @@
     },
     "pin.others.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منشورات أخرى"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9034,6 +9610,12 @@
     },
     "pin.pasteboard.alert.action" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مراجعة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9128,6 +9710,12 @@
     },
     "pin.pasteboard.alert.message" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راجع إعداداتك"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9222,6 +9810,12 @@
     },
     "pin.pasteboard.alert.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر الوصول إلى البيانات في الحافظة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9316,6 +9910,12 @@
     },
     "pin.pin" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تثبيت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9410,6 +10010,12 @@
     },
     "pin.pinned.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مثبت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9504,6 +10110,12 @@
     },
     "pin.unpin" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إلغاء التثبيت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9598,6 +10210,12 @@
     },
     "post.create%@" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم الإنشاء في %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9692,6 +10310,12 @@
     },
     "promotion.alert.message" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دفعة لمرة واحدة، بدون رسوم لاحقة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9786,6 +10410,12 @@
     },
     "promotion.alert.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هل ترغب في دعم نمونا؟"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9880,6 +10510,12 @@
     },
     "promotion.first" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- إزالة لافتة الدعم"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9974,6 +10610,12 @@
     },
     "promotion.future" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- ميزات مستقبلية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10068,6 +10710,12 @@
     },
     "promotion.second" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- دعم تثبيت منشورات متعددة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10162,6 +10810,12 @@
     },
     "promotion.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ترقية لفتح:"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10256,6 +10910,12 @@
     },
     "settings.autoEndLiveActivity.noContent" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عند عدم وجود محتوى"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10350,6 +11010,12 @@
     },
     "settings.autoEndLiveActivity.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنهاء النشاط المباشر تلقائياً"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10444,6 +11110,12 @@
     },
     "settings.autoStartLiveActivity.appLaunch" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عند فتح التطبيق"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10538,6 +11210,12 @@
     },
     "settings.autoStartLiveActivity.enableOnlyWithContent" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عند وجود محتوى"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10632,6 +11310,12 @@
     },
     "settings.autoStartLiveActivity.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بدء النشاط المباشر تلقائياً"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10726,6 +11410,12 @@
     },
     "settings.deleteOperationConfirmation.disableUntilAppBackgrounds" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعطيل مؤقت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10820,6 +11510,12 @@
     },
     "settings.deleteOperationConfirmation.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تأكيد الحذف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10914,6 +11610,12 @@
     },
     "settings.disable" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعطيل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11008,6 +11710,12 @@
     },
     "settings.enable" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تفعيل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11102,6 +11810,12 @@
     },
     "settings.fail.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فشل تحديث الإعدادات"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11196,6 +11910,12 @@
     },
     "settings.maxPinnedPosts.one" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منشور واحد"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11290,6 +12010,12 @@
     },
     "settings.maxPinnedPosts.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحد الأقصى للمنشورات المثبتة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11384,6 +12110,12 @@
     },
     "settings.maxPinnedPosts.unlimited" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير محدود"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11478,6 +12210,12 @@
     },
     "settings.reset" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعادة تعيين البيانات"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11572,6 +12310,12 @@
     },
     "settings.reset.alert.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعادة تعيين البيانات؟ لا يمكن التراجع عن هذا"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11666,6 +12410,12 @@
     },
     "shortcuts.1.subtitle" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يمكنك تثبيت نص أو صور"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11760,6 +12510,12 @@
     },
     "shortcuts.1.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التثبيت من ورقة المشاركة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11854,6 +12610,12 @@
     },
     "shortcuts.1.url" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/3ddf28819e144f07b9294784782e42fc"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11948,6 +12710,12 @@
     },
     "shortcuts.2.subtitle" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعمل بسلاسة مع زر الإجراء"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12042,6 +12810,12 @@
     },
     "shortcuts.2.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تثبيت لقطة الشاشة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12136,6 +12910,12 @@
     },
     "shortcuts.2.url" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/c6e8da1f7a834b4a8b9b60e19268715f"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12230,6 +13010,12 @@
     },
     "shortcuts.3.subtitle" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مع تطبيق Doubao"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12324,6 +13110,12 @@
     },
     "shortcuts.3.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التثبيت بالذكاء الاصطناعي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12418,6 +13210,12 @@
     },
     "shortcuts.3.url" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/478df96e992a45ae8f5a3371cb1359f3"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12512,6 +13310,12 @@
     },
     "shortcuts.copy.subtitle" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "من Pin It إلى الحافظة\""
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12606,6 +13410,12 @@
     },
     "shortcuts.copy.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نسخ المثبت حاليًا\""
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12700,6 +13510,12 @@
     },
     "shortcuts.copy.url" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/bfd48e81ff1a47dbb57ceeb90f2b2e4a"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12794,6 +13610,12 @@
     },
     "shortcuts.pasteboard.subtitle" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "من الحافظة إلى Pin It"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12888,6 +13710,12 @@
     },
     "shortcuts.pasteboard.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تثبيت الحافظة\""
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12982,6 +13810,12 @@
     },
     "shortcuts.pasteboard.url" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://www.icloud.com/shortcuts/9564b013ad144108b43f57856098055f"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13076,6 +13910,12 @@
     },
     "shortcuts.title.add" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تثبيت منشور نصي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13170,6 +14010,12 @@
     },
     "shortcuts.title.start" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عرض"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13264,6 +14110,12 @@
     },
     "shortcuts.title.stop" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إخفاء"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13359,6 +14211,12 @@
     "specifications.item.summary.dateOfProduction" : {
       "comment" : "Date of Production",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاريخ الإنتاج"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13454,6 +14312,12 @@
     "specifications.item.summary.icp" : {
       "comment" : "ICP Filing Number",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رقم تسجيل ICP"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13549,6 +14413,12 @@
     "specifications.item.summary.manufacturer" : {
       "comment" : "Manufacturer",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الشركة المصنعة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13644,6 +14514,12 @@
     "specifications.item.summary.name" : {
       "comment" : "Name",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الاسم"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13739,6 +14615,12 @@
     "specifications.item.summary.publisher" : {
       "comment" : "Publisher",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الناشر"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13834,6 +14716,12 @@
     "specifications.item.summary.version" : {
       "comment" : "Version",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإصدار"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13929,6 +14817,12 @@
     "specifications.item.thirdParty.footer" : {
       "comment" : "We extend our heartfelt appreciation to all developers of open-source projects.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نعبر عن امتناننا لجميع مطوري المشاريع مفتوحة المصدر"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14024,6 +14918,12 @@
     "specifications.item.thirdParty.header" : {
       "comment" : "Third Party Framework",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شكر وتقدير"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14118,6 +15018,12 @@
     },
     "thanks.alert.message" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيحذف هذا اللافتة إلى الأبد، لا يمكن التراجع عن هذا الإجراء"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14212,6 +15118,12 @@
     },
     "thanks.alert.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف لافتة الشكر"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14306,6 +15218,12 @@
     },
     "tips.addPost.message" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يمكنك إضافة نص أو صورة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14400,6 +15318,12 @@
     },
     "tips.addPost.title" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انقر على الزر لإضافة منشور"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14494,6 +15418,12 @@
     },
     "widget.start.description" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اعرض النشاط المباشر لـ Pin It فقط عندما توجد منشورات مثبتة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14588,6 +15518,12 @@
     },
     "widget.start.name" : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زر بدء Pin It"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",

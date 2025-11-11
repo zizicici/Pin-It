@@ -281,7 +281,11 @@ class PromotionCell: UITableViewCell {
         default:
             let imageView = UIImageView(image: UIImage(systemName: "pin.fill"))
             imageView.tintColor = .white.withAlphaComponent(0.5)
-            imageView.transform = .init(rotationAngle: .pi / 4.0)
+            if Language.type() == .ar {
+                imageView.transform = .init(rotationAngle: .pi / -4.0)
+            } else {
+                imageView.transform = .init(rotationAngle: .pi / 4.0)
+            }
             contentView.addSubview(imageView)
             imageView.snp.makeConstraints { make in
                 make.top.equalTo(contentView).inset(24)

@@ -388,6 +388,7 @@ struct Language {
         case en
         case ja
         case ko
+        case ar
     }
     
     static func type() -> LanguageType? {
@@ -401,6 +402,8 @@ struct Language {
             return .ja
         case "zh-Hans", "zh-Hant", "zh-HK":
             return .zh
+        case "ar":
+            return .ar
         default:
             return .en
         }

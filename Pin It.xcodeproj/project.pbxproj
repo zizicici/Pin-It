@@ -358,6 +358,7 @@
 				uk,
 				it,
 				ko,
+				ar,
 			);
 			mainGroup = 1481AAAE2E9D4CFD00E359C9;
 			minimizedProjectReferenceProxies = 1;

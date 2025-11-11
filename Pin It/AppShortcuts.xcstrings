@@ -4,6 +4,14 @@
     "Dismiss ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "ar" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "إغلاق ${applicationName}"
+            ]
+          }
+        },
         "de" : {
           "stringSet" : {
             "state" : "translated",
@@ -147,6 +155,14 @@
     "New ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "ar" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "جديد ${applicationName}"
+            ]
+          }
+        },
         "de" : {
           "stringSet" : {
             "state" : "translated",
@@ -314,6 +330,14 @@
     "Show ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "ar" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "عرض ${applicationName}"
+            ]
+          }
+        },
         "de" : {
           "stringSet" : {
             "state" : "translated",
