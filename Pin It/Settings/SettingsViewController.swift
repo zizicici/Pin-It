@@ -24,6 +24,7 @@ class SettingsViewController: UIViewController {
         case action
         case contact
         case shortcuts
+        case reset
         
         var header: String? {
             switch self {
@@ -39,6 +40,8 @@ class SettingsViewController: UIViewController {
                 return String(localized: "more.section.contact")
             case .shortcuts:
                 return String(localized: "more.section.shortcuts")
+            case .reset:
+                return nil
             }
         }
         
@@ -206,6 +209,7 @@ class SettingsViewController: UIViewController {
         case action(ActionItem)
         case contact(ContactItem)
         case shortcuts(ShortcutsItem)
+        case reset
         
         var title: String {
             switch self {
@@ -231,6 +235,8 @@ class SettingsViewController: UIViewController {
                 return item.title
             case .shortcuts(let item):
                 return item.title
+            case .reset:
+                return String(localized: "settings.reset")
             }
         }
     }
@@ -370,6 +376,15 @@ class SettingsViewController: UIViewController {
                 content.image = item.image
                 cell.contentConfiguration = content
                 return cell
+            case .reset:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                cell.accessoryType = .none
+                var content = UIListContentConfiguration.subtitleCell()
+                content.text = identifier.title
+                content.textProperties.color = .systemRed
+                content.textProperties.alignment = .center
+                cell.contentConfiguration = content
+                return cell
             }
         }
     }
@@ -407,6 +422,9 @@ class SettingsViewController: UIViewController {
         } else {
             snapshot.appendItems([.shortcuts(.first), .shortcuts(.second), .shortcuts(.pasteboard), .shortcuts(.copy)], toSection: .shortcuts)
         }
+        
+        snapshot.appendSections([.reset])
+        snapshot.appendItems([.reset], toSection: .reset)
 
         dataSource.apply(snapshot, animatingDifferences: false)
     }
@@ -444,6 +462,8 @@ extension SettingsViewController: UITableViewDelegate {
                 handle(contactItem: item)
             case .shortcuts(let item):
                 handle(shortcutsItem: item)
+            case .reset:
+                showResetAlert()
             }
         }
     }
@@ -464,6 +484,24 @@ extension SettingsViewController {
         settingsOptionViewController.hidesBottomBarWhenPushed = true
         
         navigationController?.pushViewController(settingsOptionViewController, animated: ConsideringUser.pushAnimated)
+    }
+}
+
+extension SettingsViewController {
+    func showResetAlert() {
+        let alertController = UIAlertController(title: String(localized: "settings.reset.alert.title"), message: nil, preferredStyle: .alert)
+        let deleteAction = UIAlertAction(title: String(localized: "settings.reset"), style: .destructive) { [weak self] _ in
+            alertController.dismiss(animated: ConsideringUser.animated)
+            self?.reset()
+        }
+        let cancelAction = UIAlertAction(title: String(localized: "button.cancel"), style: .cancel)
+        alertController.addAction(deleteAction)
+        alertController.addAction(cancelAction)
+        present(alertController, animated: ConsideringUser.animated)
+    }
+    
+    func reset() {
+        DataManager.shared.reset()
     }
 }
 

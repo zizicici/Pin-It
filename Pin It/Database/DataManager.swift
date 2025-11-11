@@ -233,3 +233,13 @@ final class DataManager {
         return result
     }
 }
+
+extension DataManager {
+    public func reset() {
+        let reset = AppDatabase.shared.reset()
+        if reset {
+            ImageCacheManager.shared.clearAllCache()
+            OnboardingManager.shared.setupOnboardingDataIfNeeded()
+        }
+    }
+}

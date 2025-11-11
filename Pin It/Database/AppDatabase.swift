@@ -300,6 +300,26 @@ extension AppDatabase {
 }
 
 extension AppDatabase {
+    public func reset() -> Bool {
+        disconnect()
+        
+        do {
+            let databasePool = try AppDatabase.generateDatabasePool()
+            try databasePool.erase()
+        }
+        catch {
+            reconnect()
+            print(error)
+            return false
+        }
+        reconnect()
+        
+        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        return true
+    }
+}
+
+extension AppDatabase {
     /// Provides a read-only access to the database
     var reader: DatabaseReader? {
         dbWriter

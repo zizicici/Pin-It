@@ -14,10 +14,7 @@ class OnboardingManager: NSObject {
     override init() {
         super.init()
         
-        if checkPostTableNeedsOnboarding() {
-            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.1"))
-            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.2"), isPinned: false)
-        }
+        setupOnboardingDataIfNeeded()
     }
     
     private func checkPostTableNeedsOnboarding() -> Bool {
@@ -39,5 +36,12 @@ class OnboardingManager: NSObject {
             print(error)
         }
         return result
+    }
+    
+    public func setupOnboardingDataIfNeeded() {
+        if checkPostTableNeedsOnboarding() {
+            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.1"))
+            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.2"), isPinned: false)
+        }
     }
 }
