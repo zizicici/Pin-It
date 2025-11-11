@@ -227,9 +227,10 @@ class MainViewController: UIViewController {
         let layout = UICollectionViewCompositionalLayout() { sectionIndex, layoutEnvironment in
             
             var configuration = UICollectionLayoutListConfiguration(appearance: .insetGrouped)
-            configuration.headerMode = sectionIndex == 0 ? .supplementary : .none
+            configuration.headerMode = .supplementary
             
             configuration.showsSeparators = false
+            configuration.backgroundColor = AppColor.background
             
             configuration.leadingSwipeActionsConfigurationProvider = { [weak self] (indexPath) in
                 guard let self = self else { return nil }
@@ -277,12 +278,12 @@ class MainViewController: UIViewController {
             let section = NSCollectionLayoutSection.list(using: configuration,
                                                          layoutEnvironment: layoutEnvironment)
             
-                        let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
-                                                                     heightDimension: .estimated(100))
-                        let sectionHeader = NSCollectionLayoutBoundarySupplementaryItem(
-                            layoutSize: headerSize,
-                            elementKind: Self.sectionHeaderElementKind, alignment: .top)
-                        section.boundarySupplementaryItems = [sectionHeader]
+            let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
+                                                    heightDimension: .estimated(100))
+            let sectionHeader = NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: headerSize,
+            elementKind: Self.sectionHeaderElementKind, alignment: .top)
+            section.boundarySupplementaryItems = [sectionHeader]
             
             return section
         }
