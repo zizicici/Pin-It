@@ -93,7 +93,7 @@ class MainViewController: UIViewController {
             addButton.sharesBackground = false
             navigationItem.trailingItemGroups = [UIBarButtonItemGroup.fixedGroup(items: [minusButton]), UIBarButtonItemGroup.fixedGroup(items: [addButton])]
         } else {
-            navigationItem.rightBarButtonItems = [minusButton, addButton]
+            navigationItem.rightBarButtonItems = [addButton, minusButton]
         }
         
         configureHierarchy()
