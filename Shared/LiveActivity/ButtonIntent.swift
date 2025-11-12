@@ -66,9 +66,9 @@ struct ButtonNextIntent: LiveActivityIntent {
 }
 
 struct ButtonUnpinIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "intent.action.unpin.title"
+    static var title: LocalizedStringResource = "intent.current.unpin.title"
     
-    static var description: IntentDescription = IntentDescription("intent.action.unpin.title", categoryName: "intent.action.category")
+    static var description: IntentDescription = IntentDescription("intent.current.unpin.title", categoryName: "intent.current.category")
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
@@ -78,7 +78,7 @@ struct ButtonUnpinIntent: LiveActivityIntent {
     }
 
     static var parameterSummary: some ParameterSummary {
-        Summary("intent.action.unpin.title")
+        Summary("intent.current.unpin.title")
     }
     
     static var openAppWhenRun: Bool = false

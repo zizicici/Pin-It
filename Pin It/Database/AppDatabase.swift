@@ -206,6 +206,24 @@ extension AppDatabase {
         NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
         return true
     }
+    
+    func delete(images: [PostImage]) -> Bool {
+        let imageIds = images.compactMap{ $0.id }
+        guard imageIds.count > 0 else {
+            return false
+        }
+        do {
+            _ = try dbWriter?.write{ db in
+                try PostImage.deleteAll(db, ids: imageIds)
+            }
+        }
+        catch {
+            print(error)
+            return false
+        }
+        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        return true
+    }
 }
 
 extension AppDatabase {
@@ -251,6 +269,24 @@ extension AppDatabase {
         do {
             _ = try dbWriter?.write{ db in
                 try PostText.deleteAll(db, ids: [textId])
+            }
+        }
+        catch {
+            print(error)
+            return false
+        }
+        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        return true
+    }
+    
+    func delete(texts: [PostText]) -> Bool {
+        let textIds = texts.compactMap{ $0.id }
+        guard textIds.count > 0 else {
+            return false
+        }
+        do {
+            _ = try dbWriter?.write{ db in
+                try PostText.deleteAll(db, ids: textIds)
             }
         }
         catch {

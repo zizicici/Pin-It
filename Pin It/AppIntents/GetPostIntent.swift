@@ -11,7 +11,7 @@ import AppIntents
 struct GetCurrentPinnedPostIntent: AppIntent {
     static var title: LocalizedStringResource = "intent.post.get.current.title"
     
-    static var description: IntentDescription = IntentDescription("intent.post.get.current.description", categoryName: "intent.post.get.category")
+    static var description: IntentDescription = IntentDescription("intent.post.get.current.description", categoryName: "intent.current.category")
     
     static var parameterSummary: some ParameterSummary {
         Summary("intent.post.get.current.summary")

@@ -110,6 +110,44 @@ final class DataManager {
         return result
     }
     
+    public func updateImage(original: String, processed: String, rect: CGRect, orientation: Int, to post: Post) -> Bool {
+        guard let postId = post.id, let detail = fetchPostDetail(for: postId) else {
+            return false
+        }
+        let deleteImage = AppDatabase.shared.delete(images: detail.images)
+        if deleteImage {
+            for image in detail.images {
+                _ = ImageCacheManager.shared.deleteImage(fileName: image.original, type: .original)
+                _ = ImageCacheManager.shared.deleteImage(fileName: image.processed, type: .processed)
+            }
+        }
+        _ = AppDatabase.shared.delete(texts: detail.texts)
+        
+        let newPostImage = PostImage(postId: postId, original: original, processed: processed, orientation: Int64(orientation), minX: Int64(rect.minX), minY: Int64(rect.minY), maxX: Int64(rect.maxX), maxY: Int64(rect.maxY), order: 0)
+        let result = AppDatabase.shared.add(image: newPostImage)
+        
+        return result
+    }
+    
+    public func updateText(content: String, to post: Post) -> Bool {
+        guard let postId = post.id, let detail = fetchPostDetail(for: postId) else {
+            return false
+        }
+        let deleteImage = AppDatabase.shared.delete(images: detail.images)
+        if deleteImage {
+            for image in detail.images {
+                _ = ImageCacheManager.shared.deleteImage(fileName: image.original, type: .original)
+                _ = ImageCacheManager.shared.deleteImage(fileName: image.processed, type: .processed)
+            }
+        }
+        _ = AppDatabase.shared.delete(texts: detail.texts)
+        
+        let newPostText = PostText(postId: postId, content: content, order: 0)
+        let result = AppDatabase.shared.add(text: newPostText)
+        
+        return result
+    }
+    
     public func createPost(content: String, isPinned: Bool = true) -> Post? {
         // Fetch Last Post
         switch MaxPinnedPosts.current {

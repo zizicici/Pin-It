@@ -32,11 +32,15 @@ struct PostEntity: AppEntity {
     @Property(title: "intent.post.originalImageValue")
     var originalImage: IntentFile?
     
-    init(id: Int, date: Date, text: String? = nil, originalImage: IntentFile? = nil) {
+    @Property(title: "intent.post.isPinnedValue")
+    var isPinned: Bool
+    
+    init(id: Int, date: Date, text: String? = nil, originalImage: IntentFile? = nil, isPinned: Bool) {
         self.id = id
         self.date = date
         self.text = text
         self.originalImage = originalImage
+        self.isPinned = isPinned
     }
 }
 
@@ -48,7 +52,7 @@ struct PostIntentQuery: EntityQuery {
             let text = detail.texts.first?.content
             let originalURL = detail.images.first?.originalURL
             
-            return .init(id: Int(detail.post.id!), date: Date(nanoSecondSince1970: detail.post.creationTime!), text: text, originalImage: (originalURL != nil) ? IntentFile(fileURL: originalURL!) : nil)
+            return .init(id: Int(detail.post.id!), date: Date(nanoSecondSince1970: detail.post.creationTime!), text: text, originalImage: (originalURL != nil) ? IntentFile(fileURL: originalURL!) : nil, isPinned: detail.post.isPinned)
         }
         
         return result
