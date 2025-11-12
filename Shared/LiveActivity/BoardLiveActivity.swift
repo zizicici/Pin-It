@@ -15,22 +15,26 @@ struct PinContentView: View {
     var context: ActivityViewContext<PinAttributes>
     
     var body: some View {
-        if context.state.total == 0 {
-            AutoSizeText(text: String(localized: "content.no"))
-        } else {
-            if let text = context.state.text {
-                AutoSizeText(text: text)
-            } else if let imageName = context.state.imageName {
-                if let path = ImageCacheManager.shared.getPath(name: imageName, type: .processed), let image = UIImage(contentsOfFile: path) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .clipShape(RoundedRectangle(cornerRadius: 10.0))
-                } else {
-                    AutoSizeText(text: String(localized: "content.error.load"))
-                }
-            } else {
+        ZStack {
+            Image("Clear")
+                .resizable()
+            if context.state.total == 0 {
                 AutoSizeText(text: String(localized: "content.no"))
+            } else {
+                if let text = context.state.text {
+                    AutoSizeText(text: text)
+                } else if let imageName = context.state.imageName {
+                    if let path = ImageCacheManager.shared.getPath(name: imageName, type: .processed), let image = UIImage(contentsOfFile: path) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                    } else {
+                        AutoSizeText(text: String(localized: "content.error.load"))
+                    }
+                } else {
+                    AutoSizeText(text: String(localized: "content.no"))
+                }
             }
         }
     }
@@ -155,65 +159,11 @@ struct AutoSizeText: View {
     let text: String
     
     var body: some View {
-        ViewThatFits(in: .vertical) {
-            // 尝试不同的字体大小，系统会自动选择最适合的
-            ForEach([36, 32, 28, 24, 20, 18, 16, 14, 12, 10, 8], id: \.self) { fontSize in
-                VStack {
-                    Spacer(minLength: 0.0)
-                    // 使用高亮处理后的文本
-                    Text(highlightedText(from: text, fontSize: fontSize))
-                        .font(.system(size: CGFloat(fontSize)).monospacedDigit())
-                        .multilineTextAlignment(.center)
-                    Spacer(minLength: 0.0)
-                }
-            }
-        }
-        .frame(maxHeight: .infinity)
-    }
-    
-    private func highlightedText(from input: String, fontSize: Int) -> AttributedString {
-        var attributedString = AttributedString(input)
-        
-//        // 使用 NSDataDetector 来识别日期和时间
-//        let detector = try! NSDataDetector(types: NSTextCheckingResult.CheckingType.date.rawValue)
-//        let matches = detector.matches(in: input, options: [], range: NSRange(location: 0, length: input.utf16.count))
-//        
-//        // 存储已识别的时间范围
-//        var dateRanges: [Range<String.Index>] = []
-//        
-//        // 高亮日期和时间
-//        for match in matches {
-//            if let range = Range(match.range, in: input) {
-//                let dateText = String(input[range])
-//                if let attributedRange = attributedString.range(of: dateText) {
-//                    attributedString[attributedRange].foregroundColor = .blue
-//                    attributedString[attributedRange].font = .system(size: CGFloat(fontSize), weight: .bold, design: .monospaced)
-//                }
-//                dateRanges.append(range)
-//            }
-//        }
-//        
-//        // 使用正则表达式高亮数字，不需要前后空格
-//        let numberRegex = try! NSRegularExpression(pattern: "\\d+", options: [])
-//        let numberMatches = numberRegex.matches(in: input, options: [], range: NSRange(location: 0, length: input.utf16.count))
-//        
-//        for match in numberMatches {
-//            if let range = Range(match.range, in: input) {
-//                // 检查数字是否在已识别的时间范围内
-//                let isInDateRange = dateRanges.contains(where: { $0.overlaps(range) })
-//                
-//                // 只有当数字不在时间范围内时，才进行高亮显示
-//                if !isInDateRange {
-//                    let numberText = String(input[range])
-//                    if let attributedRange = attributedString.range(of: numberText) {
-//                        attributedString[attributedRange].foregroundColor = .green // 可以选择不同颜色
-//                        attributedString[attributedRange].font = .system(size: CGFloat(fontSize), weight: .bold, design: .monospaced)
-//                    }
-//                }
-//            }
-//        }
-        
-        return attributedString
+        Text(text)
+            .font(.system(.title, design: .rounded).monospacedDigit())
+            .multilineTextAlignment(.center)
+            .lineLimit(5)
+            .minimumScaleFactor(0.6)
     }
 }
 
@@ -312,10 +262,10 @@ struct BoardMediumView: View {
             VStack {
                 if User.shared.proTier() == .lifetime {
                     Spacer()
-                        .frame(height: 24.0)
+                        .frame(height: 12.0)
                     PinContentView(context: context)
                     Spacer()
-                        .frame(height: 24.0)
+                        .frame(height: 12.0)
                 } else {
                     Spacer()
                         .frame(height: 16.0)
