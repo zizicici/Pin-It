@@ -13,7 +13,7 @@ struct ButtonEmptyIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        print("ButtonEmptyIntent perform()")
+        await LiveActivityManager.shared.update()
         
         return .result(value: true)
     }
