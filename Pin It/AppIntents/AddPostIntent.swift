@@ -24,8 +24,6 @@ struct AddTextRecordIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        await LiveActivityManager.shared.start(fastMode: true)
-        
         if let post = DataManager.shared.createPost(content: content) {
             await SyncCompletionManager.shared.waitForCompletion(postId: post.id!, timeout: 5.0)
             
@@ -94,8 +92,6 @@ struct AddImageRecordIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        await LiveActivityManager.shared.start(fastMode: true)
-        
         if let image = UIImage(data: content.data) {
             var newImage: UIImage? = nil
             var imageRect: CGRect = CGRect(origin: .zero, size: image.size)
@@ -130,7 +126,7 @@ struct AddImageRecordIntent: LiveActivityIntent {
                let original = ImageCacheManager.shared.storeImage(image, type: .original),
                let post = DataManager.shared.createPost(original: original, processed: processed, rect: imageRect, orientation: 0) {
                 await SyncCompletionManager.shared.waitForCompletion(postId: post.id!, timeout: 5.0)
-                    
+                
                 return .result(value: true)
             } else {
                 return .result(value: false)

@@ -69,52 +69,37 @@ class LiveActivityManager: NSObject {
     }
     
     @discardableResult
-    func start(fastMode: Bool = false) async -> Bool {
+    func start() async -> Bool {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return false }
         switch Activity<PinAttributes>.activities.count {
         case 0:
             // Create
             var result: Bool
 
-            if fastMode {
-                let activityContent = ActivityContent(state: PinAttributes.ContentState.placeholder, staleDate: nil)
-                let activityAttributes = PinAttributes(name: "Pin")
-                do {
-                    let activity = try Activity.request(attributes: activityAttributes, content: activityContent)
-                    startDate = Date()
-                    print(activity)
-                    result = true
-                }
-                catch {
-                    print(error.localizedDescription)
-                    result = false
-                }
-            } else {
-                let (contentState, shouldEnd) = PinInfoManager.shared.getCurrentContentState()
-                
-                guard !shouldEnd else {
-                    await end()
-                    result = false
-                    return result
-                }
-                guard let contentState = contentState else {
-                    result = false
-                    return result
-                }
-                
-                let activityContent = ActivityContent(state: contentState, staleDate: Date(timeIntervalSinceNow: 3600 * 6))
-                let activityAttributes = PinAttributes(name: "Pin")
-                
-                do {
-                    let activity = try Activity.request(attributes: activityAttributes, content: activityContent)
-                    startDate = Date()
-                    print(activity)
-                    result = true
-                }
-                catch {
-                    print(error.localizedDescription)
-                    result = false
-                }
+            let (contentState, shouldEnd) = PinInfoManager.shared.getCurrentContentState()
+            
+            guard !shouldEnd else {
+                await end()
+                result = false
+                return result
+            }
+            guard let contentState = contentState else {
+                result = false
+                return result
+            }
+            
+            let activityContent = ActivityContent(state: contentState, staleDate: Date(timeIntervalSinceNow: 3600 * 6))
+            let activityAttributes = PinAttributes(name: "Pin")
+            
+            do {
+                let activity = try Activity.request(attributes: activityAttributes, content: activityContent)
+                startDate = Date()
+                print(activity)
+                result = true
+            }
+            catch {
+                print(error.localizedDescription)
+                result = false
             }
             
             updateStatus()
