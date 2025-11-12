@@ -26,7 +26,9 @@ struct AddTextRecordIntent: LiveActivityIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
         await LiveActivityManager.shared.start(fastMode: true)
         
-        if DataManager.shared.createPost(content: content) != nil {
+        if let post = DataManager.shared.createPost(content: content) {
+            await SyncCompletionManager.shared.waitForCompletion(postId: post.id!, timeout: 5.0)
+            
             return .result(value: true)
         } else {
             return .result(value: false)
@@ -95,10 +97,6 @@ struct AddImageRecordIntent: LiveActivityIntent {
         await LiveActivityManager.shared.start(fastMode: true)
         
         if let image = UIImage(data: content.data) {
-            guard let post = DataManager.shared.createBlankPost(isPinned: true) else {
-                return .result(value: false)
-            }
-            
             var newImage: UIImage? = nil
             var imageRect: CGRect = CGRect(origin: .zero, size: image.size)
             switch displayMode {
@@ -127,11 +125,14 @@ struct AddImageRecordIntent: LiveActivityIntent {
                     imageRect = result.1
                 }
             }
-            if let newImage = newImage?.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3), let processed = ImageCacheManager.shared.storeImage(newImage, type: .processed), let original = ImageCacheManager.shared.storeImage(image, type: .original) {
-                _ = DataManager.shared.appendImage(original: original, processed: processed, rect: imageRect, orientation: 0, to: post)
+            if let newImage = newImage?.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3),
+               let processed = ImageCacheManager.shared.storeImage(newImage, type: .processed),
+               let original = ImageCacheManager.shared.storeImage(image, type: .original),
+               let post = DataManager.shared.createPost(original: original, processed: processed, rect: imageRect, orientation: 0) {
+                await SyncCompletionManager.shared.waitForCompletion(postId: post.id!, timeout: 5.0)
+                    
                 return .result(value: true)
             } else {
-                _ = DataManager.shared.delete(post: post)
                 return .result(value: false)
             }
         } else {

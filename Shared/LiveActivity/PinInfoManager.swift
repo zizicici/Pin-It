@@ -135,6 +135,9 @@ class PinInfoManager: NSObject {
     private func updateCurrent(newValue: Int) async {
         current = max(0, min(newValue, posts.count - 1))
         await LiveActivityManager.shared.update()
+        for id in posts.map({ $0.id }) {
+            await SyncCompletionManager.shared.notifyCompletion(for: id)
+        }
     }
     
     public func getCurrentContentState() -> (content: PinAttributes.ContentState?, shouldEnd: Bool) {
@@ -144,5 +147,56 @@ class PinInfoManager: NSObject {
         let target = try? getCurrentPost()
         
         return (PinAttributes.ContentState(index: current, total: posts.count, text: target?.text, imageName: target?.image), false)
+    }
+}
+
+actor SyncCompletionManager {
+    static let shared = SyncCompletionManager()
+    private var continuations: [Int64: [CheckedContinuation<Void, Never>]] = [:]
+    private var timeoutTasks: [Int64: Task<Void, Never>] = [:]
+    
+    func waitForCompletion(postId: Int64, timeout: TimeInterval = 10.0) async {
+        await withCheckedContinuation { continuation in
+            // 存储 continuation
+            if continuations[postId] == nil {
+                continuations[postId] = []
+            }
+            continuations[postId]?.append(continuation)
+            
+            // 如果没有超时任务，创建一个
+            if timeoutTasks[postId] == nil {
+                timeoutTasks[postId] = Task {
+                    try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                    self.handleTimeout(for: postId)
+                }
+            }
+        }
+    }
+    
+    private func handleTimeout(for postId: Int64) {
+        // 超时后恢复所有等待这个 postId 的 continuation
+        if let waitingContinuations = continuations[postId] {
+            for continuation in waitingContinuations {
+                continuation.resume()
+            }
+            continuations[postId] = nil
+            timeoutTasks[postId] = nil
+        }
+    }
+    
+    func notifyCompletion(for postId: Int64) {
+        // 取消超时任务
+        if let task = timeoutTasks[postId] {
+            task.cancel()
+            timeoutTasks[postId] = nil
+        }
+        
+        // 恢复所有等待的 continuation
+        if let waitingContinuations = continuations[postId] {
+            for continuation in waitingContinuations {
+                continuation.resume()
+            }
+            continuations[postId] = nil
+        }
     }
 }

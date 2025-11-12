@@ -27,11 +27,12 @@ struct UpdatePostTextIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        guard let post = DataManager.shared.fetchPostDetail(for: [Int64(post.id)]).first?.post else {
+        guard let post = DataManager.shared.fetchPostDetail(for: [Int64(post.id)]).first?.post, let postId = post.id else {
             return .result(value: false)
         }
         
         let result = DataManager.shared.updateText(content: content, to: post)
+        await SyncCompletionManager.shared.waitForCompletion(postId: postId, timeout: 5.0)
         
         return .result(value: result)
     }
@@ -80,7 +81,7 @@ struct UpdatePostImageIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        guard let post = DataManager.shared.fetchPostDetail(for: [Int64(post.id)]).first?.post else {
+        guard let post = DataManager.shared.fetchPostDetail(for: [Int64(post.id)]).first?.post, let postId = post.id else {
             return .result(value: false)
         }
         
@@ -115,6 +116,8 @@ struct UpdatePostImageIntent: LiveActivityIntent {
             }
             if let newImage = newImage?.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3), let processed = ImageCacheManager.shared.storeImage(newImage, type: .processed), let original = ImageCacheManager.shared.storeImage(image, type: .original) {
                 _ = DataManager.shared.updateImage(original: original, processed: processed, rect: imageRect, orientation: 0, to: post)
+                await SyncCompletionManager.shared.waitForCompletion(postId: postId, timeout: 5.0)
+                
                 return .result(value: true)
             } else {
                 return .result(value: false)
@@ -165,11 +168,12 @@ struct UpdatePinStateIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        guard let post = DataManager.shared.fetchPostDetail(for: [Int64(post.id)]).first else {
+        guard let detail = DataManager.shared.fetchPostDetail(for: [Int64(post.id)]).first else {
             return .result(value: false)
         }
         
-        let result = DataManager.shared.update(post: post.post, isPinned: isPinned)
+        let result = DataManager.shared.update(post: detail.post, isPinned: isPinned)
+        await SyncCompletionManager.shared.waitForCompletion(postId: Int64(post.id), timeout: 5.0)
         
         return .result(value: result)
     }

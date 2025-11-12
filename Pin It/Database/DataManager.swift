@@ -93,23 +93,6 @@ final class DataManager {
         return (fetchLastPost(isPinned: isPinned)?.order ?? -1) + 1
     }
     
-    public func createBlankPost(isPinned: Bool) -> Post? {
-        let newOrder = getNewOrder(isPinned: true)
-        let newPost = Post(isPinned: isPinned, order: newOrder)
-        
-        return AppDatabase.shared.add(post: newPost)
-    }
-    
-    public func appendImage(original: String, processed: String, rect: CGRect, orientation: Int, to post: Post) -> Bool {
-        guard let postId = post.id, let detail = fetchPostDetail(for: postId) else {
-            return false
-        }
-        let newPostImage = PostImage(postId: postId, original: original, processed: processed, orientation: Int64(orientation), minX: Int64(rect.minX), minY: Int64(rect.minY), maxX: Int64(rect.maxX), maxY: Int64(rect.maxY), order: detail.maxOrder + 1)
-        let result = AppDatabase.shared.add(image: newPostImage)
-        
-        return result
-    }
-    
     public func updateImage(original: String, processed: String, rect: CGRect, orientation: Int, to post: Post) -> Bool {
         guard let postId = post.id, let detail = fetchPostDetail(for: postId) else {
             return false
