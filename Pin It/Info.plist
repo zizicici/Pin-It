@@ -45,5 +45,7 @@
 			</array>
 		</dict>
 	</dict>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
 </dict>
 </plist>
