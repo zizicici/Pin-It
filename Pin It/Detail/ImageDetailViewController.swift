@@ -7,7 +7,6 @@
 
 import Foundation
 import UIKit
-import Kingfisher
 
 class ImageDetailViewController: UIViewController {
     private var imageInfo: PostImage!
