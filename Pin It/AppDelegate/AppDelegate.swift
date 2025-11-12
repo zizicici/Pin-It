@@ -10,6 +10,7 @@ import TipKit
 #if !DEBUG
 import FirebaseCore
 #endif
+import Kingfisher
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -54,6 +55,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if DeleteOperationConfirmation.current == .disableUntilAppBackgrounds {
             try? DeleteOperationConfirmation.setCurrent(DeleteOperationConfirmation.defaultOption)
         }
+        KingfisherManager.shared.cache.clearCache()
     }
 }
 
