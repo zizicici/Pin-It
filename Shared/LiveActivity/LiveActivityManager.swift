@@ -90,18 +90,19 @@ class LiveActivityManager: NSObject {
                     result = false
                 }
             } else {
-                let posts = (try? PinInfoManager.shared.getPosts()) ?? []
+                let (contentState, shouldEnd) = PinInfoManager.shared.getCurrentContentState()
                 
-                guard !((posts.count == 0) && (AutoEndLiveActivity.current == .noContent)) else {
+                guard !shouldEnd else {
                     await end()
                     result = false
                     return result
                 }
+                guard let contentState = contentState else {
+                    result = false
+                    return result
+                }
                 
-                let total: Int = posts.count
-                let index: Int = 0
-                let target = try? PinInfoManager.shared.getPost(by: PinInfo(index: index, total: total))
-                let activityContent = ActivityContent(state: PinAttributes.ContentState(index: index, total: total, text: target?.text, imageName: target?.image), staleDate: nil)
+                let activityContent = ActivityContent(state: contentState, staleDate: Date(timeIntervalSinceNow: 3600 * 6))
                 let activityAttributes = PinAttributes(name: "Pin")
                 
                 do {
@@ -134,11 +135,13 @@ class LiveActivityManager: NSObject {
         switch currentActivity.activityState {
         case .active, .dismissed:
             if let startDate = startDate {
-                if startDate.timeIntervalSinceNow < -3600 {
+                if startDate.timeIntervalSinceNow < -3600 * 4 {
+                    await end()
                     await start()
                 }
             }
         case .stale, .ended:
+            await end()
             await start()
         case .pending:
             break
@@ -157,9 +160,7 @@ class LiveActivityManager: NSObject {
     
     func update() async {
         await restartIfNeeded()
-        if let position = getCurrentPosition() {
-            await update(index: position.index)
-        }
+        await updateContentState()
         updateStatus()
     }
     
@@ -172,64 +173,21 @@ class LiveActivityManager: NSObject {
         print("Activity Count: \(currentCount)")
     }
     
-    public func getCurrentPosition() -> PinInfo? {
-        if let state = Activity<PinAttributes>.activities.first?.content.state {
-            return PinInfo(index: state.index, total: state.total)
-        } else {
-            return nil
-        }
-    }
-    
-    public func previousAction() async {
-        if let position = getCurrentPosition() {
-            var newIndex: Int
-            if position.index == 0 {
-                newIndex = position.total - 1
-            } else {
-                newIndex = position.index - 1
-            }
-            await update(index: newIndex)
-        }
-    }
-    
-    public func nextAction() async {
-        if let position = getCurrentPosition() {
-            var newIndex: Int
-            if position.index == position.total - 1 {
-                newIndex = 0
-            } else {
-                newIndex = position.index + 1
-            }
-            await update(index: newIndex)
-        }
-    }
-    
-    func update(index: Int) async {
+    private func updateContentState() async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         guard let currentActivity = Activity<PinAttributes>.activities.first else { return }
         
-        let posts = (try? PinInfoManager.shared.getPosts()) ?? []
-        let total: Int = posts.count
+        let (contentState, shouldEnd) = PinInfoManager.shared.getCurrentContentState()
         
-        guard !((posts.count == 0) && (AutoEndLiveActivity.current == .noContent)) else {
+        guard !shouldEnd else {
             await end()
             return
         }
-        
-        var newIndex = index
-        if total > 0 {
-            if index >= total {
-                // Fix for last one
-                newIndex = total - 1
-            }
-        } else if total == 0 {
-            newIndex = 0
-        } else {
-            
+        guard let contentState = contentState else {
+            return
         }
-        let target = try? PinInfoManager.shared.getPost(by: PinInfo(index: newIndex, total: total))
-        let activityContent = ActivityContent(state: PinAttributes.ContentState(index: newIndex, total: total, text: target?.text, imageName: target?.image), staleDate: nil)
         
+        let activityContent = ActivityContent(state: contentState, staleDate: Date(timeIntervalSinceNow: 3600 * 6))
         await currentActivity.update(activityContent)
     }
 }

@@ -21,7 +21,7 @@ struct GetCurrentPinnedPostIntent: AppIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<PostEntity?> {
-        guard let post = await PinInfoManager.shared.getCurrentPost() else {
+        guard let post = try? PinInfoManager.shared.getCurrentPost() else {
             return .result(value: nil)
         }
         
@@ -46,7 +46,7 @@ struct GetAllPinnedPostIntent: AppIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<[PostEntity]> {
-        let postIds = try PinInfoManager.shared.getPosts().map { $0.id }
+        let postIds = PinInfoManager.shared.posts.map { $0.id }
         
         let result = try await PostEntity.defaultQuery.entities(for: postIds.map { Int($0) })
         

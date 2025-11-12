@@ -34,7 +34,7 @@ struct ButtonPreviousIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        await LiveActivityManager.shared.previousAction()
+        await PinInfoManager.shared.previousAction()
 
         return .result(value: true)
     }
@@ -53,7 +53,7 @@ struct ButtonNextIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        await LiveActivityManager.shared.nextAction()
+        await PinInfoManager.shared.nextAction()
         
         return .result(value: true)
     }
@@ -72,7 +72,7 @@ struct ButtonUnpinIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        await PinInfoManager.shared.unpinCurrentPost()
+        PinInfoManager.shared.unpinCurrentPost()
 
         return .result(value: true)
     }

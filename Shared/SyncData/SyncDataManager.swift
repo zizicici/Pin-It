@@ -11,7 +11,7 @@ extension Notification.Name {
     static let SyncDataUpdated = Notification.Name(rawValue: "com.zizicici.common.syncData.updated")
 }
 
-struct SyncPost: Codable {
+struct SyncPost: Codable, Equatable {
     var id: Int64
     var text: String?
     var image: String?
