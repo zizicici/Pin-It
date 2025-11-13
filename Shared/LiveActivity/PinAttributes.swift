@@ -14,6 +14,7 @@ struct PinAttributes: ActivityAttributes {
         var total: Int
         var text: String?
         var imageName: String?
+        var isLeftToRight: Bool
         
         var indexString: String {
             if total == 0 {
@@ -22,8 +23,6 @@ struct PinAttributes: ActivityAttributes {
                 return String(format: String(localized: "content.index%d%d"), index + 1, total)                
             }
         }
-        
-        static let placeholder: Self = .init(index: 0, total: 0, text: String(localized: "content.loading"))
     }
     
     var name: String

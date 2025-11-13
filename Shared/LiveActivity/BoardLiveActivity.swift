@@ -120,15 +120,25 @@ struct BoardLiveActivity: Widget {
                     }
                 }
             } compactLeading: {
-                HStack {
-                    Spacer().frame(width: 3.0)
-                    Image(systemName: "pin.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(.red)
-                        .rotationEffect(Angle.degrees(-45.0))
+                if context.state.isLeftToRight {
+                    HStack {
+                        Spacer().frame(width: 3.0)
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.red)
+                            .rotationEffect(Angle.degrees(-45.0))
+                    }
                 }
             } compactTrailing: {
-                //
+                if !context.state.isLeftToRight {
+                    HStack {
+                        Spacer().frame(width: 10.0)
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.red)
+                            .rotationEffect(Angle.degrees(-45.0))
+                    }
+                }
             } minimal: {
                 Spacer().frame(width: 20.0)
                 Image(systemName: "pin.fill")

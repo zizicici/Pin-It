@@ -66,6 +66,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Globals.swift,
+				Language.swift,
 				LiveActivity/BoardLiveActivity.swift,
 				LiveActivity/ButtonIntent.swift,
 				LiveActivity/LiveActivityManager.swift,
@@ -81,6 +82,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Globals.swift,
+				Language.swift,
 				LiveActivity/BoardLiveActivity.swift,
 				LiveActivity/ButtonIntent.swift,
 				LiveActivity/LiveActivityManager.swift,
@@ -96,6 +98,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Globals.swift,
+				Language.swift,
 				Localizable.xcstrings,
 			);
 			target = 1481AAEE2E9D543400E359C9 /* Box */;

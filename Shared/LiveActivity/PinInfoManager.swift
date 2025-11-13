@@ -146,7 +146,7 @@ class PinInfoManager: NSObject {
         }
         let target = try? getCurrentPost()
         
-        return (PinAttributes.ContentState(index: current, total: posts.count, text: target?.text, imageName: target?.image), false)
+        return (PinAttributes.ContentState(index: current, total: posts.count, text: target?.text, imageName: target?.image, isLeftToRight: Language.type() != .ar), false)
     }
 }
 
