@@ -11,6 +11,13 @@ import TipKit
 import FirebaseCore
 #endif
 import Kingfisher
+import StoreKit
+
+extension UserDefaults {
+    enum Support: String {
+        case AppReviewRequestDate = "com.zizicici.common.support.AppReviewRequestDate"
+    }
+}
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -30,6 +37,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _ = User.shared
         
         resetSettingsIfNeeded()
+        
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 5.0) {
+            self.requestAppReview()
+        }
         
         NotificationCenter.default.addObserver(self, selector: #selector(resetSettingsIfNeeded), name: UIApplication.didEnterBackgroundNotification, object: nil)
         
@@ -59,3 +70,29 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 }
 
+extension AppDelegate {
+    func requestAppReview() {
+        do {
+            guard let creationDate = try AppDatabase.getDatabaseCreationDate() else { return }
+            guard let daysSinceCreation = Calendar.current.dateComponents([.day], from: creationDate, to: Date()).day else { return }
+            guard daysSinceCreation >= 5 else { return }
+            
+            let userDefaultsFlag: Bool
+            let userDefaultsKey = UserDefaults.Support.AppReviewRequestDate.rawValue
+            if let storeddaysSince1970 = UserDefaults.standard.getInt(forKey: userDefaultsKey) {
+                let daysSince1970 = Int(Date().timeIntervalSince1970 / (24 * 60 * 60))
+                userDefaultsFlag = (daysSince1970 - storeddaysSince1970) >= 180
+            } else {
+                userDefaultsFlag = true
+            }
+            
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene, userDefaultsFlag {
+                let daysSince1970 = Int(Date().timeIntervalSince1970 / (24 * 60 * 60))
+                UserDefaults.standard.set(daysSince1970, forKey: userDefaultsKey)
+                AppStore.requestReview(in: windowScene)
+            }
+        } catch {
+            print("\(error.localizedDescription)")
+        }
+    }
+}
