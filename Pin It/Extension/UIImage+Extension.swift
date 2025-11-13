@@ -24,8 +24,8 @@ extension UIImage {
         let scaleFactor = min(widthRatio, heightRatio)
         
         // 计算新的尺寸
-        let newWidth = originalWidth * scaleFactor
-        let newHeight = originalHeight * scaleFactor
+        let newWidth: Int = Int(floor(originalWidth * scaleFactor))
+        let newHeight: Int = Int(floor(originalHeight * scaleFactor))
         let newSize = CGSize(width: newWidth, height: newHeight)
         
         // 创建图形上下文并绘制缩放后的图片
