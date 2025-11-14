@@ -10,6 +10,7 @@ import ActivityKit
 
 struct PinAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
+        var id: Int
         var index: Int
         var total: Int
         var text: String?

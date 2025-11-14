@@ -70,13 +70,17 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     func handle(_ context: UIOpenURLContext?) {
         guard let context = context else { return }
-        if context.url.absoluteString == BoardLiveActivity.url {
+        if context.url.absoluteString.starts(with: BoardLiveActivity.url) {
             guard let tabbarController = window?.rootViewController as? UITabBarController else { return }
             
             switch User.shared.proTier() {
             case .lifetime:
-                tabbarController.selectedViewController = tabbarController.viewControllers?
+                let mainNavigationController = tabbarController.viewControllers?
                     .first { ($0 as? UINavigationController)?.viewControllers.first is MainViewController }
+                tabbarController.selectedViewController = mainNavigationController
+                if let main = (mainNavigationController as? UINavigationController)?.viewControllers.first as? MainViewController, let id = Int64(context.url.pathComponents.last ?? "") {
+                    main.scrollToPost(by: id)
+                }
             case .none:
                 tabbarController.selectedViewController = tabbarController.viewControllers?
                     .first { ($0 as? UINavigationController)?.viewControllers.first is SettingsViewController }

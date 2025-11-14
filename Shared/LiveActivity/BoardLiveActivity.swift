@@ -69,6 +69,7 @@ struct BoardLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: PinAttributes.self) { context in
             BoardContent(context: context)
+                .widgetURL(URL(string: Self.url + "/" + "\(context.state.id)"))
         } dynamicIsland: { context in
             DynamicIsland {
                 // Expanded UI goes here.  Compose the expanded UI through
@@ -158,7 +159,7 @@ struct BoardLiveActivity: Widget {
                     .rotationEffect(Angle.degrees(-45.0))
                 Spacer().frame(width: 20.0)
             }
-            .widgetURL(URL(string: Self.url))
+            .widgetURL(URL(string: Self.url + "/" + "\(context.state.id)"))
             .keylineTint(Color.red)
         }
         .compatibleSupplementalActivityFamilies()

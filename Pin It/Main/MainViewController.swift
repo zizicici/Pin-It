@@ -867,3 +867,19 @@ extension MainViewController: CropViewControllerDelegate {
         cropViewController.dismiss(animated: ConsideringUser.animated)
     }
 }
+
+extension MainViewController {
+    func scrollToPost(by id: Int64) {
+        let item = dataSource.snapshot().itemIdentifiers.first { item in
+            switch item {
+            case .blank:
+                return false
+            case .post(let detail):
+                return detail.post.id == id
+            }
+        }
+        if let item = item, let indexPath = dataSource.indexPath(for: item) {
+            collectionView.scrollToItem(at: indexPath, at: .top, animated: true)
+        }
+    }
+}
