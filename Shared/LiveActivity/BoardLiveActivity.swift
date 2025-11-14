@@ -45,7 +45,18 @@ struct PinContentWatchView: View {
     
     var body: some View {
         if let text = context.state.text {
-            AutoSizeText(text: text)
+            HStack {
+                Spacer().frame(width: 3.0)
+                VStack {
+                    Spacer().frame(height: 1.5)
+                    Text(text)
+                        .font(.system(.body, design: .rounded).monospacedDigit())
+                        .multilineTextAlignment(.center)
+                        .lineLimit(4)
+                        .minimumScaleFactor(0.6)
+                    Spacer().frame(height: 1.5)
+                }
+            }
         } else {
             Text("content.error.watch")
         }
