@@ -246,12 +246,17 @@ struct BoardSmallView: View {
             }
             Spacer(minLength: 3.0)
             Button(intent: ButtonNextIntent()) {
-                Image(systemName: "pin.fill")
-                    .rotationEffect(Angle.degrees(-45.0))
-                    .foregroundColor(.red)
+                VStack {
+                    Image(systemName: "pin.fill")
+                        .rotationEffect(Angle.degrees(-45.0))
+                        .foregroundColor(.red)
+                    Text(context.state.indexString)
+                        .font(Font.system(size: 9.0, weight: .bold))
+                        .foregroundColor(.red)
+                }
             }
             .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.circle)
+            .buttonBorderShape(.roundedRectangle)
             .tint(.white)
             Spacer().frame(width: 6.0)
         }
