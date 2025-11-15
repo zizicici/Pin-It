@@ -29,15 +29,19 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         if let context = connectionOptions.urlContexts.first {
             logger.log("\(#function)")
-            handle(context)
-            handleInbox()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.handle(context)
+                self.handleInbox()
+            }
         }
     }
     
     func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
         logger.log("\(#function)")
-        handle(contexts.first)
-        handleInbox()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.handle(contexts.first)
+            self.handleInbox()
+        }
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
