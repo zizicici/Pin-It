@@ -66,17 +66,22 @@ class MoreViewController: UIViewController {
         
         enum AppJunItem: Hashable {
             case otherApps(AppInfo.App)
+            case more
             
             var title: String {
                 switch self {
                 case .otherApps:
                     return ""
+                case .more:
+                    return String(localized: "appjun.more")
                 }
             }
             
             var value: String? {
                 switch self {
                 case .otherApps:
+                    return nil
+                case .more:
                     return nil
                 }
             }
@@ -140,13 +145,7 @@ class MoreViewController: UIViewController {
         configureDataSource()
         reloadData()
         
-        if Store.shared.membershipDisplayPrice() == nil {
-            Store.shared.retryRequestProducts()
-        }
-        
-        NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .SettingsUpdate, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .DatabaseUpdated, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .StoreInfoLoaded, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -191,6 +190,15 @@ class MoreViewController: UIViewController {
                     }
                     cell.accessoryType = .disclosureIndicator
                     return cell
+                case .more:
+                    let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                    cell.accessoryType = .disclosureIndicator
+                    var content = UIListContentConfiguration.valueCell()
+                    content.text = identifier.title
+                    content.textProperties.color = .label
+                    content.secondaryText = item.value
+                    cell.contentConfiguration = content
+                    return cell
                 }
             case .about(let item):
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
@@ -210,11 +218,17 @@ class MoreViewController: UIViewController {
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         
         snapshot.appendSections([.appjun])
-        var appItems: [Item] = [.appjun(.otherApps(.offDay)), .appjun(.otherApps(.tagDay)), .appjun(.otherApps(.moontake)), .appjun(.otherApps(.coconut)), .appjun(.otherApps(.lemon)), .appjun(.otherApps(.pigeon))]
+        var appItems: [Item] = [.appjun(.otherApps(.coconut))]
+        
+        var otherApps: [App] = [.moontake, .lemon, .offDay, .tagDay, .one, .pigeon]
+        
         if Language.type() == .zh {
-            appItems.append(.appjun(.otherApps(.festivals)))
+            otherApps.append(.festivals)
         }
-        appItems.append(.appjun(.otherApps(.one)))
+        
+        appItems.append(contentsOf: otherApps.randomElements(2).map{ Item.appjun(.otherApps($0)) })
+        appItems.append(.appjun(.more))
+        
         snapshot.appendItems(appItems, toSection: .appjun)
         
         snapshot.appendSections([.about])
@@ -235,6 +249,8 @@ extension MoreViewController: UITableViewDelegate {
                 switch item {
                 case .otherApps(let app):
                     openStorePage(for: app)
+                case .more:
+                    openStoreDeveloperPage()
                 }
             case .about(let item):
                 switch item {
@@ -315,6 +331,16 @@ extension MoreViewController {
         }
     }
     
+    func openStoreDeveloperPage() {
+        guard let appStoreURL = URL(string: "https://apps.apple.com/developer/zizicici-limited/id1564555697") else {
+            return
+        }
+        
+        if UIApplication.shared.canOpenURL(appStoreURL) {
+            UIApplication.shared.open(appStoreURL, options: [:], completionHandler: nil)
+        }
+    }
+    
     func openAppStoreForReview() {
         guard let appStoreURL = URL(string: "itms-apps://itunes.apple.com/app/id6753946385?action=write-review") else {
             return
@@ -379,5 +405,15 @@ extension UIViewController {
         if let url = URL(string: "https://www.xiaohongshu.com/user/profile/63f05fc5000000001001e524") {
             openSF(with: url)
         }
+    }
+}
+
+extension Array {
+    /// 随机获取指定数量的不重复元素
+    func randomElements(_ count: Int) -> [Element] {
+        guard count <= self.count else {
+            return self.shuffled()
+        }
+        return Array(self.shuffled().prefix(count))
     }
 }
