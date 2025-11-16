@@ -18,6 +18,7 @@ struct PinContentView: View {
         ZStack {
             Image("Clear")
                 .resizable()
+                .privacySensitive(false)
             if context.state.total == 0 {
                 AutoSizeText(text: String(localized: "content.no"))
             } else {
@@ -274,6 +275,7 @@ struct BoardMediumView: View {
                         .rotationEffect(Angle.degrees(-45.0))
                 }
                 .tint(.red)
+                .privacySensitive(false)
                 
                 Spacer(minLength: 4.0)
                 
@@ -282,6 +284,7 @@ struct BoardMediumView: View {
                 }
                 .buttonStyle(.borderless)
                 .tint(.secondary)
+                .privacySensitive(false)
                 
                 Spacer().frame(height: 4.0)
             }
@@ -312,6 +315,7 @@ struct BoardMediumView: View {
                         .frame(minHeight: 21.0)
                 }
                 .tint(.primary)
+                .privacySensitive(false)
                 
                 Spacer(minLength: 18.0)
                     .frame(maxHeight: .infinity)
@@ -328,6 +332,7 @@ struct BoardMediumView: View {
                         .frame(minHeight: 21.0)
                 }
                 .tint(.primary)
+                .privacySensitive(false)
             }
             .padding(12.0)
         }
