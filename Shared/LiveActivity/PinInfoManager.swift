@@ -9,10 +9,37 @@ import Foundation
 import UIKit
 import ActivityKit
 
+extension UserDefaults {
+    enum PinInfo: String {
+        case PageIndex = "com.zizicici.pin.pinInfo.pageIndex"
+    }
+}
+
+struct PinInfoPageIndex {
+    static let key: String = UserDefaults.PinInfo.PageIndex.rawValue
+    
+    static func getValue() -> Int {
+        if let intValue = UserDefaults(suiteName: appGroupId)?.getInt(forKey: key) {
+            return intValue
+        } else {
+            return 0
+        }
+    }
+    
+    static func setValue(_ value: Int) {
+        UserDefaults(suiteName: appGroupId)?.set(value, forKey: key)
+        UserDefaults(suiteName: appGroupId)?.synchronize()
+    }
+}
+
 class PinInfoManager: NSObject {
     static let shared = PinInfoManager()
     
-    private(set) var current: Int = 0
+    private(set) var current: Int = PinInfoPageIndex.getValue() {
+        didSet {
+            PinInfoPageIndex.setValue(current)
+        }
+    }
     private(set) var posts: [SyncPost] = [] {
         didSet {
             if oldValue != posts {
@@ -28,6 +55,8 @@ class PinInfoManager: NSObject {
     
     override init() {
         super.init()
+        
+        updatePosts()
         
         NotificationCenter.default.addObserver(self, selector: #selector(updatePosts), name: .SyncDataUpdated, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(updatePin), name: .SettingsUpdate, object: nil)
