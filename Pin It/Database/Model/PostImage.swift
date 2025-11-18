@@ -7,6 +7,7 @@
 
 import Foundation
 import GRDB
+import UIKit
 
 struct PostImage: Identifiable, Hashable, Codable {
     var id: Int64?
@@ -64,6 +65,32 @@ extension PostImage {
     var originalURL: URL? {
         if let path = ImageCacheManager.shared.getPath(name: original, type: .original) {
             return URL(filePath: path)
+        } else {
+            return nil
+        }
+    }
+    
+    var processedURL: URL? {
+        if let path = ImageCacheManager.shared.getPath(name: processed, type: .processed) {
+            return URL(filePath: path)
+        } else {
+            return nil
+        }
+    }
+}
+
+extension PostImage {
+    func getOriginalImage() -> UIImage? {
+        if let url = originalURL, let data = try? Data(contentsOf: url) {
+            return UIImage(data: data)
+        } else {
+            return nil
+        }
+    }
+    
+    func getProcessedImage() -> UIImage? {
+        if let url = processedURL, let data = try? Data(contentsOf: url) {
+            return UIImage(data: data)
         } else {
             return nil
         }

@@ -10,6 +10,7 @@ import SnapKit
 import PhotosUI
 import CropViewController
 import TipKit
+import JXPhotoBrowser
 
 class MainViewController: UIViewController {
     private var collectionView: UICollectionView!
@@ -170,8 +171,10 @@ class MainViewController: UIViewController {
     }
     
     func addAction(text: String) {
-        let editorViewController = EditorViewController(postText: PostText(postId: -1, content: text, order: 0)) { postText in
-            _ = DataManager.shared.createPost(content: postText.content)
+        let editorViewController = EditorViewController(postDetail: Post.Detail(post: Post.placeholder, images: [], texts: [PostText(postId: -1, content: text, order: 0)])) { detail in
+            if let postText = detail.texts.first {
+                _ = DataManager.shared.createPost(content: postText.content)
+            }
         }
         
         navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
@@ -568,53 +571,54 @@ extension MainViewController: PostCellDelegate {
     }
     
     func tap(for post: Post.Detail) {
-        if let text = post.texts.first {
-            enterDetail(for: text)
-        } else if let image = post.images.first {
-            enterDetail(for: image)
+        switch post.detailType {
+        case .text:
+            enterTextDetail(for: post)
+        case .image:
+            enterImageDetail(for: post)
         }
     }
 }
 
 extension MainViewController {
-    func enterDetail(for text: PostText) {
+    func enterTextDetail(for detail: Post.Detail) {
+        guard let text = detail.texts.first else { return }
         navigationController?.dismiss(animated: ConsideringUser.animated)
         
         let textDetail = TextDetailViewController(textInfo: text)
-        textDetail.editClosure = { [weak self] postText in
-            self?.enterEditor(for: postText)
+        textDetail.editClosure = { [weak self] _ in
+            self?.edit(post: detail)
         }
         
         navigationController?.present(UINavigationController(rootViewController: textDetail), animated: ConsideringUser.animated)
     }
     
-    func enterDetail(for image: PostImage) {
-        navigationController?.dismiss(animated: ConsideringUser.animated)
-        
-        let imageDetail = ImageDetailViewController(imageInfo: image)
-        imageDetail.editClosure = { [weak self] postImage in
-            self?.enterEditor(for: postImage)
+    func enterImageDetail(for detail: Post.Detail) {
+        guard let image = detail.images.first else { return }
+        guard let originalImage = ImageCacheManager.shared.retrieveImage(fileName: image.original, type: .original) else {
+            return
         }
         
-        navigationController?.present(UINavigationController(rootViewController: imageDetail), animated: ConsideringUser.animated)
-    }
-    
-    func enterEditor(for postText: PostText) {
-        let editorViewController = EditorViewController(postText: postText) { postText in
-            let result = DataManager.shared.update(text: postText)
-            print(result)
-            if result {
-                
+        let displayImage = ImageCropper.cropImage(originalImage, to: image.rect)
+        
+        let browser = JXPhotoBrowser()
+        browser.numberOfItems = {
+            return 2
+        }
+        browser.reloadCellAtIndex = { context in
+            let browserCell = context.cell as? JXPhotoBrowserImageCell
+            if context.index == 0 {
+                browserCell?.imageView.image = displayImage
             } else {
-                
+                browserCell?.imageView.image = originalImage
             }
         }
-        
-        navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
+        browser.pageIndex = 0
+        browser.show(method: .present(fromVC: self, embed: nil))
     }
     
     func enterEditor(for postImage: PostImage) {
-        if let path = ImageCacheManager.shared.getPath(name: postImage.original, type: .original), let image = UIImage(contentsOfFile: path) {
+        if let image = postImage.getOriginalImage() {
             handle(image, postImage: postImage)
         }
     }
@@ -622,13 +626,16 @@ extension MainViewController {
 
 extension MainViewController {
     func edit(post: Post.Detail) {
-        if let postText = post.texts.first {
-            enterEditor(for: postText)
-        } else if let postImage = post.images.first {
-            enterEditor(for: postImage)
-        } else {
-            //
+        let editorViewController = EditorViewController(postDetail: post) { detail in
+            for text in detail.texts {
+                _ = DataManager.shared.update(text: text)
+            }
+            for image in detail.images {
+                _ = DataManager.shared.update(image: image)
+            }
         }
+        
+        navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
     }
     
     func deleteAction(for post: Post.Detail) {
@@ -807,8 +814,13 @@ extension MainViewController {
         let cropController = CropViewController(croppingStyle: .default, image: image)
         cropController.delegate = self
         cropController.title = String(localized: "editor.image.crop")
+        if let rect = postImage?.rect {
+            cropController.imageCropFrame = rect
+        }
         
-        present(cropController, animated: ConsideringUser.animated, completion: nil)
+        let nav = UINavigationController(rootViewController: cropController)
+        
+        present(nav, animated: ConsideringUser.animated, completion: nil)
     }
 }
 
@@ -881,5 +893,36 @@ extension MainViewController {
         if let item = item, let indexPath = dataSource.indexPath(for: item) {
             collectionView.scrollToItem(at: indexPath, at: .top, animated: true)
         }
+    }
+}
+
+extension UICollectionViewDiffableDataSource where SectionIdentifierType: Hashable, ItemIdentifierType: Hashable {
+    func findAllIndexPaths(where predicate: (ItemIdentifierType) -> Bool) -> [IndexPath] {
+        let snapshot = snapshot()
+        var results: [IndexPath] = []
+        
+        for (sectionIndex, section) in snapshot.sectionIdentifiers.enumerated() {
+            let items = snapshot.itemIdentifiers(inSection: section)
+            for (itemIndex, item) in items.enumerated() {
+                if predicate(item) {
+                    results.append(IndexPath(item: itemIndex, section: sectionIndex))
+                }
+            }
+        }
+        
+        return results
+    }
+    
+    func findFirstIndexPath(where predicate: (ItemIdentifierType) -> Bool) -> IndexPath? {
+        let snapshot = snapshot()
+        
+        for (sectionIndex, section) in snapshot.sectionIdentifiers.enumerated() {
+            let items = snapshot.itemIdentifiers(inSection: section)
+            if let itemIndex = items.firstIndex(where: predicate) {
+                return IndexPath(item: itemIndex, section: sectionIndex)
+            }
+        }
+        
+        return nil
     }
 }

@@ -44,6 +44,8 @@ struct Post: Identifiable, Hashable, Codable {
     enum CodingKeys: String, CodingKey {
         case id, creationTime = "creation_time", modificationTime = "modification_time", isPinned = "is_pinned", order
     }
+    
+    static let placeholder: Self = .init(isPinned: false, order: 0)
 }
 
 extension Post: TableRecord {
@@ -95,5 +97,20 @@ extension Post {
         formatter.timeStyle = .short
         
         return formatter.string(from: date)
+    }
+}
+
+extension Post.Detail {
+    enum DetailType {
+        case text
+        case image
+    }
+    
+    var detailType: DetailType {
+        if images.count > 0 {
+            return .image
+        } else {
+            return .text
+        }
     }
 }
