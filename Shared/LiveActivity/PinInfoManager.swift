@@ -69,6 +69,10 @@ class PinInfoManager: NSObject {
         posts = (try? getPosts()) ?? []
     }
     
+    public func resetCurrentIndex() async {
+        await updateCurrent(newValue: 0)
+    }
+    
     private func updateCurrentIfNeeded() {
         Task {
             await updateCurrent(newValue: current)

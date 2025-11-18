@@ -13,6 +13,8 @@ struct ButtonEmptyIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
+        await PinInfoManager.shared.resetCurrentIndex()
+        
         await LiveActivityManager.shared.update()
         
         return .result(value: true)
