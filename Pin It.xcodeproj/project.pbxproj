@@ -18,6 +18,7 @@
 		1481AB172E9D547800E359C9 /* Board.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1481AB032E9D547700E359C9 /* Board.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		14A187452EB20CC8008E6492 /* CropViewController in Frameworks */ = {isa = PBXBuildFile; productRef = 14A187442EB20CC8008E6492 /* CropViewController */; };
 		14AA37282EA0907300685425 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 14AA37272EA0907300685425 /* GRDB */; };
+		14AE7AD42ECB17A0006B7467 /* JXPhotoBrowser in Frameworks */ = {isa = PBXBuildFile; productRef = 14AE7AD32ECB17A0006B7467 /* JXPhotoBrowser */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -186,6 +187,7 @@
 				14558D072E9E8CE1007A67E2 /* SnapKit in Frameworks */,
 				1461E6AD2EB5EC9900E47262 /* FirebaseCrashlytics in Frameworks */,
 				1461E6AB2EB5EC9900E47262 /* FirebaseAnalytics in Frameworks */,
+				14AE7AD42ECB17A0006B7467 /* JXPhotoBrowser in Frameworks */,
 				14AA37282EA0907300685425 /* GRDB in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -271,6 +273,7 @@
 				1461E6AA2EB5EC9900E47262 /* FirebaseAnalytics */,
 				1461E6AC2EB5EC9900E47262 /* FirebaseCrashlytics */,
 				147EC1912EBF7DC000ECAB46 /* Kingfisher */,
+				14AE7AD32ECB17A0006B7467 /* JXPhotoBrowser */,
 			);
 			productName = "Pin It";
 			productReference = 1481AAB72E9D4CFD00E359C9 /* Pin It.app */;
@@ -372,6 +375,7 @@
 				147F4C3C2EAE7DAC00F8DD7E /* XCRemoteSwiftPackageReference "AppInfo" */,
 				1461E6A92EB5EC9900E47262 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				147EC1902EBF7DC000ECAB46 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				14AE7AD22ECB17A0006B7467 /* XCRemoteSwiftPackageReference "PhotoBrowser" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1481AAB82E9D4CFD00E359C9 /* Products */;
@@ -882,6 +886,14 @@
 				version = 7.6.1;
 			};
 		};
+		14AE7AD22ECB17A0006B7467 /* XCRemoteSwiftPackageReference "PhotoBrowser" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/JiongXing/PhotoBrowser";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.6;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -919,6 +931,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 14AA37262EA0907300685425 /* XCRemoteSwiftPackageReference "GRDB" */;
 			productName = GRDB;
+		};
+		14AE7AD32ECB17A0006B7467 /* JXPhotoBrowser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 14AE7AD22ECB17A0006B7467 /* XCRemoteSwiftPackageReference "PhotoBrowser" */;
+			productName = JXPhotoBrowser;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
