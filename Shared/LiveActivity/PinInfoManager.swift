@@ -35,6 +35,8 @@ struct PinInfoPageIndex {
 class PinInfoManager: NSObject {
     static let shared = PinInfoManager()
     
+    private var updateDebounce: Debounce<Int>!
+    
     private(set) var current: Int = PinInfoPageIndex.getValue() {
         didSet {
             PinInfoPageIndex.setValue(current)
@@ -44,11 +46,7 @@ class PinInfoManager: NSObject {
         didSet {
             if oldValue != posts {
                 updateCurrentIfNeeded()
-            }
-            if posts.count > 0, AutoStartLiveActivity.current == .withContent {
-                Task {
-                    await LiveActivityManager.shared.start()
-                }
+                updateDebounce.emit(value: 0)
             }
         }
     }
@@ -56,12 +54,24 @@ class PinInfoManager: NSObject {
     override init() {
         super.init()
         
+        updateDebounce = Debounce(duration: 0.1, block: { [weak self] _ in
+            self?.commitUpdate()
+        })
+        
         updatePosts()
         
         NotificationCenter.default.addObserver(self, selector: #selector(updatePosts), name: .SyncDataUpdated, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(updatePin), name: .SettingsUpdate, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(restartPin), name: .LifetimeMembership, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(showPinIfNeeded), name: UIApplication.didBecomeActiveNotification, object: nil)
+    }
+    
+    private func commitUpdate() {
+        if posts.count > 0, AutoStartLiveActivity.current == .withContent {
+            Task {
+                await LiveActivityManager.shared.start()
+            }
+        }
     }
     
     @objc
@@ -95,7 +105,7 @@ class PinInfoManager: NSObject {
             switch AutoStartLiveActivity.current {
             case .withContent:
                 if posts.count > 0 {
-                    await LiveActivityManager.shared.start()
+                    updateDebounce.emit(value: 0)
                 } else {
                     await LiveActivityManager.shared.update()
                 }

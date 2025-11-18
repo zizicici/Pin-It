@@ -130,6 +130,7 @@
 			membershipExceptions = (
 				AppIntents/StartIntent.swift,
 				Extension/AppColor.swift,
+				Extension/Debounce.swift,
 				More/Store.swift,
 				Resource/Assets.xcassets,
 				Settings/Settings.swift,
