@@ -1,5 +1,5 @@
 {
-  "originHash" : "3703bb7c4ab924febe92443f8cdf6dbd89694025e4484984df03559a36ccfd33",
+  "originHash" : "f02486f1c1159e53faa1e11db3a172708fdb43e9c59cd26aea9c3760bf0648ae",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -179,6 +179,15 @@
       "state" : {
         "revision" : "4901016b791bf2dab2a660125463e230d7298214",
         "version" : "3.0.0"
+      }
+    },
+    {
+      "identity" : "zccalendar",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/zizicici/ZCCalendar",
+      "state" : {
+        "revision" : "baee2f449501dc48317156c8c1ce2c6cac85b598",
+        "version" : "0.1.4"
       }
     }
   ],

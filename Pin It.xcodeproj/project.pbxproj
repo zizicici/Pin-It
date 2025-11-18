@@ -16,6 +16,7 @@
 		1481AB062E9D547700E359C9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1481AB052E9D547700E359C9 /* WidgetKit.framework */; };
 		1481AB082E9D547700E359C9 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1481AB072E9D547700E359C9 /* SwiftUI.framework */; };
 		1481AB172E9D547800E359C9 /* Board.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1481AB032E9D547700E359C9 /* Board.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		1484F81D2ECCB01800802024 /* ZCCalendar in Frameworks */ = {isa = PBXBuildFile; productRef = 1484F81C2ECCB01800802024 /* ZCCalendar */; };
 		14A187452EB20CC8008E6492 /* CropViewController in Frameworks */ = {isa = PBXBuildFile; productRef = 14A187442EB20CC8008E6492 /* CropViewController */; };
 		14AA37282EA0907300685425 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 14AA37272EA0907300685425 /* GRDB */; };
 		14AE7AD42ECB17A0006B7467 /* JXPhotoBrowser in Frameworks */ = {isa = PBXBuildFile; productRef = 14AE7AD32ECB17A0006B7467 /* JXPhotoBrowser */; };
@@ -186,6 +187,7 @@
 				14A187452EB20CC8008E6492 /* CropViewController in Frameworks */,
 				147EC1922EBF7DC000ECAB46 /* Kingfisher in Frameworks */,
 				14558D072E9E8CE1007A67E2 /* SnapKit in Frameworks */,
+				1484F81D2ECCB01800802024 /* ZCCalendar in Frameworks */,
 				1461E6AD2EB5EC9900E47262 /* FirebaseCrashlytics in Frameworks */,
 				1461E6AB2EB5EC9900E47262 /* FirebaseAnalytics in Frameworks */,
 				14AE7AD42ECB17A0006B7467 /* JXPhotoBrowser in Frameworks */,
@@ -275,6 +277,7 @@
 				1461E6AC2EB5EC9900E47262 /* FirebaseCrashlytics */,
 				147EC1912EBF7DC000ECAB46 /* Kingfisher */,
 				14AE7AD32ECB17A0006B7467 /* JXPhotoBrowser */,
+				1484F81C2ECCB01800802024 /* ZCCalendar */,
 			);
 			productName = "Pin It";
 			productReference = 1481AAB72E9D4CFD00E359C9 /* Pin It.app */;
@@ -377,6 +380,7 @@
 				1461E6A92EB5EC9900E47262 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				147EC1902EBF7DC000ECAB46 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				14AE7AD22ECB17A0006B7467 /* XCRemoteSwiftPackageReference "PhotoBrowser" */,
+				1484F81B2ECCB01800802024 /* XCRemoteSwiftPackageReference "ZCCalendar" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1481AAB82E9D4CFD00E359C9 /* Products */;
@@ -879,6 +883,14 @@
 				minimumVersion = 1.2.0;
 			};
 		};
+		1484F81B2ECCB01800802024 /* XCRemoteSwiftPackageReference "ZCCalendar" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/zizicici/ZCCalendar";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.4;
+			};
+		};
 		14AA37262EA0907300685425 /* XCRemoteSwiftPackageReference "GRDB" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/groue/GRDB.swift";
@@ -922,6 +934,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 147F4C3C2EAE7DAC00F8DD7E /* XCRemoteSwiftPackageReference "AppInfo" */;
 			productName = AppInfo;
+		};
+		1484F81C2ECCB01800802024 /* ZCCalendar */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1484F81B2ECCB01800802024 /* XCRemoteSwiftPackageReference "ZCCalendar" */;
+			productName = ZCCalendar;
 		};
 		14A187442EB20CC8008E6492 /* CropViewController */ = {
 			isa = XCSwiftPackageProductDependency;

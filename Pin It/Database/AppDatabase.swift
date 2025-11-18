@@ -65,6 +65,12 @@ final class AppDatabase {
             }
         }
         
+        migrator.registerMigration("post____expiration___time") { db in
+            try db.alter(table: "post") { table in
+                table.add(column: "expiration_time", .integer)
+            }
+        }
+        
         return migrator
     }
     

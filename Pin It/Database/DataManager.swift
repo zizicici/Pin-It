@@ -131,7 +131,7 @@ final class DataManager {
         return result
     }
     
-    public func createPost(content: String, isPinned: Bool = true) -> Post? {
+    public func createPost(content: String, isPinned: Bool = true, expirationTime: Int64? = nil) -> Post? {
         // Fetch Last Post
         switch MaxPinnedPosts.current {
         case .unlimited:
@@ -142,7 +142,7 @@ final class DataManager {
             }
         }
         let newOrder = getNewOrder(isPinned: true)
-        let newPost = Post(isPinned: isPinned, order: newOrder)
+        let newPost = Post(expirationTime: expirationTime, isPinned: isPinned, order: newOrder)
         guard let savedPost = AppDatabase.shared.add(post: newPost), let id = savedPost.id else {
             return nil
         }
@@ -206,6 +206,10 @@ final class DataManager {
     public func update(postIds: [Int64], isPinned: Bool) -> Bool {
         let newOrder = getNewOrder(isPinned: isPinned)
         return AppDatabase.shared.update(postIds: postIds, isPinned: isPinned, newOrder: newOrder)
+    }
+    
+    public func update(post: Post) -> Bool {
+        return AppDatabase.shared.update(post: post)
     }
     
     public func update(text: PostText) -> Bool {

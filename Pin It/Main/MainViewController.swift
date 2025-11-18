@@ -173,7 +173,7 @@ class MainViewController: UIViewController {
     func addAction(text: String) {
         let editorViewController = EditorViewController(postDetail: Post.Detail(post: Post.placeholder, images: [], texts: [PostText(postId: -1, content: text, order: 0)])) { detail in
             if let postText = detail.texts.first {
-                _ = DataManager.shared.createPost(content: postText.content)
+                _ = DataManager.shared.createPost(content: postText.content, expirationTime: detail.post.expirationTime)
             }
         }
         
@@ -633,6 +633,7 @@ extension MainViewController {
             for image in detail.images {
                 _ = DataManager.shared.update(image: image)
             }
+            _ = DataManager.shared.update(post: detail.post)
         }
         
         navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
