@@ -11,6 +11,21 @@ import GRDB
 final class DataManager {
     static let shared = DataManager()
     
+    public func fetchAllPosts() -> [Post] {
+        var result: [Post] = []
+        do {
+            try AppDatabase.shared.reader?.read{ db in
+                result = try Post
+                    .fetchAll(db)
+            }
+        }
+        catch {
+            print(error)
+        }
+        
+        return result
+    }
+    
     public func fetchAllPostDetails(isPinned: Bool) -> [Post.Detail] {
         var result: [Post.Detail] = []
         do {
@@ -23,6 +38,26 @@ final class DataManager {
                     .asRequest(of: Post.Detail.self)
                     .filter(isPinnedColumn == isPinned)
                     .order(orderColumn.desc)
+                    .fetchAll(db)
+            }
+        }
+        catch {
+            print(error)
+        }
+        
+        return result
+    }
+    
+    public func fetchAllPostDetails(by ids: [Int64]) -> [Post.Detail] {
+        var result: [Post.Detail] = []
+        do {
+            try AppDatabase.shared.reader?.read{ db in
+                let idColumn = Post.Columns.id
+                result = try Post
+                    .including(all: Post.images)
+                    .including(all: Post.texts)
+                    .asRequest(of: Post.Detail.self)
+                    .filter(ids.contains(idColumn))
                     .fetchAll(db)
             }
         }
@@ -257,6 +292,22 @@ final class DataManager {
         
         return result
     }
+    
+    public func deletePosts(by ids: [Int64]) -> Bool {
+        let details = fetchAllPostDetails(by: ids)
+        let images = details.compactMap{ $0.images }.flatMap{ $0 }
+        
+        let result = AppDatabase.shared.deletePosts(by: ids)
+        
+        if result {
+            for image in images {
+                _ = ImageCacheManager.shared.deleteImage(fileName: image.original, type: .original)
+                _ = ImageCacheManager.shared.deleteImage(fileName: image.processed, type: .processed)
+            }
+        }
+        
+        return result
+    }
 }
 
 extension DataManager {
@@ -265,6 +316,16 @@ extension DataManager {
         if reset {
             ImageCacheManager.shared.clearAllCache()
             OnboardingManager.shared.setupOnboardingDataIfNeeded()
+        }
+    }
+    
+    public func clearExpiredPosts() {
+        let expiredIds = fetchAllPosts().filter({ $0.isExpired() }).compactMap({ $0.id })
+        switch ExpirationAction.current {
+        case .unpin:
+            _ = update(postIds: expiredIds, isPinned: false)
+        case .delete:
+            _ = deletePosts(by: expiredIds)
         }
     }
 }

@@ -69,6 +69,6 @@ extension Post.Detail {
         if let content = texts.first?.content {
             syncText = String(content.prefix(160))
         }
-        return .init(id: id, text: syncText, image: images.first?.processed)
+        return .init(id: id, text: syncText, image: images.first?.processed, expirationTime: post.expirationTime)
     }
 }

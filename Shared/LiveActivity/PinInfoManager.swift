@@ -80,6 +80,7 @@ class PinInfoManager: NSObject {
     }
     
     public func resetCurrentIndex() async {
+        updatePosts()
         await updateCurrent(newValue: 0)
     }
     
@@ -132,7 +133,7 @@ class PinInfoManager: NSObject {
         let unpinIds = actionStorage?.actions.filter{ $0.actionType == .unpin }.map{ $0.id } ?? []
         
         let posts: [SyncPost] = (syncPostStorage?.posts ?? []).filter { post in
-            return !unpinIds.contains(post.id)
+            return !unpinIds.contains(post.id) && !post.isExpired()
         }
         
         return posts

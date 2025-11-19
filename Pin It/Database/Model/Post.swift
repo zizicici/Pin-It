@@ -116,3 +116,13 @@ extension Post.Detail {
         }
     }
 }
+
+extension Post {
+    func isExpired() -> Bool {
+        if let expirationTime = expirationTime {
+            return Int(Date().timeIntervalSince1970 * 1000) > expirationTime
+        } else {
+            return false
+        }
+    }
+}

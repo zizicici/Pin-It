@@ -16,6 +16,7 @@ extension UserDefaults {
         case MaxPinnedPosts = "com.zizicici.pin.settings.MaxPinnedPosts"
         case ThanksEntryState = "com.zizicici.pin.settings.ThanksEntryState"
         case DeleteOperationConfirmation = "com.zizicici.pin.settings.DeleteOperationConfirmation"
+        case ExpirationAction = "com.zizicici.pin.settings.ExpirationAction"
     }
 }
 
@@ -289,6 +290,38 @@ extension DeleteOperationConfirmation: UserDefaultSettable {
     
     static func getTitle() -> String {
         return String(localized: "settings.deleteOperationConfirmation.title")
+    }
+    
+    static func setCurrent(_ value: Self) throws {
+        setValue(value)
+    }
+}
+
+enum ExpirationAction: Int, CaseIterable, Codable {
+    case unpin = 0
+    case delete
+}
+
+extension ExpirationAction: UserDefaultSettable {
+    static func getKey() -> UserDefaults.Settings {
+        return .ExpirationAction
+    }
+    
+    static var defaultOption: Self {
+        return .unpin
+    }
+    
+    func getName() -> String {
+        switch self {
+        case .unpin:
+            return String(localized: "settings.expirationAction.unpin")
+        case .delete:
+            return String(localized: "settings.expirationAction.delete")
+        }
+    }
+    
+    static func getTitle() -> String {
+        return String(localized: "settings.expirationAction.title")
     }
     
     static func setCurrent(_ value: Self) throws {

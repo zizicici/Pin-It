@@ -15,6 +15,15 @@ struct SyncPost: Codable, Equatable {
     var id: Int64
     var text: String?
     var image: String?
+    var expirationTime: Int64?
+    
+    func isExpired() -> Bool {
+        if let expirationTime = expirationTime {
+            return Int(Date().timeIntervalSince1970 * 1000) > expirationTime
+        } else {
+            return false
+        }
+    }
 }
 
 struct SyncPostStorage: Codable {
@@ -104,7 +113,7 @@ struct SyncDataManager {
     }
     
     // MARK: - 写入数据
-    static func write<T: Codable>(_ data: T, version: DataVersion = .v1) throws {
+    static func write<T: Codable>(_ data: T, version: DataVersion = .v2) throws {
         guard let dataFileURL = dataFileURL(for: T.self) else {
             throw NSError(domain: "SyncDataError", code: -1, userInfo: [NSLocalizedDescriptionKey: "无法访问共享目录"])
         }
@@ -134,7 +143,7 @@ struct SyncDataManager {
     }
     
     // MARK: - 读取数据
-    static func read<T: Codable>(_ type: T.Type, currentVersion: DataVersion = .v1) throws -> T? {
+    static func read<T: Codable>(_ type: T.Type, currentVersion: DataVersion = .v2) throws -> T? {
         // 检查版本并执行必要的迁移
         migrateIfNeeded(to: currentVersion, for: type)
         

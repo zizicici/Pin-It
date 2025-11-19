@@ -44,6 +44,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         NotificationCenter.default.addObserver(self, selector: #selector(resetSettingsIfNeeded), name: UIApplication.didEnterBackgroundNotification, object: nil)
         
+        NotificationCenter.default.addObserver(self, selector: #selector(clearExpiredPosts), name: UIApplication.didBecomeActiveNotification, object: nil)
+        
         return true
     }
 
@@ -67,6 +69,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             try? DeleteOperationConfirmation.setCurrent(DeleteOperationConfirmation.defaultOption)
         }
         KingfisherManager.shared.cache.clearCache()
+    }
+    
+    @objc
+    func clearExpiredPosts() {
+        DataManager.shared.clearExpiredPosts()
     }
 }
 

@@ -22,6 +22,7 @@ class SettingsViewController: UIViewController {
         case general
         case automatic
         case action
+        case expiration
         case shortcuts
         case reset
         
@@ -34,6 +35,8 @@ class SettingsViewController: UIViewController {
             case .automatic:
                 return nil
             case .action:
+                return nil
+            case .expiration:
                 return nil
             case .shortcuts:
                 return String(localized: "more.section.shortcuts")
@@ -167,6 +170,7 @@ class SettingsViewController: UIViewController {
         case general(GeneralItem)
         case automatic(AutomaticItem)
         case action(ActionItem)
+        case expiration
         case shortcuts(ShortcutsItem)
         case reset
         
@@ -190,6 +194,8 @@ class SettingsViewController: UIViewController {
                 case .deletionConfirm:
                     return DeleteOperationConfirmation.getTitle()
                 }
+            case .expiration:
+                return ExpirationAction.getTitle()
             case .shortcuts(let item):
                 return item.title
             case .reset:
@@ -314,6 +320,15 @@ class SettingsViewController: UIViewController {
                 content.secondaryText = item.value
                 cell.contentConfiguration = content
                 return cell
+            case .expiration:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                cell.accessoryType = .disclosureIndicator
+                var content = UIListContentConfiguration.valueCell()
+                content.text = identifier.title
+                content.textProperties.color = .label
+                content.secondaryText = ExpirationAction.getValue().getName()
+                cell.contentConfiguration = content
+                return cell
             case .shortcuts(let item):
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
                 cell.accessoryType = .disclosureIndicator
@@ -361,6 +376,9 @@ class SettingsViewController: UIViewController {
         snapshot.appendSections([.automatic])
         snapshot.appendItems([.automatic(.autoStart(AutoStartLiveActivity.getValue())), .automatic(.autoEnd(AutoEndLiveActivity.getValue()))], toSection: .automatic)
         
+        snapshot.appendSections([.expiration])
+        snapshot.appendItems([.expiration], toSection: .expiration)
+        
         snapshot.appendSections([.shortcuts])
         if Language.type() == .zh {
             snapshot.appendItems([.shortcuts(.first), .shortcuts(.second), .shortcuts(.ai), .shortcuts(.pasteboard), .shortcuts(.copy)], toSection: .shortcuts)
@@ -403,6 +421,8 @@ extension SettingsViewController: UITableViewDelegate {
                 case .deletionConfirm:
                     enterSettings(DeleteOperationConfirmation.self)
                 }
+            case .expiration:
+                enterSettings(ExpirationAction.self)
             case .shortcuts(let item):
                 handle(shortcutsItem: item)
             case .reset:
