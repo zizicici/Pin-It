@@ -16,15 +16,20 @@ struct AddTextRecordIntent: LiveActivityIntent {
     @Parameter(title: "intent.text")
     var content: String
     
+    @Parameter(title: "intent.expirationTime")
+    var expirationTime: Date?
+    
     static var parameterSummary: some ParameterSummary {
-        Summary("intent.post.add.by.text.summary\(\.$content)")
+        Summary("intent.post.add.by.text.summary\(\.$content)") {
+            \.$expirationTime
+        }
     }
     
     static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        if let post = DataManager.shared.createPost(content: content) {
+        if let post = DataManager.shared.createPost(content: content, expirationTime: expirationTime?.nanoSecondSince1970) {
             await SyncCompletionManager.shared.waitForCompletion(postId: post.id!, timeout: 5.0)
             
             return .result(value: true)
@@ -67,22 +72,28 @@ struct AddImageRecordIntent: LiveActivityIntent {
     @Parameter(title: "intent.cropEdges", default: true)
     var cropEdges: Bool
     
+    @Parameter(title: "intent.expirationTime")
+    var expirationTime: Date?
+    
     static var parameterSummary: some ParameterSummary {
         Switch(\.$displayMode) {
             Case(.prominentNumber) {
                 Summary("intent.post.add.by.image.summary\(\.$content)") {
                     \.$displayMode
+                    \.$expirationTime
                 }
             }
             Case(.full) {
                 Summary("intent.post.add.by.image.summary\(\.$content)") {
                     \.$displayMode
+                    \.$expirationTime
                 }
             }
             DefaultCase {
                 Summary("intent.post.add.by.image.summary\(\.$content)") {
                     \.$displayMode
                     \.$cropEdges
+                    \.$expirationTime
                 }
             }
         }
@@ -124,7 +135,7 @@ struct AddImageRecordIntent: LiveActivityIntent {
             if let newImage = newImage?.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3),
                let processed = ImageCacheManager.shared.storeImage(newImage, type: .processed),
                let original = ImageCacheManager.shared.storeImage(image, type: .original),
-               let post = DataManager.shared.createPost(original: original, processed: processed, rect: imageRect, orientation: 0) {
+               let post = DataManager.shared.createPost(original: original, processed: processed, rect: imageRect, orientation: 0, expirationTime: expirationTime?.nanoSecondSince1970) {
                 await SyncCompletionManager.shared.waitForCompletion(postId: post.id!, timeout: 5.0)
                 
                 return .result(value: true)

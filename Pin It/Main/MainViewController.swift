@@ -869,7 +869,7 @@ extension MainViewController: CropViewControllerDelegate {
             }
         } else {
             if let currentImage = currentImage, let original = ImageCacheManager.shared.storeImage(currentImage, type: .original), let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
-                _ = DataManager.shared.createPost(original: original, processed: processed, rect: cropRect, orientation: angle)
+                _ = DataManager.shared.createPost(original: original, processed: processed, rect: cropRect, orientation: angle, expirationTime: nil)
             }
         }
     }

@@ -40,8 +40,8 @@ class OnboardingManager: NSObject {
     
     public func setupOnboardingDataIfNeeded() {
         if checkPostTableNeedsOnboarding() {
-            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.1"))
-            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.2"), isPinned: false)
+            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.1"), expirationTime: nil)
+            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.2"), isPinned: false, expirationTime: nil)
         }
     }
 }

@@ -23,6 +23,9 @@ struct UpdatePostTextIntent: LiveActivityIntent {
     @Parameter(title: "intent.text")
     var content: String
     
+    @Parameter(title: "intent.expirationTime")
+    var expirationTime: Date?
+    
     static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
     
     @MainActor
@@ -173,6 +176,36 @@ struct UpdatePinStateIntent: LiveActivityIntent {
         }
         
         let result = DataManager.shared.update(post: detail.post, isPinned: isPinned)
+        await SyncCompletionManager.shared.waitForCompletion(postId: Int64(post.id), timeout: 5.0)
+        
+        return .result(value: result)
+    }
+}
+
+struct UpdateExpirationTimeIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "intent.post.update.expirationTime.title"
+    
+    static var description: IntentDescription = IntentDescription("intent.post.update.expirationTime.title", categoryName: "intent.post.update.category")
+    
+    static var parameterSummary: some ParameterSummary {
+        Summary("intent.post.update.expirationTime.summary\(\.$post)\(\.$expirationTime)")
+    }
+    
+    @Parameter(title: "intent.post.type")
+    var post: PostEntity
+    
+    @Parameter(title: "intent.expirationTime")
+    var expirationTime: Date?
+    
+    static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
+    
+    @MainActor
+    func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
+        guard let detail = DataManager.shared.fetchPostDetail(for: [Int64(post.id)]).first else {
+            return .result(value: false)
+        }
+        
+        let result = DataManager.shared.update(post: detail.post, expirationTime: expirationTime?.nanoSecondSince1970)
         await SyncCompletionManager.shared.waitForCompletion(postId: Int64(post.id), timeout: 5.0)
         
         return .result(value: result)
