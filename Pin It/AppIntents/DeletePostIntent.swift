@@ -47,6 +47,8 @@ struct DeleteAllUnpinsIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
+        PostSyncManager.shared.syncAppGroupToDatabase()
+        
         let result = DataManager.shared.deleteAllUnpins()
         
         return .result(value: result)

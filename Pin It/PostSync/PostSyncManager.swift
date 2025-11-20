@@ -33,7 +33,7 @@ class PostSyncManager: NSObject {
     }
     
     @objc
-    private func syncAppGroupToDatabase() {
+    public func syncAppGroupToDatabase() {
         // App Group -> Database
         if let actionStorage = try? SyncDataManager.read(SyncActionStorage.self) {
             let unpinIds = actionStorage.actions.filter{ $0.actionType == .unpin }.map{ $0.id }
