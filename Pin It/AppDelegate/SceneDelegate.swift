@@ -84,6 +84,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 tabbarController.selectedViewController = mainNavigationController
                 if let main = (mainNavigationController as? UINavigationController)?.viewControllers.first as? MainViewController, let id = Int64(context.url.pathComponents.last ?? "") {
                     main.scrollToPost(by: id)
+                    if context.url.pathComponents.contains("detail") {
+                        main.viewDetail(for: id)
+                    }
                 }
             case .none:
                 tabbarController.selectedViewController = tabbarController.viewControllers?

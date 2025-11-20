@@ -26,10 +26,12 @@ struct PinContentView: View {
                     AutoSizeText(text: text)
                 } else if let imageName = context.state.imageName {
                     if let path = ImageCacheManager.shared.getPath(name: imageName, type: .processed), let image = UIImage(contentsOfFile: path) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                        Link(destination: URL(string: BoardLiveActivity.url + "/detail/" + "\(context.state.id)")!) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                        }
                     } else {
                         AutoSizeText(text: String(localized: "content.error.load"))
                     }

@@ -578,6 +578,14 @@ extension MainViewController: PostCellDelegate {
             enterImageDetail(for: post)
         }
     }
+    
+    public func viewDetail(for id: Int64) {
+        guard let detail = DataManager.shared.fetchPostDetail(for: [id]).first else { return }
+        
+        navigationController?.dismiss(animated: false)
+        
+        enterImageDetail(for: detail)
+    }
 }
 
 extension MainViewController {
