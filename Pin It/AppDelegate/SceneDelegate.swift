@@ -10,6 +10,14 @@ import os.log
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
+    var pendingDeepLink: URL? {
+        didSet {
+            if isAppReady {
+                processPendingDeepLink()
+            }
+        }
+    }
+    var isAppReady = false
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
@@ -29,19 +37,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         if let context = connectionOptions.urlContexts.first {
             logger.log("\(#function)")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.handle(context)
-                self.handleInbox()
-            }
+            pendingDeepLink = context.url
         }
     }
     
     func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
         logger.log("\(#function)")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.handle(contexts.first)
-            self.handleInbox()
-        }
+        pendingDeepLink = contexts.first?.url
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -54,6 +56,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneDidBecomeActive(_ scene: UIScene) {
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
+        isAppReady = true
+        
+        processPendingDeepLink()
+        handleInbox()
     }
 
     func sceneWillResignActive(_ scene: UIScene) {
@@ -72,9 +78,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // to restore the scene back to its current state.
     }
     
-    func handle(_ context: UIOpenURLContext?) {
-        guard let context = context else { return }
-        if context.url.absoluteString.starts(with: BoardLiveActivity.url) {
+    private func processPendingDeepLink() {
+        guard let url = pendingDeepLink else { return }
+        pendingDeepLink = nil
+        handle(url)
+    }
+    
+    func handle(_ url: URL) {
+        if url.absoluteString.starts(with: BoardLiveActivity.url) {
             guard let tabbarController = window?.rootViewController as? UITabBarController else { return }
             
             switch User.shared.proTier() {
@@ -82,9 +93,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 let mainNavigationController = tabbarController.viewControllers?
                     .first { ($0 as? UINavigationController)?.viewControllers.first is MainViewController }
                 tabbarController.selectedViewController = mainNavigationController
-                if let main = (mainNavigationController as? UINavigationController)?.viewControllers.first as? MainViewController, let id = Int64(context.url.pathComponents.last ?? "") {
+                if let main = (mainNavigationController as? UINavigationController)?.viewControllers.first as? MainViewController, let id = Int64(url.pathComponents.last ?? "") {
                     main.scrollToPost(by: id)
-                    if context.url.pathComponents.contains("detail") {
+                    if url.pathComponents.contains("detail") {
                         main.viewDetail(for: id)
                     }
                 }
