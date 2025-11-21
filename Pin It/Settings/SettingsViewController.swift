@@ -22,7 +22,7 @@ class SettingsViewController: UIViewController {
         case general
         case automatic
         case action
-        case expiration
+        case advanced
         case shortcuts
         case reset
         
@@ -36,7 +36,7 @@ class SettingsViewController: UIViewController {
                 return nil
             case .action:
                 return nil
-            case .expiration:
+            case .advanced:
                 return nil
             case .shortcuts:
                 return String(localized: "more.section.shortcuts")
@@ -165,12 +165,26 @@ class SettingsViewController: UIViewController {
             }
         }
         
+        enum AdvancedItem: Hashable {
+            case expirationAction(ExpirationAction)
+            case expirationTime(DefaultExpirationTime)
+            
+            var value: String {
+                switch self {
+                case .expirationAction(let value):
+                    return value.getName()
+                case .expirationTime(let value):
+                    return value.getName()
+                }
+            }
+        }
+        
         case promotion(String)
         case thanks
         case general(GeneralItem)
         case automatic(AutomaticItem)
         case action(ActionItem)
-        case expiration
+        case advanced(AdvancedItem)
         case shortcuts(ShortcutsItem)
         case reset
         
@@ -194,8 +208,13 @@ class SettingsViewController: UIViewController {
                 case .deletionConfirm:
                     return DeleteOperationConfirmation.getTitle()
                 }
-            case .expiration:
-                return ExpirationAction.getTitle()
+            case .advanced(let item):
+                switch item {
+                case .expirationAction:
+                    return ExpirationAction.getTitle()
+                case .expirationTime:
+                    return DefaultExpirationTime.getTitle()
+                }
             case .shortcuts(let item):
                 return item.title
             case .reset:
@@ -320,13 +339,13 @@ class SettingsViewController: UIViewController {
                 content.secondaryText = item.value
                 cell.contentConfiguration = content
                 return cell
-            case .expiration:
+            case .advanced(let item):
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
                 cell.accessoryType = .disclosureIndicator
                 var content = UIListContentConfiguration.valueCell()
                 content.text = identifier.title
                 content.textProperties.color = .label
-                content.secondaryText = ExpirationAction.getValue().getName()
+                content.secondaryText = item.value
                 cell.contentConfiguration = content
                 return cell
             case .shortcuts(let item):
@@ -376,8 +395,8 @@ class SettingsViewController: UIViewController {
         snapshot.appendSections([.automatic])
         snapshot.appendItems([.automatic(.autoStart(AutoStartLiveActivity.getValue())), .automatic(.autoEnd(AutoEndLiveActivity.getValue()))], toSection: .automatic)
         
-        snapshot.appendSections([.expiration])
-        snapshot.appendItems([.expiration], toSection: .expiration)
+        snapshot.appendSections([.advanced])
+        snapshot.appendItems([.advanced(.expirationAction(ExpirationAction.getValue())), .advanced(.expirationTime(DefaultExpirationTime.getValue()))], toSection: .advanced)
         
         snapshot.appendSections([.shortcuts])
         if Language.type() == .zh {
@@ -421,8 +440,13 @@ extension SettingsViewController: UITableViewDelegate {
                 case .deletionConfirm:
                     enterSettings(DeleteOperationConfirmation.self)
                 }
-            case .expiration:
-                enterSettings(ExpirationAction.self)
+            case .advanced(let item):
+                switch item {
+                case .expirationAction:
+                    enterSettings(ExpirationAction.self)
+                case .expirationTime:
+                    enterSettings(DefaultExpirationTime.self)
+                }
             case .shortcuts(let item):
                 handle(shortcutsItem: item)
             case .reset:

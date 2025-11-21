@@ -171,7 +171,7 @@ class MainViewController: UIViewController {
     }
     
     func addAction(text: String) {
-        let editorViewController = EditorViewController(postDetail: Post.Detail(post: Post.placeholder, images: [], texts: [PostText(postId: -1, content: text, order: 0)])) { detail in
+        let editorViewController = EditorViewController(postDetail: Post.Detail(post: Post.placeholder(), images: [], texts: [PostText(postId: -1, content: text, order: 0)])) { detail in
             if let postText = detail.texts.first {
                 _ = DataManager.shared.createPost(content: postText.content, expirationTime: detail.post.expirationTime)
             }
@@ -877,7 +877,7 @@ extension MainViewController: CropViewControllerDelegate {
             }
         } else {
             if let currentImage = currentImage, let original = ImageCacheManager.shared.storeImage(currentImage, type: .original), let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
-                _ = DataManager.shared.createPost(original: original, processed: processed, rect: cropRect, orientation: angle, expirationTime: nil)
+                _ = DataManager.shared.createPost(original: original, processed: processed, rect: cropRect, orientation: angle, expirationTime: Post.getDefaultExpirationTime())
             }
         }
     }

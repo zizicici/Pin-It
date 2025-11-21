@@ -39,7 +39,11 @@ class EditorViewController: UIViewController {
                 expirationTime = nil
             } else {
                 if expirationTime == nil {
-                    expirationTime = Int64(Date().combine(with: day).timeIntervalSince1970) / 60 * 60 * 1000
+                    if let postDefaultExpirationTime = Post.getDefaultExpirationTime() {
+                        expirationTime = postDefaultExpirationTime
+                    } else {
+                        expirationTime = Int64(Date().combine(with: day).timeIntervalSince1970) / 60 * 60 * 1000
+                    }
                 }
             }
             reloadData()

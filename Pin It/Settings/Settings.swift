@@ -17,6 +17,7 @@ extension UserDefaults {
         case ThanksEntryState = "com.zizicici.pin.settings.ThanksEntryState"
         case DeleteOperationConfirmation = "com.zizicici.pin.settings.DeleteOperationConfirmation"
         case ExpirationAction = "com.zizicici.pin.settings.ExpirationAction"
+        case DefaultExpirationTime = "com.zizicici.pin.settings.DefaultExpirationTime"
     }
 }
 
@@ -326,6 +327,79 @@ extension ExpirationAction: UserDefaultSettable {
     
     static func setCurrent(_ value: Self) throws {
         setValue(value)
+    }
+    
+    static func getFooter() -> String? {
+        return String(localized: "settings.expirationAction.footer")
+    }
+}
+
+enum DefaultExpirationTime: Int, CaseIterable, Codable {
+    case `none` = -1
+    case min5 = 300
+    case min10 = 600
+    case min30 = 1800
+    case hour1 = 3600
+    case hour6 = 21600
+    case hour12 = 43200
+    case day1 = 86400
+    case day2 = 172800
+    case day3 = 259200
+    case day4 = 345600
+    case day5 = 432000
+    case day6 = 518400
+    case day7 = 604800
+
+    var duration: Duration? {
+        if rawValue > 0 {
+            return Duration.seconds(rawValue)
+        } else {
+            return nil
+        }
+    }
+    
+    func localized() -> String? {
+        guard let duration = duration else {
+            return nil
+        }
+        let formatter = DateComponentsFormatter()
+        formatter.unitsStyle = .full
+        formatter.allowedUnits = [.day, .hour, .minute]
+        formatter.maximumUnitCount = 2
+        
+        let totalSeconds = duration.components.seconds
+        return formatter.string(from: TimeInterval(totalSeconds))
+    }
+}
+
+extension DefaultExpirationTime: UserDefaultSettable {
+    static func getKey() -> UserDefaults.Settings {
+        return .DefaultExpirationTime
+    }
+    
+    static var defaultOption: Self {
+        return .none
+    }
+    
+    func getName() -> String {
+        switch self {
+        case .none:
+            return String(localized: "settings.defaultExpirationTime.none")
+        default:
+            return localized() ?? ""
+        }
+    }
+    
+    static func getTitle() -> String {
+        return String(localized: "settings.defaultExpirationTime.title")
+    }
+    
+    static func setCurrent(_ value: Self) throws {
+        setValue(value)
+    }
+    
+    static func getFooter() -> String? {
+        return String(localized: "settings.defaultExpirationTime.footer")
     }
 }
 

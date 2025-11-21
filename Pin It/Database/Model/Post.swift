@@ -46,8 +46,6 @@ struct Post: Identifiable, Hashable, Codable {
     enum CodingKeys: String, CodingKey {
         case id, creationTime = "creation_time", modificationTime = "modification_time", expirationTime = "expiration_time", isPinned = "is_pinned", order
     }
-    
-    static let placeholder: Self = .init(isPinned: false, order: 0)
 }
 
 extension Post: TableRecord {
@@ -124,5 +122,17 @@ extension Post {
         } else {
             return false
         }
+    }
+    
+    static func placeholder() -> Post {
+        return .init(expirationTime: getDefaultExpirationTime(), isPinned: false, order: 0)
+    }
+    
+    static func getDefaultExpirationTime() -> Int64? {
+        guard DefaultExpirationTime.current.duration != nil else {
+            return nil
+        }
+        let seconds = DefaultExpirationTime.current.rawValue
+        return Date(timeIntervalSinceNow: TimeInterval(seconds)).nanoSecondSince1970
     }
 }
