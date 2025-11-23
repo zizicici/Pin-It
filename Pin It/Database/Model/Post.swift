@@ -83,7 +83,7 @@ extension Post {
         guard let modificationTime = modificationTime else { return "" }
         let date = Date(timeIntervalSince1970: Double(modificationTime) / 1000.0)
         
-        formatter.dateStyle = .short
+        formatter.dateStyle = .medium
         formatter.timeStyle = .short
         
         return formatter.string(from: date)
@@ -93,7 +93,7 @@ extension Post {
         guard let creationTime = creationTime else { return "" }
         let date = Date(timeIntervalSince1970: Double(creationTime) / 1000.0)
         
-        formatter.dateStyle = .short
+        formatter.dateStyle = .medium
         formatter.timeStyle = .short
         
         return formatter.string(from: date)
