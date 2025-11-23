@@ -687,8 +687,8 @@ extension MainViewController {
         alertController.addAction(deleteAction)
 
         if let popoverController = alertController.popoverPresentationController {
-            popoverController.sourceView = cell
-            popoverController.sourceRect = cell.frame
+            popoverController.sourceView = cell.photoBrowser?.browserView
+            popoverController.sourceRect = cell.photoBrowser?.browserView.frame ?? .zero
         }
         
         cell.photoBrowser?.present(alertController, animated: ConsideringUser.animated, completion: nil)
