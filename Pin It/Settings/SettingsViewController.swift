@@ -23,6 +23,7 @@ class SettingsViewController: UIViewController {
         case automatic
         case action
         case advanced
+        case style
         case shortcuts
         case reset
         
@@ -38,6 +39,8 @@ class SettingsViewController: UIViewController {
                 return nil
             case .advanced:
                 return nil
+            case .style:
+                return String(localized: "more.section.style")
             case .shortcuts:
                 return String(localized: "more.section.shortcuts")
             case .reset:
@@ -185,6 +188,8 @@ class SettingsViewController: UIViewController {
         case automatic(AutomaticItem)
         case action(ActionItem)
         case advanced(AdvancedItem)
+        case style(PostStyle)
+        case addStyle
         case shortcuts(ShortcutsItem)
         case reset
         
@@ -215,6 +220,10 @@ class SettingsViewController: UIViewController {
                 case .expirationTime:
                     return DefaultExpirationTime.getTitle()
                 }
+            case .style(let style):
+                return style.name
+            case .addStyle:
+                return String(localized: "style.add")
             case .shortcuts(let item):
                 return item.title
             case .reset:
@@ -348,6 +357,24 @@ class SettingsViewController: UIViewController {
                 content.secondaryText = item.value
                 cell.contentConfiguration = content
                 return cell
+            case .style:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                cell.accessoryType = .disclosureIndicator
+                var content = UIListContentConfiguration.valueCell()
+                content.text = identifier.title
+                content.textProperties.color = .label
+                content.secondaryText = nil
+                cell.contentConfiguration = content
+                return cell
+            case .addStyle:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                cell.accessoryType = .none
+                var content = UIListContentConfiguration.subtitleCell()
+                content.text = identifier.title
+                content.textProperties.color = .systemRed
+                content.textProperties.alignment = .center
+                cell.contentConfiguration = content
+                return cell
             case .shortcuts(let item):
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
                 cell.accessoryType = .disclosureIndicator
@@ -398,6 +425,11 @@ class SettingsViewController: UIViewController {
         snapshot.appendSections([.advanced])
         snapshot.appendItems([.advanced(.expirationAction(ExpirationAction.getValue())), .advanced(.expirationTime(DefaultExpirationTime.getValue()))], toSection: .advanced)
         
+        let styles = DataManager.shared.fetchAllStyles()
+        snapshot.appendSections([.style])
+        snapshot.appendItems(styles.map{ Item.style($0) }, toSection: .style)
+        snapshot.appendItems([Item.addStyle], toSection: .style)
+
         snapshot.appendSections([.shortcuts])
         if Language.type() == .zh {
             snapshot.appendItems([.shortcuts(.first), .shortcuts(.second), .shortcuts(.ai), .shortcuts(.pasteboard), .shortcuts(.copy)], toSection: .shortcuts)
@@ -447,12 +479,26 @@ extension SettingsViewController: UITableViewDelegate {
                 case .expirationTime:
                     enterSettings(DefaultExpirationTime.self)
                 }
+            case .style(let style):
+                enterStyleDetail(for: style)
+            case .addStyle:
+                addStyle()
             case .shortcuts(let item):
                 handle(shortcutsItem: item)
             case .reset:
                 showResetAlert()
             }
         }
+    }
+}
+
+extension SettingsViewController {
+    func enterStyleDetail(for style: PostStyle) {
+        
+    }
+    
+    func addStyle() {
+        
     }
 }
 

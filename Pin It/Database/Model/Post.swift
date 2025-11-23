@@ -13,6 +13,7 @@ struct Post: Identifiable, Hashable, Codable {
         var post: Post
         var images: [PostImage]
         var texts: [PostText]
+        var style: PostStyle?
         
         var title: String {
             return texts.first?.content ?? ""
@@ -74,6 +75,10 @@ extension Post {
     var texts: QueryInterfaceRequest<PostText> {
         request(for: Post.texts)
     }
+}
+
+extension Post {
+    static let decoration = hasOne(PostDecoration.self)
 }
 
 let formatter = DateFormatter()

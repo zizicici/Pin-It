@@ -10408,6 +10408,16 @@
         }
       }
     },
+    "more.section.style" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "样式"
+          }
+        }
+      }
+    },
     "onboarding.message.1" : {
       "localizations" : {
         "ar" : {
@@ -10604,6 +10614,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "點按訊息旁的圖釘按鈕，即可切換其狀態"
+          }
+        }
+      }
+    },
+    "onboarding.style.1" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "默认样式"
+          }
+        }
+      }
+    },
+    "onboarding.style.2" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "透明按钮样式"
           }
         }
       }
@@ -17712,6 +17742,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "致謝"
+          }
+        }
+      }
+    },
+    "style.add" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "增加样式"
           }
         }
       }

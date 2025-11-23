@@ -35,6 +35,8 @@ final class DataManager {
                 result = try Post
                     .including(all: Post.images)
                     .including(all: Post.texts)
+                    .including(optional: Post.decoration
+                        .including(optional: PostDecoration.style))
                     .asRequest(of: Post.Detail.self)
                     .filter(isPinnedColumn == isPinned)
                     .order(orderColumn.desc)
@@ -56,6 +58,8 @@ final class DataManager {
                 result = try Post
                     .including(all: Post.images)
                     .including(all: Post.texts)
+                    .including(optional: Post.decoration
+                        .including(optional: PostDecoration.style))
                     .asRequest(of: Post.Detail.self)
                     .filter(ids.contains(idColumn))
                     .fetchAll(db)
@@ -92,6 +96,8 @@ final class DataManager {
                 result = try Post
                     .including(all: Post.images)
                     .including(all: Post.texts)
+                    .including(optional: Post.decoration
+                        .including(optional: PostDecoration.style))
                     .asRequest(of: Post.Detail.self)
                     .filter(ids.contains(idColumn))
                     .fetchAll(db)
@@ -112,6 +118,8 @@ final class DataManager {
                 result = try Post
                     .including(all: Post.images)
                     .including(all: Post.texts)
+                    .including(optional: Post.decoration
+                        .including(optional: PostDecoration.style))
                     .asRequest(of: Post.Detail.self)
                     .filter(idColumn == id)
                     .fetchOne(db)
@@ -314,6 +322,46 @@ final class DataManager {
         post.expirationTime = expirationTime
         
         return update(post: post)
+    }
+}
+
+extension DataManager {
+    func fetchAllStyles() -> [PostStyle] {
+        var result: [PostStyle] = []
+        do {
+            try AppDatabase.shared.reader?.read{ db in
+                result = try PostStyle.fetchAll(db)
+            }
+        }
+        catch {
+            print(error)
+        }
+        
+        return result
+    }
+    
+    func add(style: PostStyle) -> Bool {
+        return AppDatabase.shared.add(style: style)
+    }
+    
+    func update(style: PostStyle) -> Bool {
+        return AppDatabase.shared.update(style: style)
+    }
+    
+    func delete(style: PostStyle) -> Bool {
+        return AppDatabase.shared.delete(style: style)
+    }
+    
+    func add(decoration: PostDecoration) -> Bool {
+        return AppDatabase.shared.add(decoration: decoration)
+    }
+    
+    func update(decoration: PostDecoration) -> Bool {
+        return AppDatabase.shared.update(decoration: decoration)
+    }
+    
+    func delete(decoration: PostDecoration) -> Bool {
+        return AppDatabase.shared.delete(decoration: decoration)
     }
 }
 

@@ -71,6 +71,43 @@ final class AppDatabase {
             }
         }
         
+        migrator.registerMigration("post____style___decoration") { db in
+            try db.create(table: "style") { table in
+                table.autoIncrementedPrimaryKey("id")
+                
+                table.column("name", .text).notNull()
+                
+                table.column("lock_background_color", .text)
+                table.column("lock_text_color", .integer)
+                table.column("lock_text_size", .integer)
+                table.column("lock_text_alignment", .integer).notNull()
+                
+                table.column("island_text_color", .integer)
+                table.column("island_text_size", .integer)
+                table.column("island_text_alignment", .integer).notNull()
+                
+                table.column("icon", .text).notNull()
+                table.column("icon_color", .text)
+                table.column("icon_anger", .integer) // angle * 100
+                
+                table.column("image_display_mode", .integer).notNull()
+                
+                table.column("button_alpha", .integer).notNull()
+            }
+            
+            try db.create(table: "decoration") { table in
+                table.autoIncrementedPrimaryKey("id")
+                
+                table.column("post_id", .integer).notNull()
+                    .indexed()
+                    .references("post", onDelete: .cascade)
+                
+                table.column("style_id", .integer).notNull()
+                    .indexed()
+                    .references("style", onDelete: .cascade)
+            }
+        }
+        
         return migrator
     }
     
@@ -330,6 +367,114 @@ extension AppDatabase {
                 for var post in posts {
                     try? post.updateWithTimestamp(db)
                 }
+            }
+        }
+        catch {
+            print(error)
+            return false
+        }
+        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        return true
+    }
+}
+
+extension AppDatabase {
+    func add(style: PostStyle) -> Bool {
+        guard style.id == nil else {
+            return false
+        }
+        do {
+            try dbWriter?.write{ db in
+                var saveStyle = style
+                try saveStyle.save(db)
+            }
+        }
+        catch {
+            print(error)
+            return false
+        }
+        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        return true
+    }
+    
+    func update(style: PostStyle) -> Bool {
+        guard style.id != nil else {
+            return false
+        }
+        do {
+            _ = try dbWriter?.write{ db in
+                try style.update(db)
+            }
+        }
+        catch {
+            print(error)
+            return false
+        }
+        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        return true
+    }
+    
+    func delete(style: PostStyle) -> Bool {
+        guard let textId = style.id else {
+            return false
+        }
+        do {
+            _ = try dbWriter?.write{ db in
+                try PostStyle.deleteAll(db, ids: [textId])
+            }
+        }
+        catch {
+            print(error)
+            return false
+        }
+        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        return true
+    }
+}
+
+extension AppDatabase {
+    func add(decoration: PostDecoration) -> Bool {
+        guard decoration.id == nil else {
+            return false
+        }
+        do {
+            try dbWriter?.write{ db in
+                var saveStyle = decoration
+                try saveStyle.save(db)
+            }
+        }
+        catch {
+            print(error)
+            return false
+        }
+        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        return true
+    }
+    
+    func update(decoration: PostDecoration) -> Bool {
+        guard decoration.id != nil else {
+            return false
+        }
+        do {
+            _ = try dbWriter?.write{ db in
+                try decoration.update(db)
+            }
+        }
+        catch {
+            print(error)
+            return false
+        }
+        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        return true
+    }
+    
+    func delete(decoration: PostDecoration) -> Bool {
+        guard let textId = decoration.id else {
+            return false
+        }
+        do {
+            _ = try dbWriter?.write{ db in
+                try PostDecoration.deleteAll(db, ids: [textId])
             }
         }
         catch {

@@ -38,10 +38,35 @@ class OnboardingManager: NSObject {
         return result
     }
     
+    private func checkStyleTableNeedsOnboarding() -> Bool {
+        var result = false
+        do {
+            try AppDatabase.shared.reader?.read { db in
+                if let sequenceCount = try Int.fetchOne(
+                    db,
+                    sql: "SELECT seq FROM sqlite_sequence WHERE name = ?",
+                    arguments: [PostStyle.databaseTableName]
+                ), sequenceCount > 0 {
+                    result = false
+                } else {
+                    result = true
+                }
+            }
+        }
+        catch {
+            print(error)
+        }
+        return result
+    }
+    
     public func setupOnboardingDataIfNeeded() {
         if checkPostTableNeedsOnboarding() {
             _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.1"), expirationTime: nil)
             _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.2"), isPinned: false, expirationTime: nil)
+        }
+        if checkStyleTableNeedsOnboarding() {
+            _ = DataManager.shared.add(style: PostStyle(name: String(localized: "onboarding.style.1"), lockTextAlignment: .center, islandTextAlignment: .center, icon: "pin.fill", iconAngle: -4500, imageDisplayMode: .aspectFit, buttonAlpha: 100))
+            _ = DataManager.shared.add(style: PostStyle(name: String(localized: "onboarding.style.2"), lockTextAlignment: .center, islandTextAlignment: .center, icon: "pin.fill", iconAngle: -4500, imageDisplayMode: .aspectFit, buttonAlpha: 0))
         }
     }
 }
