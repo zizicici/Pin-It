@@ -73,7 +73,7 @@ class SpecificationsViewController: UIViewController {
                 case .publisher:
                     return "ZIZICICI LIMITED"
                 case .date:
-                    return "2025/11/21"
+                    return "2025/11/23"
                 case .license:
                     return "粤ICP备2025448771号-4A"
                 }
@@ -99,12 +99,12 @@ class SpecificationsViewController: UIViewController {
                 let TOCropViewController = ThirdParty(
                     urlString: "https://github.com/TimOliver/TOCropViewController",
                     name: "TOCropViewController",
-                    version: "3.1.0"
+                    version: "3.1.1"
                 )
                 let Kingfisher = ThirdParty(
                     urlString: "https://github.com/onevcat/Kingfisher",
                     name: "Kingfisher",
-                    version: "8.6.1")
+                    version: "8.6.2")
                 let JXPhotoBrowser = ThirdParty(
                     urlString: "https://github.com/JiongXing/PhotoBrowser",
                     name: "JXPhotoBrowser",

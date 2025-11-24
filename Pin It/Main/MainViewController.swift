@@ -529,6 +529,17 @@ extension MainViewController: UICollectionViewDropDelegate {
 extension MainViewController: PostCellDelegate {
     func getMoreButtonMenu(for post: Post.Detail) -> UIMenu {
         var elements: [UIMenuElement] = []
+        
+        if let postImage = post.images.first {
+            let cropAction = UIAction(title: String(localized: "image.action.fastCrop"), image: UIImage(systemName: "crop")) { [weak self] _ in
+                self?.enterFastCropEditor(for: postImage)
+            }
+            
+            let currentPageDivider = UIMenu(title: "", image: nil, options: [.displayInline], children: [cropAction])
+            
+            elements.append(currentPageDivider)
+        }
+        
         let editAction = UIAction(title: String(localized: "pin.edit"), image: UIImage(systemName: "pencil")) { [weak self] _ in
             self?.edit(post: post)
         }
@@ -553,7 +564,7 @@ extension MainViewController: PostCellDelegate {
             }
             
             let currentPageDivider = UIMenu(title: String(localized: "pin.copy"), image: UIImage(systemName: "doc.on.clipboard"), options: [], children: [copyOriginalAction, copyProcessedAction])
-
+            
             elements.append(currentPageDivider)
         }
         
@@ -613,22 +624,74 @@ extension MainViewController {
         browser.numberOfItems = {
             return 2
         }
-        browser.reloadCellAtIndex = { context in
+        browser.reloadCellAtIndex = { [weak self] context in
+            guard let self = self else { return }
             let browserCell = context.cell as? JXPhotoBrowserImageCell
             if context.index == 0 {
                 browserCell?.imageView.image = displayImage
             } else {
                 browserCell?.imageView.image = originalImage
             }
+            browserCell?.longPressedAction = { [weak self] cell, _ in
+                self?.longPress(for: cell, detail: detail)
+            }
         }
         browser.pageIndex = 0
-        browser.show(method: .present(fromVC: self, embed: nil))
+        browser.show(method: .present(fromVC: self.navigationController, embed: nil))
     }
     
-    func enterEditor(for postImage: PostImage) {
+    func enterFastCropEditor(for postImage: PostImage) {
         if let image = postImage.getOriginalImage() {
             handle(image, postImage: postImage)
         }
+    }
+    
+    func longPress(for cell: JXPhotoBrowserImageCell, detail: Post.Detail) {
+        guard let image = detail.images.first else { return }
+        
+        let alertController = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        let cropAction = UIAlertAction(title: String(localized: "image.action.fastCrop"), style: .default) { [weak self] _ in
+            alertController.dismiss(animated: ConsideringUser.animated)
+            cell.photoBrowser?.dismiss(animated: ConsideringUser.animated) {
+                self?.enterFastCropEditor(for: image)
+            }
+        }
+        let copyProcessedAction = UIAlertAction(title: String(localized: "image.action.copyProcessed"), style: .default) { [weak self] _ in
+            alertController.dismiss(animated: ConsideringUser.animated)
+            cell.photoBrowser?.dismiss(animated: ConsideringUser.animated) {
+                self?.copyImage(from: detail, isOriginal: false)
+            }
+        }
+        let copyOriginalAction = UIAlertAction(title: String(localized: "image.action.copyOriginal"), style: .default) { [weak self] _ in
+            alertController.dismiss(animated: ConsideringUser.animated)
+            cell.photoBrowser?.dismiss(animated: ConsideringUser.animated) {
+                self?.copyImage(from: detail, isOriginal: true)
+            }
+        }
+        let editPostAction = UIAlertAction(title: String(localized: "image.action.editPost"), style: .default) { [weak self] _ in
+            alertController.dismiss(animated: ConsideringUser.animated)
+            cell.photoBrowser?.dismiss(animated: ConsideringUser.animated) {
+                self?.edit(post: detail)
+            }
+        }
+        let deleteAction = UIAlertAction(title: String(localized: "image.action.deletePost"), style: .destructive) { [weak self] _ in
+            alertController.dismiss(animated: ConsideringUser.animated)
+            cell.photoBrowser?.dismiss(animated: ConsideringUser.animated) {
+                self?.deleteAction(for: detail)
+            }
+        }
+        alertController.addAction(cropAction)
+        alertController.addAction(copyOriginalAction)
+        alertController.addAction(copyProcessedAction)
+        alertController.addAction(editPostAction)
+        alertController.addAction(deleteAction)
+
+        if let popoverController = alertController.popoverPresentationController {
+            popoverController.sourceView = cell.photoBrowser?.browserView
+            popoverController.sourceRect = cell.photoBrowser?.browserView.frame ?? .zero
+        }
+        
+        cell.photoBrowser?.present(alertController, animated: ConsideringUser.animated, completion: nil)
     }
 }
 
