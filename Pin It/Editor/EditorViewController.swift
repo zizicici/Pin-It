@@ -444,13 +444,3 @@ extension String {
         return count > 0
     }
 }
-
-class UIDraggableTableView: UITableView {
-    override func touchesShouldCancel(in view: UIView) -> Bool {
-        if view.isKind(of: UIButton.self) {
-            return true
-        } else {
-            return super.touchesShouldCancel(in: view)
-        }
-    }
-}

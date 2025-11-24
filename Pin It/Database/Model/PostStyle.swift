@@ -14,10 +14,24 @@ enum PostImageDisplayMode: Int, Codable {
     case aspectFill = 2
 }
 
-enum PostTextAlignment: Int, Codable {
+enum PostTextAlignment: Int, Codable, CaseIterable {
     case leading = 0
     case center = 1
     case trailing = 2
+}
+
+enum PostTextSize: Int, Codable, CaseIterable {
+    case automatic = -1
+    case largeTitle = 34
+    case title1 = 28
+    case title2 = 22
+    case title3 = 20
+    case body = 17
+    case callout = 16
+    case subhead = 15
+    case footnote = 13
+    case caption1 = 12
+    case caption2 = 11
 }
 
 struct PostStyle: Identifiable, Hashable, Codable {
@@ -27,16 +41,16 @@ struct PostStyle: Identifiable, Hashable, Codable {
     
     var lockBackgroundColor: String?
     var lockTextColor: String?
-    var lockTextSize: Int?
+    var lockTextSize: PostTextSize
     var lockTextAlignment: PostTextAlignment
     
     var islandTextColor: String?
-    var islandTextSize: Int?
+    var islandTextSize: PostTextSize
     var islandTextAlignment: PostTextAlignment
     
-    var icon: String
-    var iconColor: String?
-    var iconAngle: Int
+    var symbol: String
+    var symbolColor: String?
+    var symbolAngle: Int
     
     var imageDisplayMode: PostImageDisplayMode
     
@@ -47,7 +61,7 @@ struct PostStyle: Identifiable, Hashable, Codable {
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, name, lockBackgroundColor = "lock_background_color", lockTextColor = "lock_text_color", lockTextSize = "lock_text_size", lockTextAlignment = "lock_text_alignment", islandTextColor = "island_text_color", islandTextSize = "island_text_size", islandTextAlignment = "island_text_alignment", icon, iconColor = "icon_color", iconAngle = "icon_anger", imageDisplayMode = "image_display_mode", buttonAlpha = "button_alpha"
+        case id, name, lockBackgroundColor = "lock_background_color", lockTextColor = "lock_text_color", lockTextSize = "lock_text_size", lockTextAlignment = "lock_text_alignment", islandTextColor = "island_text_color", islandTextSize = "island_text_size", islandTextAlignment = "island_text_alignment", symbol, symbolColor = "symbol_color", symbolAngle = "symbol_angle", imageDisplayMode = "image_display_mode", buttonAlpha = "button_alpha"
     }
 }
 

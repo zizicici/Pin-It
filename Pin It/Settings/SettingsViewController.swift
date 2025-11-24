@@ -494,7 +494,11 @@ extension SettingsViewController: UITableViewDelegate {
 
 extension SettingsViewController {
     func enterStyleDetail(for style: PostStyle) {
+        let styleViewController = StyleViewController(style: style)
         
+        let nav = UINavigationController(rootViewController: styleViewController)
+        
+        present(nav, animated: ConsideringUser.animated)
     }
     
     func addStyle() {

@@ -14,7 +14,7 @@ extension Task where Success == Never, Failure == Never {
     }
 }
 
-final class Debounce<T> {
+actor Debounce<T> {
     private let block: @Sendable (T) async -> Void
     private let duration: Double
     private var task: Task<Void, Never>?
@@ -27,7 +27,13 @@ final class Debounce<T> {
         self.block = block
     }
     
-    func emit(value: T) {
+    nonisolated func emit(value: T) {
+        Task {
+            await self._emit(value: value)
+        }
+    }
+    
+    private func _emit(value: T) {
         self.task?.cancel()
         self.task = Task { [duration, block] in
             do {
@@ -39,5 +45,9 @@ final class Debounce<T> {
                 await block(value)
             } catch {}
         }
+    }
+    
+    deinit {
+        self.task?.cancel()
     }
 }

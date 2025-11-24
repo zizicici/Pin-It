@@ -78,17 +78,17 @@ final class AppDatabase {
                 table.column("name", .text).notNull()
                 
                 table.column("lock_background_color", .text)
-                table.column("lock_text_color", .integer)
-                table.column("lock_text_size", .integer)
+                table.column("lock_text_color", .text)
+                table.column("lock_text_size", .integer).notNull()
                 table.column("lock_text_alignment", .integer).notNull()
                 
-                table.column("island_text_color", .integer)
-                table.column("island_text_size", .integer)
+                table.column("island_text_color", .text)
+                table.column("island_text_size", .integer).notNull()
                 table.column("island_text_alignment", .integer).notNull()
                 
-                table.column("icon", .text).notNull()
-                table.column("icon_color", .text)
-                table.column("icon_anger", .integer) // angle * 100
+                table.column("symbol", .text).notNull()
+                table.column("symbol_color", .text)
+                table.column("symbol_angle", .integer) // angle * 100
                 
                 table.column("image_display_mode", .integer).notNull()
                 
