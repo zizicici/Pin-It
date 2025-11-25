@@ -98,6 +98,7 @@ class OptionCell<T: OptionItem>: OptionBaseCell<T> {
         setupViewsIfNeeded()
         var content = defaultListContentConfiguration().updated(for: state)
         content.text = defaultSectionTitle  // 使用泛型类型的 sectionTitle
+        content.textProperties.color = AppColor.text
         listContentView.configuration = content
         
         if let optionItem = state.optionItem as? T {  // 使用泛型类型 T

@@ -91,6 +91,8 @@ struct PostDecoration: Identifiable, Hashable, Codable {
     
     enum Columns: String, ColumnExpression {
         case id
+        
+        static let postId = Column(CodingKeys.postId)
     }
     
     enum CodingKeys: String, CodingKey {

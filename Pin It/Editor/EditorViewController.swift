@@ -67,6 +67,7 @@ class EditorViewController: UIViewController {
     enum Section: Int, Hashable {
         case text
         case image
+        case style
         case advanced
         
         var header: String? {
@@ -75,6 +76,8 @@ class EditorViewController: UIViewController {
                 return String(localized: "editor.text")
             case .image:
                 return String(localized: "editor.image")
+            case .style:
+                return String(localized: "style.title")
             case .advanced:
                 return String(localized: "editor.advanced")
             }
@@ -82,7 +85,7 @@ class EditorViewController: UIViewController {
         
         var footer: String? {
             switch self {
-            case .text, .image, .advanced:
+            case .text, .image, .advanced, .style:
                 return nil
             }
         }
@@ -92,6 +95,7 @@ class EditorViewController: UIViewController {
         case text(String?)
         case image(UIImage)
         case imageAction(ImageAction)
+        case style(PostStyle, Bool)
         case expirationToggle(Bool)
         case expiration(Int64?)
     }
@@ -146,6 +150,12 @@ class EditorViewController: UIViewController {
     
     weak var commentCell: TextViewCell?
     
+    private var style: PostStyle? {
+        didSet {
+            reloadData()
+        }
+    }
+    
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
     }
@@ -157,6 +167,7 @@ class EditorViewController: UIViewController {
     convenience init(postDetail: Post.Detail, editorClosure: @escaping (Post.Detail) -> ()) {
         self.init()
         self.detail = postDetail
+        self.style = detail.style ?? DataManager.shared.fetchAllStyles().first
         self.editorClosure = editorClosure
         
         expirationToggle = (expirationTime != nil)
@@ -245,22 +256,38 @@ class EditorViewController: UIViewController {
             case .imageAction(let action):
                 let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(UITableViewCell.self), for: indexPath)
                 cell.accessoryType = .none
+                cell.accessoryView = nil
+                
                 var content = UIListContentConfiguration.valueCell()
                 content.text = action.title
+                content.textProperties.color = AppColor.text
                 content.image = action.image
                 content.imageProperties.tintColor = .systemRed
                 cell.contentConfiguration = content
                 return cell
+            case .style(let style, let isSelected):
+                let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(UITableViewCell.self), for: indexPath)
+                cell.tintColor = .systemRed
+                cell.accessoryType = isSelected ? .checkmark : .none
+                cell.accessoryView = nil
+                
+                var content = UIListContentConfiguration.valueCell()
+                content.text = style.name
+                content.textProperties.color = AppColor.text
+                cell.contentConfiguration = content
+                return cell
             case .expirationToggle(let enable):
                 let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(UITableViewCell.self), for: indexPath)
+                
                 let itemSwitch = UISwitch()
                 itemSwitch.isOn = enable
                 itemSwitch.addTarget(self, action: #selector(self.toggle(_:)), for: .touchUpInside)
                 itemSwitch.onTintColor = .systemRed
+                cell.accessoryView = itemSwitch
+                
                 var content = cell.defaultContentConfiguration()
                 content.text = String(localized: "editor.expiration.toggle")
-                content.textProperties.color = .label
-                cell.accessoryView = itemSwitch
+                content.textProperties.color = AppColor.text
                 cell.contentConfiguration = content
                 return cell
             case .expiration(let startTime):
@@ -297,6 +324,12 @@ class EditorViewController: UIViewController {
                 snapshot.appendItems([.image(imageInfo.image), .imageAction(.fullScreen), .imageAction(.crop)], toSection: .image)
             }
         }
+        
+        let styles = DataManager.shared.fetchAllStyles()
+        
+        snapshot.appendSections([.style])
+        snapshot.appendItems(styles.map({ .style($0, $0 == style) }), toSection: .style)
+        
         snapshot.appendSections([.advanced])
         snapshot.appendItems([.expirationToggle(expirationToggle)], toSection: .advanced)
         if expirationToggle {
@@ -316,6 +349,11 @@ class EditorViewController: UIViewController {
     }
     
     private func saveToDetail() {
+        saveImageInfoToDetail()
+        detail.style = style
+    }
+    
+    private func saveImageInfoToDetail() {
         guard let imageInfo = imageInfo else { return }
         let image = imageInfo.image
         let cropRect = imageInfo.rect
@@ -381,6 +419,8 @@ extension EditorViewController: UITableViewDelegate {
             }
         case .expirationToggle, .expiration:
             break
+        case .style(let style, _):
+            self.style = style
         }
     }
 }

@@ -504,7 +504,7 @@ class StyleViewController: UIViewController {
             let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(SymbolTextCell.self), for: indexPath)
             var content = UIListContentConfiguration.valueCell()
             content.text = String(localized: "style.symbol.angle")
-            content.textProperties.color = .label
+            content.textProperties.color = AppColor.text
             content.secondaryText = String(format: String(localized: "style.symbol.angle%d"), angle / 100)
             cell.contentConfiguration = content
             cell.accessoryType = .disclosureIndicator
@@ -572,7 +572,7 @@ class StyleViewController: UIViewController {
         if let config = colorManager.configuration(for: colorType) {
             content.text = config.type.title
         }
-        content.textProperties.color = .label
+        content.textProperties.color = AppColor.text
         cell.accessoryView = itemSwitch
         cell.contentConfiguration = content
         return cell
@@ -652,7 +652,7 @@ class StyleViewController: UIViewController {
         
         snapshot.appendItems([.controlDisplayMode(controlDisplayMode), .imageDisplayMode(imageDisplayMode)], toSection: .others)
         
-        if style.id != nil {
+        if style.id != nil, DataManager.shared.fetchAllPosts().count > 1 {
             snapshot.appendSections([.action])
             snapshot.appendItems([.delete], toSection: .action)
         }

@@ -173,7 +173,11 @@ class MainViewController: UIViewController {
     func addAction(text: String) {
         let editorViewController = EditorViewController(postDetail: Post.Detail(post: Post.placeholder(), images: [], texts: [PostText(postId: -1, content: text, order: 0)])) { detail in
             if let postText = detail.texts.first {
-                _ = DataManager.shared.createPost(content: postText.content, expirationTime: detail.post.expirationTime)
+                let post = DataManager.shared.createPost(content: postText.content, expirationTime: detail.post.expirationTime)
+                if let style = detail.style, let styleId = style.id, let postId = post?.id {
+                    let decoration = PostDecoration(styleId: styleId, postId: postId)
+                    _ = DataManager.shared.add(decoration: decoration)
+                }
             }
         }
         
@@ -703,6 +707,15 @@ extension MainViewController {
             }
             for image in detail.images {
                 _ = DataManager.shared.update(image: image)
+            }
+            if let styleId = detail.style?.id, let postId = detail.post.id {
+                if var decoration = DataManager.shared.fetchDecoration(by: postId) {
+                    decoration.styleId = styleId
+                    _ = DataManager.shared.update(decoration: decoration)
+                } else {
+                    let newDecoration = PostDecoration(styleId: styleId, postId: postId)
+                    _ = DataManager.shared.add(decoration: newDecoration)
+                }
             }
             _ = DataManager.shared.update(post: detail.post)
         }

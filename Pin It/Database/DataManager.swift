@@ -343,7 +343,10 @@ extension DataManager {
         var result: [PostStyle] = []
         do {
             try AppDatabase.shared.reader?.read{ db in
-                result = try PostStyle.fetchAll(db)
+                let idColumn = PostStyle.Columns.id
+                result = try PostStyle
+                    .order(idColumn.asc)
+                    .fetchAll(db)
             }
         }
         catch {
@@ -363,6 +366,23 @@ extension DataManager {
     
     func delete(style: PostStyle) -> Bool {
         return AppDatabase.shared.delete(style: style)
+    }
+    
+    func fetchDecoration(by postId: Int64) -> PostDecoration? {
+        var result: PostDecoration? = nil
+        do {
+            try AppDatabase.shared.reader?.read{ db in
+                let postIdColumn = PostDecoration.Columns.postId
+                result = try PostDecoration
+                    .filter(postIdColumn == postId)
+                    .fetchOne(db)
+            }
+        }
+        catch {
+            print(error)
+        }
+        
+        return result
     }
     
     func add(decoration: PostDecoration) -> Bool {

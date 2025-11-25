@@ -40,7 +40,7 @@ class SettingsViewController: UIViewController {
             case .advanced:
                 return nil
             case .style:
-                return String(localized: "more.section.style")
+                return String(localized: "style.title")
             case .shortcuts:
                 return String(localized: "more.section.shortcuts")
             case .reset:

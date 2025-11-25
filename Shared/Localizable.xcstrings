@@ -10938,16 +10938,6 @@
         }
       }
     },
-    "more.section.style" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "样式"
-          }
-        }
-      }
-    },
     "onboarding.message.1" : {
       "localizations" : {
         "ar" : {
@@ -18592,6 +18582,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%d号"
+          }
+        }
+      }
+    },
+    "style.title" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "样式"
           }
         }
       }
