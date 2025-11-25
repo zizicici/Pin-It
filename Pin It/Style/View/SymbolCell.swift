@@ -11,3 +11,7 @@ import UIKit
 class SymbolCell: UITableViewCell {
     
 }
+
+class SymbolTextCell: UITableViewCell {
+    
+}

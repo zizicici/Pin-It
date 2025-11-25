@@ -251,12 +251,50 @@ class StyleViewController: UIViewController {
         }
     }
     
+    private var symbolAngle: Int {
+        get { return style.symbolAngle }
+        set {
+            if style.symbolAngle != newValue {
+                style.symbolAngle = newValue
+                markAsEdited()
+                reloadData()
+            }
+        }
+    }
+    
+    private var imageDisplayMode: PostImageDisplayMode {
+        get { return style.imageDisplayMode }
+        set {
+            if style.imageDisplayMode != newValue {
+                style.imageDisplayMode = newValue
+                markAsEdited()
+                reloadData()
+            }
+        }
+    }
+    
+    private var controlDisplayMode: PostControlDisplayMode {
+        get {
+            if style.controlAlpha != 0 {
+                return .normal
+            } else {
+                return .transparent
+            }
+        }
+        set {
+            style.controlAlpha = newValue.rawValue
+            markAsEdited()
+            reloadData()
+        }
+    }
+    
     // MARK: - Section 定义
     enum Section: Int, Hashable {
         case name
         case lockScreen
         case island
         case symbol
+        case others
         
         var header: String? {
             switch self {
@@ -268,6 +306,8 @@ class StyleViewController: UIViewController {
                 return String(localized: "style.island")
             case .symbol:
                 return String(localized: "style.symbol")
+            case .others:
+                return String(localized: "style.others")
             }
         }
         
@@ -285,6 +325,9 @@ class StyleViewController: UIViewController {
         case textSize(Section, PostTextSize)
         case textAlignment(Section, PostTextAlignment)
         case symbol(String, UIColor)
+        case symbolAngle(Int)
+        case imageDisplayMode(PostImageDisplayMode)
+        case controlDisplayMode(PostControlDisplayMode)
     }
     
     class DataSource: UITableViewDiffableDataSource<Section, Item> {
@@ -371,6 +414,9 @@ class StyleViewController: UIViewController {
         tableView.register(OptionCell<PostTextSize>.self, forCellReuseIdentifier: NSStringFromClass(OptionCell<PostTextSize>.self))
         tableView.register(OptionCell<PostTextAlignment>.self, forCellReuseIdentifier: NSStringFromClass(OptionCell<PostTextAlignment>.self))
         tableView.register(SymbolCell.self, forCellReuseIdentifier: NSStringFromClass(SymbolCell.self))
+        tableView.register(SymbolTextCell.self, forCellReuseIdentifier: NSStringFromClass(SymbolTextCell.self))
+        tableView.register(OptionCell<PostImageDisplayMode>.self, forCellReuseIdentifier: NSStringFromClass(OptionCell<PostImageDisplayMode>.self))
+        tableView.register(OptionCell<PostControlDisplayMode>.self, forCellReuseIdentifier: NSStringFromClass(OptionCell<PostControlDisplayMode>.self))
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 50.0
         tableView.delegate = self
@@ -408,7 +454,7 @@ class StyleViewController: UIViewController {
                 let actions = PostTextSize.allCases.map { target in
                     let action = UIAction(title: target.title, subtitle: target.subtitle, state: textSize == target ? .on : .off) { [weak self] _ in
                         switch section {
-                        case .name, .symbol:
+                        case .name, .symbol, .others:
                             break
                         case .lockScreen:
                             self?.lockTextSize = target
@@ -429,7 +475,7 @@ class StyleViewController: UIViewController {
                 let actions = PostTextAlignment.allCases.map { target in
                     let action = UIAction(title: target.title, subtitle: target.subtitle, state: textAlignment == target ? .on : .off) { [weak self] _ in
                         switch section {
-                        case .name, .symbol:
+                        case .name, .symbol, .others:
                             break
                         case .lockScreen:
                             self?.lockTextAlignment = target
@@ -449,6 +495,43 @@ class StyleViewController: UIViewController {
             var content = UIListContentConfiguration.cell()
             content.attributedText = NSAttributedString.symbol(symbol, pointSize: 20.0, color: color)
             cell.contentConfiguration = content
+            return cell
+        case .symbolAngle(let angle):
+            let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(SymbolTextCell.self), for: indexPath)
+            var content = UIListContentConfiguration.valueCell()
+            content.text = String(localized: "style.symbol.angle")
+            content.textProperties.color = .label
+            content.secondaryText = String(format: String(localized: "style.symbol.angle%d"), angle / 100)
+            cell.contentConfiguration = content
+            cell.accessoryType = .disclosureIndicator
+            return cell
+        case .imageDisplayMode(let displayMode):
+            let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(OptionCell<PostImageDisplayMode>.self), for: indexPath)
+            if let cell = cell as? OptionCell<PostImageDisplayMode> {
+                cell.update(with: displayMode)
+                let actions = PostImageDisplayMode.allCases.map { target in
+                    let action = UIAction(title: target.title, subtitle: target.subtitle, state: displayMode == target ? .on : .off) { [weak self] _ in
+                        self?.imageDisplayMode = displayMode
+                    }
+                    return action
+                }
+                let menu = UIMenu(children: actions)
+                cell.valueButton.menu = menu
+            }
+            return cell
+        case .controlDisplayMode(let displayMode):
+            let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(OptionCell<PostControlDisplayMode>.self), for: indexPath)
+            if let cell = cell as? OptionCell<PostControlDisplayMode> {
+                cell.update(with: displayMode)
+                let actions = PostControlDisplayMode.allCases.map { target in
+                    let action = UIAction(title: target.title, subtitle: target.subtitle, state: displayMode == target ? .on : .off) { [weak self] _ in
+                        self?.controlDisplayMode = displayMode
+                    }
+                    return action
+                }
+                let menu = UIMenu(children: actions)
+                cell.valueButton.menu = menu
+            }
             return cell
         }
     }
@@ -523,7 +606,7 @@ class StyleViewController: UIViewController {
         updateSaveButtonStatus()
         
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
-        snapshot.appendSections([.name, .lockScreen, .island, .symbol])
+        snapshot.appendSections([.name, .lockScreen, .island, .symbol, .others])
         
         // 名称部分
         snapshot.appendItems([.name(styleName)], toSection: .name)
@@ -551,6 +634,10 @@ class StyleViewController: UIViewController {
         
         snapshot.appendItems([.textSize(.island, islandTextSize)], toSection: .island)
         snapshot.appendItems([.textAlignment(.island, islandTextAlignment)], toSection: .island)
+        
+        snapshot.appendItems([.symbolAngle(symbolAngle)], toSection: .symbol)
+        
+        snapshot.appendItems([.controlDisplayMode(controlDisplayMode), .imageDisplayMode(imageDisplayMode)], toSection: .others)
         
         dataSource.apply(snapshot, animatingDifferences: false)
     }
@@ -724,6 +811,28 @@ extension StyleViewController: UITableViewDelegate {
             switch identifier {
             case .symbol:
                 showSymbolPicker()
+            case .symbolAngle:
+                let alertController = UIAlertController(title: String(localized: "style.alert.angle.title"), message: String(localized: "style.alert.angle.message"), preferredStyle: .alert)
+                alertController.addTextField { [weak self] textField in
+                    guard let self = self else { return }
+                    textField.placeholder = ""
+                    textField.text = "\(self.symbolAngle / 100)"
+                    textField.addTarget(alertController, action: #selector(alertController.textDidChangeInAngle), for: .editingChanged)
+                }
+                let cancelAction = UIAlertAction(title: String(localized: "button.cancel"), style: .cancel) { _ in
+                    //
+                }
+                let okAction = UIAlertAction(title: String(localized: "button.confirm"), style: .default) { [weak self] _ in
+                    if let text = alertController.textFields?.first?.text, let value = Int(text) {
+                        self?.symbolAngle = value * 100
+                    } else {
+                        self?.symbolAngle = 0
+                    }
+                }
+
+                alertController.addAction(cancelAction)
+                alertController.addAction(okAction)
+                present(alertController, animated: ConsideringUser.animated, completion: nil)
             default:
                 break
             }
@@ -812,6 +921,62 @@ extension PostTextAlignment: OptionItem {
     }
 }
 
+extension PostImageDisplayMode: OptionItem {
+    static var noneTitle: String {
+        return ""
+    }
+    
+    static var sectionTitle: String {
+        return String(localized: "style.imageDisplayMode")
+    }
+    
+    var title: String {
+        switch self {
+        case .scaleFill:
+            return String(localized: "style.imageDisplayMode.scaleFill")
+        case .aspectFit:
+            return String(localized: "style.imageDisplayMode.scaleFit")
+        case .aspectFill:
+            return String(localized: "style.imageDisplayMode.aspectFill")
+        }
+    }
+    
+    var subtitle: String? {
+        return nil
+    }
+}
+
+enum PostControlDisplayMode: Int, OptionItem, CaseIterable {
+    case normal = 100
+    case transparent = 0
+    
+    static var noneTitle: String {
+        return ""
+    }
+    
+    static var sectionTitle: String {
+        return String(localized: "style.postControlDisplayMode")
+    }
+    
+    var title: String {
+        switch self {
+        case .normal:
+            return String(localized: "style.postControlDisplayMode.normal")
+        case .transparent:
+            return String(localized: "style.postControlDisplayMode.transparent")
+        }
+    }
+    
+    var subtitle: String? {
+        switch self {
+        case .normal:
+            return nil
+        case .transparent:
+            return String(localized: "style.postControlDisplayMode.transparent.hint")
+        }
+    }
+}
+
 extension NSAttributedString {
     static func symbol(
         _ symbolName: String,
@@ -832,5 +997,14 @@ extension NSAttributedString {
         }
         
         return NSAttributedString(attachment: imageAttachment)
+    }
+}
+
+extension UIAlertController {
+    @objc
+    func textDidChangeInAngle() {
+        if let title = textFields?[0].text, let action = actions.last {
+            action.isEnabled = (title.count > 0) && (Int(title) != nil)
+        }
     }
 }

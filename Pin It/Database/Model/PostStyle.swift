@@ -8,7 +8,7 @@
 import Foundation
 import GRDB
 
-enum PostImageDisplayMode: Int, Codable {
+enum PostImageDisplayMode: Int, Codable, CaseIterable {
     case scaleFill = 0
     case aspectFit = 1
     case aspectFill = 2
@@ -54,14 +54,14 @@ struct PostStyle: Identifiable, Hashable, Codable {
     
     var imageDisplayMode: PostImageDisplayMode
     
-    var buttonAlpha: Int // 0 - 100
+    var controlAlpha: Int // 0 - 100
     
     enum Columns: String, ColumnExpression {
         case id
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, name, lockBackgroundColor = "lock_background_color", lockTextColor = "lock_text_color", lockTextSize = "lock_text_size", lockTextAlignment = "lock_text_alignment", islandTextColor = "island_text_color", islandTextSize = "island_text_size", islandTextAlignment = "island_text_alignment", symbol, symbolColor = "symbol_color", symbolAngle = "symbol_angle", imageDisplayMode = "image_display_mode", buttonAlpha = "button_alpha"
+        case id, name, lockBackgroundColor = "lock_background_color", lockTextColor = "lock_text_color", lockTextSize = "lock_text_size", lockTextAlignment = "lock_text_alignment", islandTextColor = "island_text_color", islandTextSize = "island_text_size", islandTextAlignment = "island_text_alignment", symbol, symbolColor = "symbol_color", symbolAngle = "symbol_angle", imageDisplayMode = "image_display_mode", controlAlpha = "control_alpha"
     }
 }
 

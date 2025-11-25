@@ -507,6 +507,16 @@
         }
       }
     },
+    "button.confirm" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认"
+          }
+        }
+      }
+    },
     "button.delete" : {
       "localizations" : {
         "ar" : {
@@ -18276,12 +18286,72 @@
         }
       }
     },
+    "style.alert.angle.message" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "范围在-360到360之间"
+          }
+        }
+      }
+    },
+    "style.alert.angle.title" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请输入数字"
+          }
+        }
+      }
+    },
     "style.editor" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "编辑样式"
+          }
+        }
+      }
+    },
+    "style.imageDisplayMode" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图片显示模式"
+          }
+        }
+      }
+    },
+    "style.imageDisplayMode.aspectFill" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "放大填充"
+          }
+        }
+      }
+    },
+    "style.imageDisplayMode.scaleFill" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拉伸填充"
+          }
+        }
+      }
+    },
+    "style.imageDisplayMode.scaleFit" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完整显示"
           }
         }
       }
@@ -18346,12 +18416,82 @@
         }
       }
     },
+    "style.others" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "其他"
+          }
+        }
+      }
+    },
+    "style.postControlDisplayMode" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按钮显示模式"
+          }
+        }
+      }
+    },
+    "style.postControlDisplayMode.normal" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示"
+          }
+        }
+      }
+    },
+    "style.postControlDisplayMode.transparent" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "透明化"
+          }
+        }
+      }
+    },
+    "style.postControlDisplayMode.transparent.hint" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按钮透明化，但依旧可以点击。此选项将会使记录显示区域最大化。"
+          }
+        }
+      }
+    },
     "style.symbol" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "标志"
+          }
+        }
+      }
+    },
+    "style.symbol.angle" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "旋转角度"
+          }
+        }
+      }
+    },
+    "style.symbol.angle%d" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d度"
           }
         }
       }

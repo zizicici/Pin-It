@@ -92,7 +92,7 @@ final class AppDatabase {
                 
                 table.column("image_display_mode", .integer).notNull()
                 
-                table.column("button_alpha", .integer).notNull()
+                table.column("control_alpha", .integer).notNull()
             }
             
             try db.create(table: "decoration") { table in
