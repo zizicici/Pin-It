@@ -79,6 +79,10 @@ extension PostStyle: MutablePersistableRecord {
     
 }
 
+extension PostStyle {
+    static let placeholder: Self = PostStyle(name: String(localized: "style.placeholder"), lockTextSize: .automatic, lockTextAlignment: .center, islandTextSize: .automatic, islandTextAlignment: .center, symbol: "pin.fill", symbolAngle: -4500, imageDisplayMode: .aspectFit, controlAlpha: 100)
+}
+
 struct PostDecoration: Identifiable, Hashable, Codable {
     var id: Int64?
     

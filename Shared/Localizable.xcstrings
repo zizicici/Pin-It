@@ -18306,6 +18306,16 @@
         }
       }
     },
+    "style.alert.delete.title" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除这个样式吗？"
+          }
+        }
+      }
+    },
     "style.editor" : {
       "localizations" : {
         "zh-Hans" : {
@@ -18422,6 +18432,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "其他"
+          }
+        }
+      }
+    },
+    "style.placeholder" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建样式"
           }
         }
       }

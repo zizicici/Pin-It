@@ -179,7 +179,7 @@ class StyleViewController: UIViewController {
     private var tableView: UITableView!
     private var dataSource: DataSource!
     
-    private var isEdited: Bool = false
+    private var isEdited: Bool = true
     private var saveBarButton: UIBarButtonItem?
     private weak var nameCell: TextInputCell?
     
@@ -295,6 +295,7 @@ class StyleViewController: UIViewController {
         case island
         case symbol
         case others
+        case action
         
         var header: String? {
             switch self {
@@ -308,6 +309,8 @@ class StyleViewController: UIViewController {
                 return String(localized: "style.symbol")
             case .others:
                 return String(localized: "style.others")
+            case .action:
+                return nil
             }
         }
         
@@ -328,6 +331,7 @@ class StyleViewController: UIViewController {
         case symbolAngle(Int)
         case imageDisplayMode(PostImageDisplayMode)
         case controlDisplayMode(PostControlDisplayMode)
+        case delete
     }
     
     class DataSource: UITableViewDiffableDataSource<Section, Item> {
@@ -454,7 +458,7 @@ class StyleViewController: UIViewController {
                 let actions = PostTextSize.allCases.map { target in
                     let action = UIAction(title: target.title, subtitle: target.subtitle, state: textSize == target ? .on : .off) { [weak self] _ in
                         switch section {
-                        case .name, .symbol, .others:
+                        case .name, .symbol, .others, .action:
                             break
                         case .lockScreen:
                             self?.lockTextSize = target
@@ -475,7 +479,7 @@ class StyleViewController: UIViewController {
                 let actions = PostTextAlignment.allCases.map { target in
                     let action = UIAction(title: target.title, subtitle: target.subtitle, state: textAlignment == target ? .on : .off) { [weak self] _ in
                         switch section {
-                        case .name, .symbol, .others:
+                        case .name, .symbol, .others, .action:
                             break
                         case .lockScreen:
                             self?.lockTextAlignment = target
@@ -532,6 +536,15 @@ class StyleViewController: UIViewController {
                 let menu = UIMenu(children: actions)
                 cell.valueButton.menu = menu
             }
+            return cell
+        case .delete:
+            let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(UITableViewCell.self), for: indexPath)
+            var content = UIListContentConfiguration.valueCell()
+            content.text = String(localized: "button.delete")
+            content.textProperties.color = .systemRed
+            content.textProperties.alignment = .center
+            cell.contentConfiguration = content
+            cell.accessoryType = .none
             return cell
         }
     }
@@ -638,6 +651,11 @@ class StyleViewController: UIViewController {
         snapshot.appendItems([.symbolAngle(symbolAngle)], toSection: .symbol)
         
         snapshot.appendItems([.controlDisplayMode(controlDisplayMode), .imageDisplayMode(imageDisplayMode)], toSection: .others)
+        
+        if style.id != nil {
+            snapshot.appendSections([.action])
+            snapshot.appendItems([.delete], toSection: .action)
+        }
         
         dataSource.apply(snapshot, animatingDifferences: false)
     }
@@ -833,6 +851,20 @@ extension StyleViewController: UITableViewDelegate {
                 alertController.addAction(cancelAction)
                 alertController.addAction(okAction)
                 present(alertController, animated: ConsideringUser.animated, completion: nil)
+            case .delete:
+                let alertController = UIAlertController(title: String(localized: "style.alert.delete.title"), message: nil, preferredStyle: .alert)
+                let deleteAction = UIAlertAction(title: String(localized: "button.delete"), style: .destructive) { [weak self] _ in
+                    guard let self = self else { return }
+                    alertController.dismiss(animated: ConsideringUser.animated)
+                    self.dismissViewController()
+                    _ = DataManager.shared.delete(style: self.style)
+                }
+                
+                let cancelAction = UIAlertAction(title: String(localized: "button.cancel"), style: .cancel)
+                alertController.addAction(deleteAction)
+                alertController.addAction(cancelAction)
+                
+                present(alertController, animated: ConsideringUser.animated)
             default:
                 break
             }

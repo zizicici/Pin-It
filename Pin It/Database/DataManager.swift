@@ -11,6 +11,14 @@ import GRDB
 final class DataManager {
     static let shared = DataManager()
     
+    var styles: [PostStyle] = []
+    
+    init() {
+        updateStyles()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(updateStyles), name: .DatabaseUpdated, object: nil)
+    }
+    
     public func fetchAllPosts() -> [Post] {
         var result: [Post] = []
         do {
@@ -326,6 +334,11 @@ final class DataManager {
 }
 
 extension DataManager {
+    @objc
+    func updateStyles() {
+        styles = fetchAllStyles()
+    }
+    
     func fetchAllStyles() -> [PostStyle] {
         var result: [PostStyle] = []
         do {

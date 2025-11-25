@@ -495,6 +495,7 @@ extension SettingsViewController: UITableViewDelegate {
 extension SettingsViewController {
     func enterStyleDetail(for style: PostStyle) {
         let styleViewController = StyleViewController(style: style)
+        styleViewController.delegate = self
         
         let nav = UINavigationController(rootViewController: styleViewController)
         
@@ -502,7 +503,25 @@ extension SettingsViewController {
     }
     
     func addStyle() {
+        let style: PostStyle = PostStyle.placeholder
+        let styleViewController = StyleViewController(style: style)
+        styleViewController.delegate = self
         
+        let nav = UINavigationController(rootViewController: styleViewController)
+        
+        present(nav, animated: ConsideringUser.animated)
+    }
+}
+
+extension SettingsViewController: StyleEditorDelegate {
+    func styleEditor(_ editor: StyleViewController, didUpdateStyle style: PostStyle) {
+        if style.id == nil {
+            // Create
+            _ = DataManager.shared.add(style: style)
+        } else {
+            // Update
+            _ = DataManager.shared.update(style: style)
+        }
     }
 }
 
