@@ -605,7 +605,7 @@ extension MainViewController: PostCellDelegate {
     func getStyleButtonMenu(for post: Post.Detail) -> UIMenu {
         var elements: [UIMenuElement] = []
         
-        let defaultStyleAction = UIAction(title: String(format: String(localized: "style.default%@"), post.activedStyle?.name ?? ""), state: post.style == nil ? .on : .off) { _ in
+        let defaultStyleAction = UIAction(title: PostStyle.noneTitle, state: post.style == nil ? .on : .off) { _ in
             _ = DataManager.shared.update(post: post.post, style: nil)
         }
         elements.append(defaultStyleAction)
