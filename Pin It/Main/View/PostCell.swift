@@ -21,6 +21,7 @@ private extension UICellConfigurationState {
 
 protocol PostCellDelegate: NSObjectProtocol {
     func getMoreButtonMenu(for post: Post.Detail) -> UIMenu
+    func getStyleButtonMenu(for post: Post.Detail) -> UIMenu
     func update(post: Post, isPinned: Bool)
     func tap(for post: Post.Detail)
 }
@@ -63,6 +64,23 @@ class PostCell: PostBaseCell {
         return button
     }()
     
+    private var styleButton: UIButton = {
+        var configuration = UIButton.Configuration.plain()
+        configuration.image = UIImage(systemName: "swatchpalette", withConfiguration: UIImage.SymbolConfiguration(pointSize: 8.5, weight: .bold))
+        configuration.imagePadding = 5.0
+        configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer({ incoming in
+            var outgoing = incoming
+            outgoing.font = UIFont.boldSystemFont(ofSize: 14.0)
+            
+            return outgoing
+        })
+        let button = UIButton(configuration: configuration)
+        button.tintColor = AppColor.text.withAlphaComponent(0.6)
+        button.showsMenuAsPrimaryAction = true
+        
+        return button
+    }()
+    
     private var postView: PostView = PostView()
     
     private func setupViewsIfNeeded() {
@@ -71,7 +89,8 @@ class PostCell: PostBaseCell {
         contentView.addSubview(postView)
         postView.snp.makeConstraints { make in
             make.leading.equalTo(contentView).inset(0.0)
-            make.top.bottom.equalTo(contentView).inset(10.0)
+            make.top.equalTo(contentView).inset(10.0)
+            make.bottom.equalTo(contentView).inset(40.0)
             make.trailing.equalTo(contentView).inset(54.0)
         }
         
@@ -84,7 +103,7 @@ class PostCell: PostBaseCell {
         
         contentView.addSubview(moreButton)
         moreButton.snp.makeConstraints { make in
-            make.bottom.equalTo(contentView).inset(16.0)
+            make.bottom.equalTo(contentView).inset(46.0)
             make.trailing.equalTo(contentView)
             make.width.height.equalTo(44.0)
             make.top.equalTo(pinButton.snp.bottom).offset(4.0)
@@ -93,12 +112,28 @@ class PostCell: PostBaseCell {
         pinButton.addTarget(self, action: #selector(pinAction), for: .touchUpInside)
         
         postView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapAction)))
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(reloadMenus), name: .DatabaseStyleUpdated, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(reloadMenus), name: .SettingsUpdate, object: nil)
+    }
+    
+    private func setupStyleButtonIfNeeded() {
+        guard styleButton.superview == nil else { return }
+        
+        contentView.addSubview(styleButton)
+        styleButton.snp.makeConstraints { make in
+            make.leading.equalTo(postView)
+            make.top.equalTo(postView.snp.bottom).offset(4.0)
+            make.height.equalTo(30.0)
+        }
     }
     
     override func updateConfiguration(using state: UICellConfigurationState) {
         super.updateConfiguration(using: state)
         
         setupViewsIfNeeded()
+        
+        setupStyleButtonIfNeeded()
         
         if let postItem = state.postItem {
             postView.update(with: postItem)
@@ -113,6 +148,22 @@ class PostCell: PostBaseCell {
                 }
             }
             pinButton.setNeedsUpdateConfiguration()
+            
+            styleButton.configurationUpdateHandler = { button in
+                var config = button.configuration
+                config?.title = postItem.activedStyle?.name
+                button.configuration = config
+            }
+            styleButton.constraints.forEach{ $0.isActive = true }
+            
+            reloadMenus()
+        }
+    }
+    
+    @objc
+    private func reloadMenus() {
+        if let postItem = configurationState.postItem {
+            styleButton.menu = delegate?.getStyleButtonMenu(for: postItem)
             
             moreButton.menu = delegate?.getMoreButtonMenu(for: postItem)
         }
@@ -129,6 +180,12 @@ class PostCell: PostBaseCell {
     private func tapAction() {
         guard let postItem = configurationState.postItem else { return }
         delegate?.tap(for: postItem)
+    }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        
+        styleButton.removeFromSuperview()
     }
 }
 

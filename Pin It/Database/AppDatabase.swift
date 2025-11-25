@@ -10,6 +10,7 @@ import GRDB
 
 extension Notification.Name {
     static let DatabaseUpdated = Notification.Name(rawValue: "com.zizicici.common.database.updated")
+    static let DatabaseStyleUpdated = Notification.Name(rawValue: "com.zizicici.common.database.updated.style")
 }
 
 final class AppDatabase {
@@ -379,22 +380,23 @@ extension AppDatabase {
 }
 
 extension AppDatabase {
-    func add(style: PostStyle) -> Bool {
+    func add(style: PostStyle) -> PostStyle? {
         guard style.id == nil else {
-            return false
+            return nil
         }
+        var saveStyle = style
         do {
             try dbWriter?.write{ db in
-                var saveStyle = style
                 try saveStyle.save(db)
             }
         }
         catch {
             print(error)
-            return false
+            return nil
         }
         NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
-        return true
+        NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
+        return saveStyle
     }
     
     func update(style: PostStyle) -> Bool {
@@ -411,6 +413,7 @@ extension AppDatabase {
             return false
         }
         NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
         return true
     }
     
@@ -428,6 +431,7 @@ extension AppDatabase {
             return false
         }
         NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
         return true
     }
 }
@@ -448,6 +452,7 @@ extension AppDatabase {
             return false
         }
         NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
         return true
     }
     
@@ -465,6 +470,7 @@ extension AppDatabase {
             return false
         }
         NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
         return true
     }
     
@@ -482,6 +488,7 @@ extension AppDatabase {
             return false
         }
         NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
         return true
     }
 }

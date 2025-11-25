@@ -11143,7 +11143,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "默认样式"
+            "value" : "标准"
           }
         }
       }
@@ -11153,7 +11153,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "透明按钮样式"
+            "value" : "透明按钮"
           }
         }
       }
@@ -18306,6 +18306,26 @@
         }
       }
     },
+    "style.default" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "默认样式"
+          }
+        }
+      }
+    },
+    "style.default%@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "默认（%@）"
+          }
+        }
+      }
+    },
     "style.editor" : {
       "localizations" : {
         "zh-Hans" : {
@@ -18372,6 +18392,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "文字颜色"
+          }
+        }
+      }
+    },
+    "style.list" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "样式列表"
           }
         }
       }

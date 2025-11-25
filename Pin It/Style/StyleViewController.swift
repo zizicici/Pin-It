@@ -395,6 +395,14 @@ class StyleViewController: UIViewController {
         reloadData()
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        if style.id == nil {
+            _ = nameCell?.becomeFirstResponder()
+        }
+    }
+    
     private func setupNavigationBar() {
         let saveItem = UIBarButtonItem(title: String(localized: "button.save"), style: .done, target: self, action: #selector(save))
         saveItem.tintColor = .systemRed
@@ -652,7 +660,7 @@ class StyleViewController: UIViewController {
         
         snapshot.appendItems([.controlDisplayMode(controlDisplayMode), .imageDisplayMode(imageDisplayMode)], toSection: .others)
         
-        if style.id != nil, DataManager.shared.fetchAllPosts().count > 1 {
+        if let styleId = style.id, DefaultStyle.current.rawValue != Int(styleId) {
             snapshot.appendSections([.action])
             snapshot.appendItems([.delete], toSection: .action)
         }
@@ -1038,5 +1046,38 @@ extension UIAlertController {
         if let title = textFields?[0].text, let action = actions.last {
             action.isEnabled = (title.count > 0) && (Int(title) != nil)
         }
+    }
+}
+
+struct DefaultStyle: RawRepresentable, UserDefaultSettable {
+    init(rawValue: Int) {
+        self.rawValue = rawValue
+    }
+    
+    var rawValue: Int
+    
+    static func getKey() -> UserDefaults.Settings {
+        .DefaultStyle
+    }
+    
+    static var defaultOption: DefaultStyle = Self.init(rawValue: 0)
+    
+    func getName() -> String {
+        let style = DataManager.shared.fetchStyle(by: Int64(rawValue))
+        return style?.name ?? ""
+    }
+    
+    static func getTitle() -> String {
+        return String(localized: "style.default")
+    }
+    
+    static func getOptions() -> [DefaultStyle] {
+        let styleIds = DataManager.shared.fetchAllStyles().compactMap({ $0.id }).map({ Int($0) })
+        
+        return styleIds.map{ DefaultStyle.init(rawValue: $0) }
+    }
+    
+    static func setCurrent(_ value: DefaultStyle) throws {
+        setValue(value)
     }
 }

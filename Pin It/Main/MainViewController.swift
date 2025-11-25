@@ -601,6 +601,29 @@ extension MainViewController: PostCellDelegate {
         
         enterImageDetail(for: detail)
     }
+    
+    func getStyleButtonMenu(for post: Post.Detail) -> UIMenu {
+        var elements: [UIMenuElement] = []
+        
+        let defaultStyleAction = UIAction(title: String(format: String(localized: "style.default%@"), post.activedStyle?.name ?? ""), state: post.style == nil ? .on : .off) { _ in
+            _ = DataManager.shared.update(post: post.post, style: nil)
+        }
+        elements.append(defaultStyleAction)
+        
+        let styles = DataManager.shared.fetchAllStyles()
+        
+        let styleActions = styles.map({ style in
+            let action = UIAction(title: style.name, state: post.style == style ? .on : .off) {  _ in
+                _ = DataManager.shared.update(post: post.post, style: style)
+            }
+            return action
+        })
+        let currentPageDivider = UIMenu(title: "", options: .displayInline, children: styleActions)
+
+        elements.append(currentPageDivider)
+        
+        return UIMenu(title: "", children: elements)
+    }
 }
 
 extension MainViewController {
@@ -708,14 +731,8 @@ extension MainViewController {
             for image in detail.images {
                 _ = DataManager.shared.update(image: image)
             }
-            if let styleId = detail.style?.id, let postId = detail.post.id {
-                if var decoration = DataManager.shared.fetchDecoration(by: postId) {
-                    decoration.styleId = styleId
-                    _ = DataManager.shared.update(decoration: decoration)
-                } else {
-                    let newDecoration = PostDecoration(styleId: styleId, postId: postId)
-                    _ = DataManager.shared.add(decoration: newDecoration)
-                }
+            if let style = detail.style {
+                _ = DataManager.shared.update(post: detail.post, style: style)
             }
             _ = DataManager.shared.update(post: detail.post)
         }

@@ -356,7 +356,24 @@ extension DataManager {
         return result
     }
     
-    func add(style: PostStyle) -> Bool {
+    func fetchStyle(by id: Int64) -> PostStyle? {
+        var result: PostStyle? = nil
+        do {
+            try AppDatabase.shared.reader?.read{ db in
+                let idColumn = PostStyle.Columns.id
+                result = try PostStyle
+                    .filter(idColumn == id)
+                    .fetchOne(db)
+            }
+        }
+        catch {
+            print(error)
+        }
+        
+        return result
+    }
+    
+    func add(style: PostStyle) -> PostStyle? {
         return AppDatabase.shared.add(style: style)
     }
     
@@ -395,6 +412,25 @@ extension DataManager {
     
     func delete(decoration: PostDecoration) -> Bool {
         return AppDatabase.shared.delete(decoration: decoration)
+    }
+    
+    func update(post: Post, style: PostStyle?) -> Bool {
+        guard let postId = post.id else { return false }
+        if let styleId = style?.id {
+            if var decoration = fetchDecoration(by: postId) {
+                decoration.styleId = styleId
+                return update(decoration: decoration)
+            } else {
+                let decoration = PostDecoration(styleId: styleId, postId: postId)
+                return add(decoration: decoration)
+            }
+        } else {
+            if let decoration = fetchDecoration(by: postId) {
+                return delete(decoration: decoration)
+            } else {
+                return true
+            }
+        }
     }
 }
 

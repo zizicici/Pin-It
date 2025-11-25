@@ -18,6 +18,7 @@ extension UserDefaults {
         case DeleteOperationConfirmation = "com.zizicici.pin.settings.DeleteOperationConfirmation"
         case ExpirationAction = "com.zizicici.pin.settings.ExpirationAction"
         case DefaultExpirationTime = "com.zizicici.pin.settings.DefaultExpirationTime"
+        case DefaultStyle = "com.zizicici.pin.settings.DefaultStyle"
     }
 }
 
@@ -69,7 +70,7 @@ extension UserDefaultSettable where Self: RawRepresentable, Self.RawValue == Int
         }
     }
     
-    fileprivate static func setValue(_ value: Self) {
+    static func setValue(_ value: Self) {
         UserDefaults(suiteName: appGroupId)?.set(value.rawValue, forKey: getKey().rawValue)
         UserDefaults(suiteName: appGroupId)?.synchronize()
         NotificationCenter.default.post(name: NSNotification.Name.SettingsUpdate, object: nil)

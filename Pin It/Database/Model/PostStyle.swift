@@ -83,6 +83,24 @@ extension PostStyle {
     static let placeholder: Self = PostStyle(name: String(localized: "style.placeholder"), lockTextSize: .automatic, lockTextAlignment: .center, islandTextSize: .automatic, islandTextAlignment: .center, symbol: "pin.fill", symbolAngle: -4500, imageDisplayMode: .aspectFit, controlAlpha: 100)
 }
 
+extension PostStyle: OptionItem {
+    static var noneTitle: String {
+        return String(format: String(localized: "style.default%@"), DefaultStyle.getValue().getName())
+    }
+    
+    static var sectionTitle: String {
+        return String(localized: "style.title")
+    }
+    
+    var title: String {
+        return name
+    }
+    
+    var subtitle: String? {
+        return nil
+    }
+}
+
 struct PostDecoration: Identifiable, Hashable, Codable {
     var id: Int64?
     

@@ -118,6 +118,20 @@ extension Post.Detail {
             return .text
         }
     }
+    
+    var activedStyle: PostStyle? {
+        var result: PostStyle?
+        if style == nil {
+            let id = Int64(DefaultStyle.getValue().rawValue)
+            result = DataManager.shared.fetchStyle(by: id)
+        } else {
+            result = style
+        }
+        if result == nil {
+            result = DataManager.shared.fetchAllStyles().first
+        }
+        return result
+    }
 }
 
 extension Post {

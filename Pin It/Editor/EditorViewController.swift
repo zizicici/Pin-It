@@ -67,7 +67,6 @@ class EditorViewController: UIViewController {
     enum Section: Int, Hashable {
         case text
         case image
-        case style
         case advanced
         
         var header: String? {
@@ -76,8 +75,6 @@ class EditorViewController: UIViewController {
                 return String(localized: "editor.text")
             case .image:
                 return String(localized: "editor.image")
-            case .style:
-                return String(localized: "style.title")
             case .advanced:
                 return String(localized: "editor.advanced")
             }
@@ -85,7 +82,7 @@ class EditorViewController: UIViewController {
         
         var footer: String? {
             switch self {
-            case .text, .image, .advanced, .style:
+            case .text, .image, .advanced:
                 return nil
             }
         }
@@ -95,7 +92,7 @@ class EditorViewController: UIViewController {
         case text(String?)
         case image(UIImage)
         case imageAction(ImageAction)
-        case style(PostStyle, Bool)
+        case style(PostStyle?)
         case expirationToggle(Bool)
         case expiration(Int64?)
     }
@@ -167,7 +164,7 @@ class EditorViewController: UIViewController {
     convenience init(postDetail: Post.Detail, editorClosure: @escaping (Post.Detail) -> ()) {
         self.init()
         self.detail = postDetail
-        self.style = detail.style ?? DataManager.shared.fetchAllStyles().first
+        self.style = detail.style
         self.editorClosure = editorClosure
         
         expirationToggle = (expirationTime != nil)
@@ -220,6 +217,7 @@ class EditorViewController: UIViewController {
         tableView.register(TextViewCell.self, forCellReuseIdentifier: NSStringFromClass(TextViewCell.self))
         tableView.register(PostImageCell.self, forCellReuseIdentifier: NSStringFromClass(PostImageCell.self))
         tableView.register(DateCell.self, forCellReuseIdentifier: NSStringFromClass(DateCell.self))
+        tableView.register(OptionCell<PostStyle>.self, forCellReuseIdentifier: NSStringFromClass(OptionCell<PostStyle>.self))
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 50.0
         tableView.delegate = self
@@ -265,16 +263,24 @@ class EditorViewController: UIViewController {
                 content.imageProperties.tintColor = .systemRed
                 cell.contentConfiguration = content
                 return cell
-            case .style(let style, let isSelected):
-                let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(UITableViewCell.self), for: indexPath)
-                cell.tintColor = .systemRed
-                cell.accessoryType = isSelected ? .checkmark : .none
-                cell.accessoryView = nil
-                
-                var content = UIListContentConfiguration.valueCell()
-                content.text = style.name
-                content.textProperties.color = AppColor.text
-                cell.contentConfiguration = content
+            case .style(let style):
+                let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(OptionCell<PostStyle>.self), for: indexPath)
+                if let cell = cell as? OptionCell<PostStyle> {
+                    cell.update(with: style)
+                    let noneAction = UIAction(title: PostStyle.noneTitle, state: style == nil ? .on : .off) { [weak self] _ in
+                        self?.style = nil
+                    }
+                    let actions = DataManager.shared.fetchAllStyles().map { target in
+                        let action = UIAction(title: target.title, subtitle: target.subtitle, state: style == target ? .on : .off) { [weak self] _ in
+                            self?.style = target
+                        }
+                        return action
+                    }
+                    let divider = UIMenu(title: "", options: . displayInline, children: actions)
+                    
+                    let menu = UIMenu(children: [noneAction, divider])
+                    cell.valueButton.menu = menu
+                }
                 return cell
             case .expirationToggle(let enable):
                 let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(UITableViewCell.self), for: indexPath)
@@ -325,12 +331,8 @@ class EditorViewController: UIViewController {
             }
         }
         
-        let styles = DataManager.shared.fetchAllStyles()
-        
-        snapshot.appendSections([.style])
-        snapshot.appendItems(styles.map({ .style($0, $0 == style) }), toSection: .style)
-        
         snapshot.appendSections([.advanced])
+        snapshot.appendItems([.style(style)], toSection: .advanced)
         snapshot.appendItems([.expirationToggle(expirationToggle)], toSection: .advanced)
         if expirationToggle {
             snapshot.appendItems([.expiration(expirationTime)], toSection: .advanced)
@@ -419,7 +421,7 @@ extension EditorViewController: UITableViewDelegate {
             }
         case .expirationToggle, .expiration:
             break
-        case .style(let style, _):
+        case .style(let style):
             self.style = style
         }
     }
