@@ -523,7 +523,7 @@ class StyleViewController: UIViewController {
                 cell.update(with: displayMode)
                 let actions = PostImageDisplayMode.allCases.map { target in
                     let action = UIAction(title: target.title, subtitle: target.subtitle, state: displayMode == target ? .on : .off) { [weak self] _ in
-                        self?.imageDisplayMode = displayMode
+                        self?.imageDisplayMode = target
                     }
                     return action
                 }
@@ -537,7 +537,7 @@ class StyleViewController: UIViewController {
                 cell.update(with: displayMode)
                 let actions = PostControlDisplayMode.allCases.map { target in
                     let action = UIAction(title: target.title, subtitle: target.subtitle, state: displayMode == target ? .on : .off) { [weak self] _ in
-                        self?.controlDisplayMode = displayMode
+                        self?.controlDisplayMode = target
                     }
                     return action
                 }
@@ -652,13 +652,14 @@ class StyleViewController: UIViewController {
         
         snapshot.appendItems([.textSize(.lockScreen, lockTextSize)], toSection: .lockScreen)
         snapshot.appendItems([.textAlignment(.lockScreen, lockTextAlignment)], toSection: .lockScreen)
+        snapshot.appendItems([.controlDisplayMode(controlDisplayMode)], toSection: .lockScreen)
         
         snapshot.appendItems([.textSize(.island, islandTextSize)], toSection: .island)
         snapshot.appendItems([.textAlignment(.island, islandTextAlignment)], toSection: .island)
         
         snapshot.appendItems([.symbolAngle(symbolAngle)], toSection: .symbol)
         
-        snapshot.appendItems([.controlDisplayMode(controlDisplayMode), .imageDisplayMode(imageDisplayMode)], toSection: .others)
+        snapshot.appendItems([.imageDisplayMode(imageDisplayMode)], toSection: .others)
         
         if let styleId = style.id, DefaultStyle.current.rawValue != Int(styleId) {
             snapshot.appendSections([.action])
@@ -972,10 +973,8 @@ extension PostImageDisplayMode: OptionItem {
     
     var title: String {
         switch self {
-        case .scaleFill:
-            return String(localized: "style.imageDisplayMode.scaleFill")
         case .aspectFit:
-            return String(localized: "style.imageDisplayMode.scaleFit")
+            return String(localized: "style.imageDisplayMode.aspectFit")
         case .aspectFill:
             return String(localized: "style.imageDisplayMode.aspectFill")
         }

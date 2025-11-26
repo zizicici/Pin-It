@@ -8,9 +8,8 @@
 import Foundation
 
 enum PostImageDisplayMode: Int, Codable, CaseIterable {
-    case scaleFill = 0
-    case aspectFit = 1
-    case aspectFill = 2
+    case aspectFit = 0
+    case aspectFill = 1
 }
 
 enum PostTextAlignment: Int, Codable, CaseIterable {

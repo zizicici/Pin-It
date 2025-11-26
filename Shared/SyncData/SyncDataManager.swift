@@ -263,3 +263,17 @@ extension SyncDataManager {
         return try read(SyncActionStorage.self)
     }
 }
+
+extension SyncDataManager {
+    static func post(by id: Int64) -> SyncPost? {
+        return try? loadPosts()?.posts.first(where: { $0.id == id })
+    }
+    
+    static func style(by postId: Int64?) -> PostStyle? {
+        guard let storage = try? loadPosts() else { return nil }
+        
+        let styleId = storage.posts.first(where: { $0.id == postId })?.styleId ?? Int64(UserDefaults(suiteName: appGroupId)?.getInt(forKey: UserDefaults.Settings.DefaultStyle.rawValue) ?? -1)
+        
+        return storage.styles.first(where: { $0.id == styleId })
+    }
+}

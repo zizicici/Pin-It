@@ -18356,17 +18356,7 @@
         }
       }
     },
-    "style.imageDisplayMode.scaleFill" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "拉伸填充"
-          }
-        }
-      }
-    },
-    "style.imageDisplayMode.scaleFit" : {
+    "style.imageDisplayMode.aspectFit" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
