@@ -28,7 +28,6 @@ struct PinInfoPageIndex {
     
     static func setValue(_ value: Int) {
         UserDefaults(suiteName: appGroupId)?.set(value, forKey: key)
-        UserDefaults(suiteName: appGroupId)?.synchronize()
     }
 }
 
@@ -190,7 +189,7 @@ class PinInfoManager: NSObject {
         }
         let target = try? getCurrentPost()
         
-        return (PinAttributes.ContentState(id: Int(target?.id ?? -1), index: current, total: posts.count, text: target?.text, imageName: target?.image, isLeftToRight: Language.type() != .ar), false)
+        return (PinAttributes.ContentState(id: Int(target?.id ?? -1), index: current, total: posts.count, isLeftToRight: Language.type() != .ar), false)
     }
 }
 

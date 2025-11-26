@@ -22,18 +22,23 @@ struct PinContentView: View {
             if context.state.total == 0 {
                 AutoSizeText(text: String(localized: "content.no"))
             } else {
-                if let text = context.state.text {
-                    AutoSizeText(text: text)
-                } else if let imageName = context.state.imageName {
-                    if let path = ImageCacheManager.shared.getPath(name: imageName, type: .processed), let image = UIImage(contentsOfFile: path) {
-                        Link(destination: URL(string: BoardLiveActivity.url + "/detail/" + "\(context.state.id)")!) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                if let post = try? SyncDataManager.loadPosts()?.posts.first(where: { $0.id == context.state.id }) {
+                    switch post.content {
+                    case .empty:
+                        AutoSizeText(text: String(localized: "content.no"))
+                    case .text(let string):
+                        AutoSizeText(text: string)
+                    case .image(let string):
+                        if let path = ImageCacheManager.shared.getPath(name: string, type: .processed), let image = UIImage(contentsOfFile: path) {
+                            Link(destination: URL(string: BoardLiveActivity.url + "/detail/" + "\(context.state.id)")!) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                            }
+                        } else {
+                            AutoSizeText(text: String(localized: "content.error.load"))
                         }
-                    } else {
-                        AutoSizeText(text: String(localized: "content.error.load"))
                     }
                 } else {
                     AutoSizeText(text: String(localized: "content.no"))
@@ -47,21 +52,28 @@ struct PinContentWatchView: View {
     var context: ActivityViewContext<PinAttributes>
     
     var body: some View {
-        if let text = context.state.text {
-            HStack {
-                Spacer().frame(width: 3.0)
-                VStack {
-                    Spacer().frame(height: 1.5)
-                    Text(text)
-                        .font(.system(.body, design: .rounded).monospacedDigit())
-                        .multilineTextAlignment(.center)
-                        .lineLimit(4)
-                        .minimumScaleFactor(0.6)
-                    Spacer().frame(height: 1.5)
+        if let post = try? SyncDataManager.loadPosts()?.posts.first(where: { $0.id == context.state.id }) {
+            switch post.content {
+            case .empty:
+                Text("content.no")
+            case .image:
+                Text("content.error.watch")
+            case .text(let string):
+                HStack {
+                    Spacer().frame(width: 3.0)
+                    VStack {
+                        Spacer().frame(height: 1.5)
+                        Text(string)
+                            .font(.system(.body, design: .rounded).monospacedDigit())
+                            .multilineTextAlignment(.center)
+                            .lineLimit(4)
+                            .minimumScaleFactor(0.6)
+                        Spacer().frame(height: 1.5)
+                    }
                 }
             }
         } else {
-            Text("content.error.watch")
+            Text("content.no")
         }
     }
 }

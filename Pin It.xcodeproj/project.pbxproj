@@ -131,6 +131,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AppIntents/StartIntent.swift,
+				Database/Model/PostStyle.swift,
 				Extension/AppColor.swift,
 				Extension/Debounce.swift,
 				More/Store.swift,

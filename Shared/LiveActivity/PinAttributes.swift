@@ -13,8 +13,6 @@ struct PinAttributes: ActivityAttributes {
         var id: Int
         var index: Int
         var total: Int
-        var text: String?
-        var imageName: String?
         var isLeftToRight: Bool
         
         var indexString: String {
