@@ -23,6 +23,7 @@ class PostSyncManager: NSObject {
         syncData()
         
         NotificationCenter.default.addObserver(self, selector: #selector(needSyncDatabaseToAppGroup), name: .DatabaseUpdated, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(needSyncDatabaseToAppGroup), name: .DefaultStyleDidChanged, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(syncData), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
     
@@ -77,6 +78,6 @@ extension Post.Detail {
         
         let defaultStyleId = Int64(DefaultStyle.getValue().rawValue)
         
-        return .init(id: id, content: content, expirationTime: post.expirationTime, styleId: style?.id ?? defaultStyleId)
+        return .init(id: id, content: content, expirationTime: post.expirationTime, styleId: style?.id ?? defaultStyleId, defaultStyleId: defaultStyleId)
     }
 }

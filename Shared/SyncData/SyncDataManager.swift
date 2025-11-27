@@ -22,6 +22,7 @@ struct SyncPost: Codable, Equatable {
     var content: Content
     var expirationTime: Int64?
     var styleId: Int64
+    var defaultStyleId: Int64
     
     func isExpired() -> Bool {
         if let expirationTime = expirationTime {

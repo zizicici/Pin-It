@@ -1078,5 +1078,7 @@ struct DefaultStyle: RawRepresentable, UserDefaultSettable {
     
     static func setCurrent(_ value: DefaultStyle) throws {
         setValue(value)
+        
+        NotificationCenter.default.post(name: NSNotification.Name.DefaultStyleDidChanged, object: nil)
     }
 }

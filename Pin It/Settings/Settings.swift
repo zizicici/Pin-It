@@ -24,6 +24,7 @@ extension UserDefaults {
 
 extension Notification.Name {
     static let SettingsUpdate = Notification.Name(rawValue: "com.zizicici.common.settings.updated")
+    static let DefaultStyleDidChanged = Notification.Name(rawValue: "com.zizicici.pin.defaultStyle.didChanged")
 }
 
 protocol SettingsOption: Hashable, Equatable {
