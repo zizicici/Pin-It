@@ -259,7 +259,7 @@ struct BoardMediumView: View {
                     .privacySensitive(false)
                 HStack {
                     VStack {
-                        Button(intent: ButtonEmptyIntent()) {
+                        Button(intent: ResetAndUpdateIntent()) {
                             Image(systemName: context.state.symbol)
                                 .rotationEffect(Angle.degrees(context.state.symbolAngle))
                         }
@@ -330,7 +330,7 @@ struct BoardMediumView: View {
         } else {
             HStack {
                 VStack {
-                    Button(intent: ButtonEmptyIntent()) {
+                    Button(intent: ResetAndUpdateIntent()) {
                         Image(systemName: context.state.symbol)
                             .rotationEffect(Angle.degrees(context.state.symbolAngle))
                     }

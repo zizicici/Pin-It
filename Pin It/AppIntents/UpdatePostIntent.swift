@@ -211,3 +211,40 @@ struct UpdateExpirationTimeIntent: LiveActivityIntent {
         return .result(value: result)
     }
 }
+
+struct UpdateStyleIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "intent.post.update.style.title"
+    
+    static var description: IntentDescription = IntentDescription("intent.post.update.style.title", categoryName: "intent.post.update.category")
+    
+    static var parameterSummary: some ParameterSummary {
+        Summary("intent.post.update.style.summary\(\.$post)\(\.$style)")
+    }
+    
+    @Parameter(title: "intent.post.type")
+    var post: PostEntity
+    
+    @Parameter(title: "intent.style.type")
+    var style: StyleEntity?
+    
+    var styleId: Int64? {
+        guard let styleId = style?.id else {
+            return nil
+        }
+        return Int64(styleId)
+    }
+    
+    static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
+    
+    @MainActor
+    func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
+        guard let detail = DataManager.shared.fetchPostDetail(for: [Int64(post.id)]).first else {
+            return .result(value: false)
+        }
+        
+        let result = DataManager.shared.update(post: detail.post, styleId: styleId)
+        await SyncCompletionManager.shared.waitForCompletion(postId: Int64(post.id), timeout: 5.0)
+        
+        return .result(value: result)
+    }
+}

@@ -8,25 +8,27 @@
 import Foundation
 import AppIntents
 
-struct ButtonEmptyIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "intent.empty.title"
+struct ResetAndUpdateIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "intent.action.reload.title"
+    
+    static var description: IntentDescription = IntentDescription("intent.action.reload.title", categoryName: "intent.action.category")
+    
+    static var parameterSummary: some ParameterSummary {
+        Summary("intent.action.reload.summary")
+    }
+    
+    static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
         await PinInfoManager.shared.resetCurrentIndex()
         
         await LiveActivityManager.shared.update()
-        
-        return .result(value: true)
-    }
 
-    static var parameterSummary: some ParameterSummary {
-        Summary("")
+        return .result(value: true)
     }
     
     static var openAppWhenRun: Bool = false
-    
-    static var isDiscoverable: Bool = false
 }
 
 struct ButtonPreviousIntent: LiveActivityIntent {

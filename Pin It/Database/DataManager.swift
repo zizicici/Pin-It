@@ -182,7 +182,7 @@ final class DataManager {
         return result
     }
     
-    public func createPost(content: String, isPinned: Bool = true, expirationTime: Int64?) -> Post? {
+    public func createPost(content: String, isPinned: Bool = true, expirationTime: Int64?, styleId: Int64?) -> Post? {
         // Fetch Last Post
         switch MaxPinnedPosts.current {
         case .unlimited:
@@ -192,21 +192,28 @@ final class DataManager {
                 _ = unpinAllPinnedPosts()
             }
         }
+        
         let newOrder = getNewOrder(isPinned: true)
         let newPost = Post(expirationTime: expirationTime, isPinned: isPinned, order: newOrder)
-        guard let savedPost = AppDatabase.shared.add(post: newPost), let id = savedPost.id else {
+        guard let savedPost = AppDatabase.shared.add(post: newPost), let postId = savedPost.id else {
             return nil
         }
-        let newPostText = PostText(postId: id, content: content, order: 0)
-        if !AppDatabase.shared.add(text: newPostText) {
+        
+        let newPostText = PostText(postId: postId, content: content, order: 0)
+        guard AppDatabase.shared.add(text: newPostText) else {
             _ = AppDatabase.shared.delete(post: newPost)
             return nil
-        } else {
-            return savedPost
         }
+        
+        if let styleId = styleId {
+            let decoration = PostDecoration(styleId: styleId, postId: postId)
+            _ = AppDatabase.shared.add(decoration: decoration)
+        }
+        
+        return savedPost
     }
     
-    public func createPost(original: String, processed: String, rect: CGRect, orientation: Int, isPinned: Bool = true, expirationTime: Int64?) -> Post? {
+    public func createPost(original: String, processed: String, rect: CGRect, orientation: Int, isPinned: Bool = true, expirationTime: Int64?, styleId: Int64?) -> Post? {
         switch MaxPinnedPosts.current {
         case .unlimited:
             break
@@ -217,16 +224,22 @@ final class DataManager {
         }
         let newOrder = getNewOrder(isPinned: isPinned)
         let newPost = Post(expirationTime: expirationTime, isPinned: isPinned, order: newOrder)
-        guard let savedPost = AppDatabase.shared.add(post: newPost), let id = savedPost.id else {
+        guard let savedPost = AppDatabase.shared.add(post: newPost), let postId = savedPost.id else {
             return nil
         }
-        let newPostImage = PostImage(postId: id, original: original, processed: processed, orientation: Int64(orientation), minX: Int64(rect.minX), minY: Int64(rect.minY), maxX: Int64(rect.maxX), maxY: Int64(rect.maxY), order: 0)
-        if !AppDatabase.shared.add(image: newPostImage) {
+        
+        let newPostImage = PostImage(postId: postId, original: original, processed: processed, orientation: Int64(orientation), minX: Int64(rect.minX), minY: Int64(rect.minY), maxX: Int64(rect.maxX), maxY: Int64(rect.maxY), order: 0)
+        guard AppDatabase.shared.add(image: newPostImage) else {
             _ = AppDatabase.shared.delete(post: newPost)
             return nil
-        } else {
-            return savedPost
         }
+        
+        if let styleId = styleId {
+            let decoration = PostDecoration(styleId: styleId, postId: postId)
+            _ = AppDatabase.shared.add(decoration: decoration)
+        }
+        
+        return savedPost
     }
     
     public func update(post: Post, isPinned: Bool) -> Bool {
@@ -373,6 +386,22 @@ extension DataManager {
         return result
     }
     
+    func fetchStyles(by ids: [Int64]) -> [PostStyle] {
+        var result: [PostStyle] = []
+        do {
+            try AppDatabase.shared.reader?.read{ db in
+                result = try PostStyle
+                    .filter(ids: ids)
+                    .fetchAll(db)
+            }
+        }
+        catch {
+            print(error)
+        }
+        
+        return result
+    }
+    
     func add(style: PostStyle) -> PostStyle? {
         return AppDatabase.shared.add(style: style)
     }
@@ -414,9 +443,9 @@ extension DataManager {
         return AppDatabase.shared.delete(decoration: decoration)
     }
     
-    func update(post: Post, style: PostStyle?) -> Bool {
+    func update(post: Post, styleId: Int64?) -> Bool {
         guard let postId = post.id else { return false }
-        if let styleId = style?.id {
+        if let styleId = styleId {
             if var decoration = fetchDecoration(by: postId) {
                 decoration.styleId = styleId
                 return update(decoration: decoration)

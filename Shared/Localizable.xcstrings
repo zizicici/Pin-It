@@ -1,9 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-      "shouldTranslate" : false
-    },
     "%@" : {
       "shouldTranslate" : false
     },
@@ -4037,6 +4034,26 @@
         }
       }
     },
+    "intent.action.reload.summary" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重载钉一下实时活动，回到第一个记录。"
+          }
+        }
+      }
+    },
+    "intent.action.reload.title" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重载钉一下实时活动"
+          }
+        }
+      }
+    },
     "intent.action.start.description" : {
       "localizations" : {
         "ar" : {
@@ -5238,6 +5255,7 @@
       }
     },
     "intent.empty.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8537,6 +8555,26 @@
         }
       }
     },
+    "intent.post.update.style.summary${post}${style}" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新${post}样式为${style}"
+          }
+        }
+      }
+    },
+    "intent.post.update.style.title" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新记录样式"
+          }
+        }
+      }
+    },
     "intent.post.update.text.summary${post}${content}" : {
       "localizations" : {
         "ar" : {
@@ -8733,6 +8771,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "更新記錄爲文字記錄"
+          }
+        }
+      }
+    },
+    "intent.style.isDefaultValue" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此样式为默认样式"
+          }
+        }
+      }
+    },
+    "intent.style.nameValue" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "样式名称"
+          }
+        }
+      }
+    },
+    "intent.style.type" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "样式"
           }
         }
       }
@@ -18541,7 +18609,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "文本对齐"
+            "value" : "文本行对齐方式"
           }
         }
       }

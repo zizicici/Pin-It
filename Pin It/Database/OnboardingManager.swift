@@ -60,17 +60,17 @@ class OnboardingManager: NSObject {
     }
     
     public func setupOnboardingDataIfNeeded() {
-        if checkPostTableNeedsOnboarding() {
-            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.1"), expirationTime: nil)
-            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.2"), isPinned: false, expirationTime: nil)
-        }
         if checkStyleTableNeedsOnboarding() {
             if let style = DataManager.shared.add(style: PostStyle(name: String(localized: "onboarding.style.1"), lockTextSize: .automatic, lockTextAlignment: .center, islandTextSize: .automatic, islandTextAlignment: .center, symbol: "pin.fill", symbolAngle: -4500, imageDisplayMode: .aspectFit, controlAlpha: 100)) {
                 if let id = style.id {
                     try? DefaultStyle.setCurrent(DefaultStyle(rawValue: Int(id)))
                 }
             }
-            _ = DataManager.shared.add(style: PostStyle(name: String(localized: "onboarding.style.2"), lockTextSize: .automatic, lockTextAlignment: .center, islandTextSize: .automatic, islandTextAlignment: .center, symbol: "pin.fill", symbolAngle: -4500, imageDisplayMode: .aspectFit, controlAlpha: 0))
+            _ = DataManager.shared.add(style: PostStyle(name: String(localized: "onboarding.style.2"), lockTextSize: .automatic, lockTextAlignment: .center, islandTextSize: .automatic, islandTextAlignment: .center, symbol: "pin.fill", symbolAngle: -4500, imageDisplayMode: .aspectFill, controlAlpha: 0))
+        }
+        if checkPostTableNeedsOnboarding() {
+            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.1"), expirationTime: nil, styleId: nil)
+            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.2"), isPinned: false, expirationTime: nil, styleId: nil)
         }
     }
 }

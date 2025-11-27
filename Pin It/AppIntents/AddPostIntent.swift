@@ -19,17 +19,28 @@ struct AddTextRecordIntent: LiveActivityIntent {
     @Parameter(title: "intent.expirationTime")
     var expirationTime: Date?
     
+    @Parameter(title: "intent.style.type")
+    var style: StyleEntity?
+    
     static var parameterSummary: some ParameterSummary {
         Summary("intent.post.add.by.text.summary\(\.$content)") {
+            \.$style
             \.$expirationTime
         }
     }
     
     static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
     
+    var styleId: Int64? {
+        guard let styleId = style?.id else {
+            return nil
+        }
+        return Int64(styleId)
+    }
+    
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        if let post = DataManager.shared.createPost(content: content, expirationTime: expirationTime?.nanoSecondSince1970 ?? Post.getDefaultExpirationTime()) {
+        if let post = DataManager.shared.createPost(content: content, expirationTime: expirationTime?.nanoSecondSince1970 ?? Post.getDefaultExpirationTime(), styleId: styleId) {
             await SyncCompletionManager.shared.waitForCompletion(postId: post.id!, timeout: 5.0)
             
             return .result(value: true)
@@ -75,17 +86,29 @@ struct AddImageRecordIntent: LiveActivityIntent {
     @Parameter(title: "intent.expirationTime")
     var expirationTime: Date?
     
+    @Parameter(title: "intent.style.type")
+    var style: StyleEntity?
+    
+    var styleId: Int64? {
+        guard let styleId = style?.id else {
+            return nil
+        }
+        return Int64(styleId)
+    }
+    
     static var parameterSummary: some ParameterSummary {
         Switch(\.$displayMode) {
             Case(.prominentNumber) {
                 Summary("intent.post.add.by.image.summary\(\.$content)") {
                     \.$displayMode
+                    \.$style
                     \.$expirationTime
                 }
             }
             Case(.full) {
                 Summary("intent.post.add.by.image.summary\(\.$content)") {
                     \.$displayMode
+                    \.$style
                     \.$expirationTime
                 }
             }
@@ -93,6 +116,7 @@ struct AddImageRecordIntent: LiveActivityIntent {
                 Summary("intent.post.add.by.image.summary\(\.$content)") {
                     \.$displayMode
                     \.$cropEdges
+                    \.$style
                     \.$expirationTime
                 }
             }
@@ -135,7 +159,7 @@ struct AddImageRecordIntent: LiveActivityIntent {
             if let newImage = newImage?.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3),
                let processed = ImageCacheManager.shared.storeImage(newImage, type: .processed),
                let original = ImageCacheManager.shared.storeImage(image, type: .original),
-               let post = DataManager.shared.createPost(original: original, processed: processed, rect: imageRect, orientation: 0, expirationTime: expirationTime?.nanoSecondSince1970 ?? Post.getDefaultExpirationTime()) {
+               let post = DataManager.shared.createPost(original: original, processed: processed, rect: imageRect, orientation: 0, expirationTime: expirationTime?.nanoSecondSince1970 ?? Post.getDefaultExpirationTime(), styleId: styleId) {
                 await SyncCompletionManager.shared.waitForCompletion(postId: post.id!, timeout: 5.0)
                 
                 return .result(value: true)
