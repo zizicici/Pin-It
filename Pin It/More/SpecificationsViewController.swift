@@ -73,7 +73,7 @@ class SpecificationsViewController: UIViewController {
                 case .publisher:
                     return "ZIZICICI LIMITED"
                 case .date:
-                    return "2025/11/23"
+                    return "2025/11/27"
                 case .license:
                     return "粤ICP备2025448771号-4A"
                 }
@@ -104,12 +104,19 @@ class SpecificationsViewController: UIViewController {
                 let Kingfisher = ThirdParty(
                     urlString: "https://github.com/onevcat/Kingfisher",
                     name: "Kingfisher",
-                    version: "8.6.2")
+                    version: "8.6.2"
+                )
                 let JXPhotoBrowser = ThirdParty(
                     urlString: "https://github.com/JiongXing/PhotoBrowser",
                     name: "JXPhotoBrowser",
-                    version: "3.1.6")
-                return [SnapKit, GRDB, TOCropViewController, Kingfisher, JXPhotoBrowser]
+                    version: "3.1.6"
+                )
+                let SymbolPicker = ThirdParty(
+                    urlString: "https://github.com/xnth97/SymbolPicker",
+                    name: "SymbolPicker",
+                    version: "1.6.2"
+                )
+                return [SnapKit, GRDB, TOCropViewController, Kingfisher, JXPhotoBrowser, SymbolPicker]
             }()
         }
         
