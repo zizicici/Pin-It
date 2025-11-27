@@ -928,7 +928,7 @@ extension PostTextSize: OptionItem {
         case .automatic:
             return String(localized: "style.textSize.auto")
         default:
-            return String(format: String(localized: "style.textSize.auto%d"), rawValue)
+            return String(format: String(localized: "style.textSize.specific%d"), rawValue)
         }
     }
     
