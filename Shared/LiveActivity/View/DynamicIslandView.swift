@@ -29,7 +29,7 @@ struct DynamicIslandView: View {
             VStack {
                 Button(intent: ResetAndUpdateIntent()) {
                     Image(systemName: context.state.symbol)
-                        .rotationEffect(Angle.degrees(-45.0))
+                        .rotationEffect(Angle.degrees(context.state.symbolAngle))
                 }
                 .tint(context.state.symbolColor)
                 
@@ -85,7 +85,7 @@ struct DynamicIslandView: View {
                     Image(systemName: context.state.symbol)
                         .font(.system(size: 12))
                         .foregroundColor(context.state.symbolColor)
-                        .rotationEffect(Angle.degrees(-45.0))
+                        .rotationEffect(Angle.degrees(context.state.symbolAngle))
                 }
             }
         case .compactTrailing:
@@ -95,7 +95,7 @@ struct DynamicIslandView: View {
                     Image(systemName: context.state.symbol)
                         .font(.system(size: 12))
                         .foregroundColor(context.state.symbolColor)
-                        .rotationEffect(Angle.degrees(-45.0))
+                        .rotationEffect(Angle.degrees(context.state.symbolAngle))
                 }
             }
         case .minimal:
@@ -103,7 +103,7 @@ struct DynamicIslandView: View {
             Image(systemName: context.state.symbol)
                 .font(.system(size: 12))
                 .foregroundColor(context.state.symbolColor)
-                .rotationEffect(Angle.degrees(-45.0))
+                .rotationEffect(Angle.degrees(context.state.symbolAngle))
             Spacer().frame(width: 20.0)
         }
     }

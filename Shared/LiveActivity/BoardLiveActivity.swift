@@ -65,7 +65,7 @@ struct PinContentView: View {
                             .padding(context.state.needTransparentControl ? 10.0 : 0.0)
                     case .image(let string):
                         if let path = ImageCacheManager.shared.getPath(name: string, type: .processed), let image = UIImage(contentsOfFile: path) {
-                            if context.state.imageDisplayMode == .aspectFill {
+                            if context.state.imageDisplayMode == .aspectFill, displayType == .lockScreen {
                                 Link(destination: BoardURL.detailURL(by: context)!) {
                                     Image(uiImage: image)
                                         .resizable()
