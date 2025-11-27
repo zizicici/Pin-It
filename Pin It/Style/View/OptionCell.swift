@@ -62,6 +62,7 @@ class OptionCell<T: OptionItem>: OptionBaseCell<T> {
         configuration.imagePlacement = .trailing
         configuration.contentInsets = .zero
         configuration.baseForegroundColor = .secondaryLabel
+        configuration.background.cornerRadius = 0
         
         let button = UIButton(configuration: configuration)
         button.isAccessibilityElement = false
