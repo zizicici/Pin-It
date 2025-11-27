@@ -323,6 +323,8 @@ struct BoardMediumView: View {
                                 .foregroundStyle(.secondary.opacity(0.8))
                                 .scaleEffect(0.8)
                                 .frame(height: 10.0)
+                            Spacer()
+                                .frame(height: 16.0)
                         }
                     }
                 }
