@@ -27,6 +27,7 @@ struct DynamicIslandView: View {
         switch position {
         case .leading:
             VStack {
+                Spacer().frame(height: 1.0)
                 Button(intent: ResetAndUpdateIntent()) {
                     Image(systemName: context.state.symbol)
                         .rotationEffect(Angle.degrees(context.state.symbolAngle))
@@ -41,8 +42,9 @@ struct DynamicIslandView: View {
                 .buttonStyle(.borderless)
                 .tint(.secondary)
                 
-                Spacer().frame(height: 4.0)
+                Spacer().frame(height: 5.0)
             }
+            .frame(maxHeight: .infinity)
         case .trailing:
             VStack {
                 Button(intent: ButtonPreviousIntent()) {
