@@ -65,7 +65,9 @@ class LiveActivityManager: NSObject {
     override init() {
         super.init()
         
-        updateStatus()
+        Task {
+            await updateStatus()            
+        }
     }
     
     @discardableResult
@@ -102,7 +104,7 @@ class LiveActivityManager: NSObject {
                 result = false
             }
             
-            updateStatus()
+            await updateStatus()
             return result
         case 1:
             // Update
@@ -140,21 +142,18 @@ class LiveActivityManager: NSObject {
             await activity.end(nil, dismissalPolicy: .immediate)
             print("Ending the Live Activity: \(activity.id)")
         }
-        updateStatus()
+        await updateStatus()
     }
     
     func update() async {
         await restartIfNeeded()
         await updateContentState()
-        updateStatus()
+        await updateStatus()
     }
     
-    @objc
-    private func updateStatus() {
-        Task {
-            await restartIfNeeded()
-            currentCount = Activity<PinAttributes>.activities.count
-        }
+    private func updateStatus() async {
+        await restartIfNeeded()
+        currentCount = Activity<PinAttributes>.activities.count
         print("Activity Count: \(currentCount)")
     }
     

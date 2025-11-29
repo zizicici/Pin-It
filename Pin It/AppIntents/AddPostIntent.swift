@@ -43,6 +43,10 @@ struct AddTextRecordIntent: LiveActivityIntent {
         if let post = DataManager.shared.createPost(content: content, expirationTime: expirationTime?.nanoSecondSince1970 ?? Post.getDefaultExpirationTime(), styleId: styleId) {
             await SyncCompletionManager.shared.waitForCompletion(postId: post.id!, timeout: 5.0)
             
+            if LiveActivityManager.shared.status != .running {
+                await LiveActivityManager.shared.restartIfNeeded()
+            }
+            
             return .result(value: true)
         } else {
             return .result(value: false)
@@ -161,6 +165,10 @@ struct AddImageRecordIntent: LiveActivityIntent {
                let original = ImageCacheManager.shared.storeImage(image, type: .original),
                let post = DataManager.shared.createPost(original: original, processed: processed, rect: imageRect, orientation: 0, expirationTime: expirationTime?.nanoSecondSince1970 ?? Post.getDefaultExpirationTime(), styleId: styleId) {
                 await SyncCompletionManager.shared.waitForCompletion(postId: post.id!, timeout: 5.0)
+                
+                if LiveActivityManager.shared.status != .running {
+                    await LiveActivityManager.shared.restartIfNeeded()
+                }
                 
                 return .result(value: true)
             } else {
