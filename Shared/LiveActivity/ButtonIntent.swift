@@ -11,10 +11,10 @@ import AppIntents
 struct ResetAndUpdateIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "intent.action.reload.title"
     
-    static var description: IntentDescription = IntentDescription("intent.action.reload.title", categoryName: "intent.action.category")
+    static var description: IntentDescription = IntentDescription("intent.action.reload.summary", categoryName: "intent.action.category")
     
     static var parameterSummary: some ParameterSummary {
-        Summary("intent.action.reload.summary")
+        Summary("intent.action.reload.title")
     }
     
     static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
