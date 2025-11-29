@@ -54,7 +54,7 @@ class PinInfoManager: NSObject {
         super.init()
         
         updateDebounce = Debounce(duration: 0.1, block: { [weak self] _ in
-            self?.commitUpdate()
+            await self?.commitUpdate()
         })
         
         updatePosts()
@@ -65,11 +65,9 @@ class PinInfoManager: NSObject {
         NotificationCenter.default.addObserver(self, selector: #selector(showPinIfNeeded), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
     
-    private func commitUpdate() {
+    private func commitUpdate() async {
         if pinInfo.posts.count > 0, AutoStartLiveActivity.current == .withContent {
-            Task {
-                await LiveActivityManager.shared.start()
-            }
+            await LiveActivityManager.shared.start()
         }
     }
     
@@ -118,8 +116,13 @@ class PinInfoManager: NSObject {
     @objc
     private func showPinIfNeeded() {
         Task {
-            if AutoStartLiveActivity.current == .appLaunch {
+            switch AutoStartLiveActivity.current {
+            case .withContent:
+                updateDebounce.emit(value: 0)
+            case .appLaunch:
                 await LiveActivityManager.shared.start()
+            case .disable:
+                break
             }
         }
     }
