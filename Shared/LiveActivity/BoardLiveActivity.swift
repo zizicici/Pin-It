@@ -268,6 +268,17 @@ struct BoardMediumView: View {
                         
                         Spacer(minLength: 4.0)
                         
+                        if context.state.isActionable {
+                            Link(destination: BoardURL.actionURL(by: context)!) {
+                                Image(systemName: "arrow.up.forward")
+                                    .foregroundColor(.secondary)
+                            }
+
+                            Spacer(minLength: 4.0)
+                            
+                            Spacer().frame(height: 4.0)
+                        }
+                        
                         Button(intent: ButtonUnpinIntent()) {
                             Image(systemName: "pin.slash")
                         }
@@ -340,6 +351,17 @@ struct BoardMediumView: View {
                     .privacySensitive(false)
                     
                     Spacer(minLength: 4.0)
+                    
+                    if context.state.isActionable {
+                        Link(destination: BoardURL.actionURL(by: context)!) {
+                            Image(systemName: "arrow.up.forward")
+                                .foregroundColor(.secondary)
+                        }
+
+                        Spacer(minLength: 4.0)
+                        
+                        Spacer().frame(height: 4.0)
+                    }
                     
                     Button(intent: ButtonUnpinIntent()) {
                         Image(systemName: "pin.slash")
@@ -418,6 +440,14 @@ struct BoardURL {
             return URL(string: url + "\(postId)")
         } else {
             return URL(string: url)
+        }
+    }
+    
+    static func actionURL(by context: ActivityViewContext<PinAttributes>) -> URL? {
+        if let postId = context.state.id {
+            return URL(string: url + "/action/" + "\(postId)")
+        } else {
+            return URL(string: url + "/action/")
         }
     }
 }

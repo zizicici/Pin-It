@@ -32,6 +32,7 @@ struct Post: Identifiable, Hashable, Codable {
     var modificationTime: Int64?
     
     var expirationTime: Int64?
+    var actionLink: String
     
     var isPinned: Bool
     var order: Int64
@@ -45,7 +46,7 @@ struct Post: Identifiable, Hashable, Codable {
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, creationTime = "creation_time", modificationTime = "modification_time", expirationTime = "expiration_time", isPinned = "is_pinned", order
+        case id, creationTime = "creation_time", modificationTime = "modification_time", expirationTime = "expiration_time", actionLink = "action_link", isPinned = "is_pinned", order
     }
 }
 
@@ -144,7 +145,7 @@ extension Post {
     }
     
     static func placeholder() -> Post {
-        return .init(expirationTime: getDefaultExpirationTime(), isPinned: false, order: 0)
+        return .init(expirationTime: getDefaultExpirationTime(), actionLink: "", isPinned: false, order: 0)
     }
     
     static func getDefaultExpirationTime() -> Int64? {

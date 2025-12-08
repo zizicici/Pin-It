@@ -34,6 +34,13 @@ extension PinAttributes.ContentState {
         return SyncDataManager.style(by: id)
     }
     
+    var post: SyncPost? {
+        guard let id = id else {
+            return nil
+        }
+        return SyncDataManager.post(by: id)
+    }
+    
     var symbol: String {
         return style?.symbol ?? "pin.fill"
     }
@@ -142,5 +149,10 @@ extension PinAttributes.ContentState {
     
     var needTransparentControl: Bool {
         return controlAlpha == 0
+    }
+    
+    var isActionable: Bool {
+        guard let post = post else { return false }
+        return !post.actionLink.isEmpty
     }
 }

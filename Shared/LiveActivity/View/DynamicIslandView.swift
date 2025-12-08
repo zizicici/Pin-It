@@ -36,6 +36,17 @@ struct DynamicIslandView: View {
                 
                 Spacer(minLength: 4.0)
                 
+                if context.state.isActionable {
+                    Link(destination: BoardURL.actionURL(by: context)!) {
+                        Image(systemName: "arrow.up.forward")
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer(minLength: 4.0)
+                    
+                    Spacer().frame(height: 5.0)
+                }
+                
                 Button(intent: ButtonUnpinIntent()) {
                     Image(systemName: "pin.slash")
                 }

@@ -182,7 +182,7 @@ final class DataManager {
         return result
     }
     
-    public func createPost(content: String, isPinned: Bool = true, expirationTime: Int64?, styleId: Int64?) -> Post? {
+    public func createPost(content: String, actionLink: String, isPinned: Bool = true, expirationTime: Int64?, styleId: Int64?) -> Post? {
         // Fetch Last Post
         switch MaxPinnedPosts.current {
         case .unlimited:
@@ -194,7 +194,7 @@ final class DataManager {
         }
         
         let newOrder = getNewOrder(isPinned: true)
-        let newPost = Post(expirationTime: expirationTime, isPinned: isPinned, order: newOrder)
+        let newPost = Post(expirationTime: expirationTime, actionLink: actionLink, isPinned: isPinned, order: newOrder)
         guard let savedPost = AppDatabase.shared.add(post: newPost), let postId = savedPost.id else {
             return nil
         }
@@ -213,7 +213,7 @@ final class DataManager {
         return savedPost
     }
     
-    public func createPost(original: String, processed: String, rect: CGRect, orientation: Int, isPinned: Bool = true, expirationTime: Int64?, styleId: Int64?) -> Post? {
+    public func createPost(original: String, processed: String, rect: CGRect, orientation: Int, actionLink: String, isPinned: Bool = true, expirationTime: Int64?, styleId: Int64?) -> Post? {
         switch MaxPinnedPosts.current {
         case .unlimited:
             break
@@ -223,7 +223,7 @@ final class DataManager {
             }
         }
         let newOrder = getNewOrder(isPinned: isPinned)
-        let newPost = Post(expirationTime: expirationTime, isPinned: isPinned, order: newOrder)
+        let newPost = Post(expirationTime: expirationTime, actionLink: actionLink, isPinned: isPinned, order: newOrder)
         guard let savedPost = AppDatabase.shared.add(post: newPost), let postId = savedPost.id else {
             return nil
         }

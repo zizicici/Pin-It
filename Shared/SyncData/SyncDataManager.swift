@@ -23,6 +23,7 @@ struct SyncPost: Codable, Equatable {
     var expirationTime: Int64?
     var styleId: Int64
     var defaultStyleId: Int64
+    var actionLink: String
     
     func isExpired() -> Bool {
         if let expirationTime = expirationTime {
@@ -60,7 +61,7 @@ private struct VersionedContainer<T: Codable>: Codable {
 
 struct SyncDataManager {
     enum DataVersion: String, Codable {
-        case v1 = "1.0"
+        case v1 = "1.0.0"
     }
     
     private static let appGroupUserDefaults = UserDefaults(suiteName: appGroupId)

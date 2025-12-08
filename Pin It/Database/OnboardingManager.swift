@@ -69,8 +69,8 @@ class OnboardingManager: NSObject {
             _ = DataManager.shared.add(style: PostStyle(name: String(localized: "onboarding.style.2"), lockTextSize: .automatic, lockTextAlignment: .center, islandTextSize: .automatic, islandTextAlignment: .center, symbol: "pin.fill", symbolAngle: -4500, imageDisplayMode: .aspectFill, controlAlpha: 0))
         }
         if checkPostTableNeedsOnboarding() {
-            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.1"), expirationTime: nil, styleId: nil)
-            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.2"), isPinned: false, expirationTime: nil, styleId: nil)
+            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.1"), actionLink: "", expirationTime: nil, styleId: nil)
+            _ = DataManager.shared.createPost(content: String(localized: "onboarding.message.2"), actionLink: "", isPinned: false, expirationTime: nil, styleId: nil)
         }
     }
 }
