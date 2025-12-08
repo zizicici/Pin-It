@@ -20,6 +20,7 @@
 		14A187452EB20CC8008E6492 /* CropViewController in Frameworks */ = {isa = PBXBuildFile; productRef = 14A187442EB20CC8008E6492 /* CropViewController */; };
 		14AA37282EA0907300685425 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 14AA37272EA0907300685425 /* GRDB */; };
 		14AE7AD42ECB17A0006B7467 /* JXPhotoBrowser in Frameworks */ = {isa = PBXBuildFile; productRef = 14AE7AD32ECB17A0006B7467 /* JXPhotoBrowser */; };
+		14B4B4AD2ED4A63A00B09600 /* SymbolPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 14B4B4AC2ED4A63A00B09600 /* SymbolPicker */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,8 +73,10 @@
 				LiveActivity/BoardLiveActivity.swift,
 				LiveActivity/ButtonIntent.swift,
 				LiveActivity/LiveActivityManager.swift,
-				LiveActivity/PinAttributes.swift,
+				LiveActivity/Model/PinAttributes.swift,
 				LiveActivity/PinInfoManager.swift,
+				LiveActivity/View/AutoSizeText.swift,
+				LiveActivity/View/DynamicIslandView.swift,
 				Localizable.xcstrings,
 				SyncData/ImageCacheManager.swift,
 				SyncData/SyncDataManager.swift,
@@ -88,8 +91,10 @@
 				LiveActivity/BoardLiveActivity.swift,
 				LiveActivity/ButtonIntent.swift,
 				LiveActivity/LiveActivityManager.swift,
-				LiveActivity/PinAttributes.swift,
+				LiveActivity/Model/PinAttributes.swift,
 				LiveActivity/PinInfoManager.swift,
+				LiveActivity/View/AutoSizeText.swift,
+				LiveActivity/View/DynamicIslandView.swift,
 				Localizable.xcstrings,
 				SyncData/ImageCacheManager.swift,
 				SyncData/SyncDataManager.swift,
@@ -130,8 +135,10 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AppIntents/StartIntent.swift,
+				Database/Model/PostStyle.swift,
 				Extension/AppColor.swift,
 				Extension/Debounce.swift,
+				"Extension/UIColor+Extension.swift",
 				More/Store.swift,
 				Resource/Assets.xcassets,
 				Settings/Settings.swift,
@@ -187,6 +194,7 @@
 				14A187452EB20CC8008E6492 /* CropViewController in Frameworks */,
 				147EC1922EBF7DC000ECAB46 /* Kingfisher in Frameworks */,
 				14558D072E9E8CE1007A67E2 /* SnapKit in Frameworks */,
+				14B4B4AD2ED4A63A00B09600 /* SymbolPicker in Frameworks */,
 				1484F81D2ECCB01800802024 /* ZCCalendar in Frameworks */,
 				1461E6AD2EB5EC9900E47262 /* FirebaseCrashlytics in Frameworks */,
 				1461E6AB2EB5EC9900E47262 /* FirebaseAnalytics in Frameworks */,
@@ -278,6 +286,7 @@
 				147EC1912EBF7DC000ECAB46 /* Kingfisher */,
 				14AE7AD32ECB17A0006B7467 /* JXPhotoBrowser */,
 				1484F81C2ECCB01800802024 /* ZCCalendar */,
+				14B4B4AC2ED4A63A00B09600 /* SymbolPicker */,
 			);
 			productName = "Pin It";
 			productReference = 1481AAB72E9D4CFD00E359C9 /* Pin It.app */;
@@ -381,6 +390,7 @@
 				147EC1902EBF7DC000ECAB46 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				14AE7AD22ECB17A0006B7467 /* XCRemoteSwiftPackageReference "PhotoBrowser" */,
 				1484F81B2ECCB01800802024 /* XCRemoteSwiftPackageReference "ZCCalendar" */,
+				14B4B4AB2ED4A63A00B09600 /* XCRemoteSwiftPackageReference "SymbolPicker" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1481AAB82E9D4CFD00E359C9 /* Products */;
@@ -480,7 +490,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.10;
+				MARKETING_VERSION = 1.1.1;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -520,7 +530,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.10;
+				MARKETING_VERSION = 1.1.1;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -679,7 +689,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.10;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin.Box;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -714,7 +724,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.10;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin.Box;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -750,7 +760,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.10;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin.Board;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -785,7 +795,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.10;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin.Board;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -907,6 +917,14 @@
 				minimumVersion = 3.1.6;
 			};
 		};
+		14B4B4AB2ED4A63A00B09600 /* XCRemoteSwiftPackageReference "SymbolPicker" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/xnth97/SymbolPicker";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.6.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -954,6 +972,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 14AE7AD22ECB17A0006B7467 /* XCRemoteSwiftPackageReference "PhotoBrowser" */;
 			productName = JXPhotoBrowser;
+		};
+		14B4B4AC2ED4A63A00B09600 /* SymbolPicker */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 14B4B4AB2ED4A63A00B09600 /* XCRemoteSwiftPackageReference "SymbolPicker" */;
+			productName = SymbolPicker;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

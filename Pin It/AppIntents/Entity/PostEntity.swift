@@ -35,12 +35,16 @@ struct PostEntity: AppEntity {
     @Property(title: "intent.post.isPinnedValue")
     var isPinned: Bool
     
-    init(id: Int, date: Date, text: String? = nil, originalImage: IntentFile? = nil, isPinned: Bool) {
+    @Property(title: "intent.style.type")
+    var style: StyleEntity?
+    
+    init(id: Int, date: Date, text: String? = nil, originalImage: IntentFile? = nil, isPinned: Bool, style: StyleEntity?) {
         self.id = id
         self.date = date
         self.text = text
         self.originalImage = originalImage
         self.isPinned = isPinned
+        self.style = style
     }
 }
 
@@ -48,17 +52,44 @@ struct PostIntentQuery: EntityQuery {
     func entities(for identifiers: [Int]) async throws -> [PostEntity] {
         let posts = DataManager.shared.fetchPostDetail(for: identifiers.map{ Int64($0) })
         
+        let defaultStyleId = UserDefaults(suiteName: appGroupId)?.getInt(forKey: UserDefaults.Settings.DefaultStyle.rawValue)
+        
         let result: [PostEntity] = posts.compactMap { detail in
             let text = detail.texts.first?.content
             let originalURL = detail.images.first?.originalURL
             
-            return .init(id: Int(detail.post.id!), date: Date(nanoSecondSince1970: detail.post.creationTime!), text: text, originalImage: (originalURL != nil) ? IntentFile(fileURL: originalURL!) : nil, isPinned: detail.post.isPinned)
+            var styleEntity: StyleEntity? = nil
+            if let style = detail.style {
+                styleEntity = StyleEntity(style: style, defaultId: defaultStyleId)
+            } else {
+                styleEntity = nil
+            }
+            
+            return .init(id: Int(detail.post.id!), date: Date(nanoSecondSince1970: detail.post.creationTime!), text: text, originalImage: (originalURL != nil) ? IntentFile(fileURL: originalURL!) : nil, isPinned: detail.post.isPinned, style: styleEntity)
         }
         
         return result
     }
     
     func suggestedEntities() async throws -> [PostEntity] {
-        return []
+        let posts = DataManager.shared.fetchAllPostDetails(isPinned: true)
+        
+        let defaultStyleId = UserDefaults(suiteName: appGroupId)?.getInt(forKey: UserDefaults.Settings.DefaultStyle.rawValue)
+        
+        let result: [PostEntity] = posts.compactMap { detail in
+            let text = detail.texts.first?.content
+            let originalURL = detail.images.first?.originalURL
+            
+            var styleEntity: StyleEntity? = nil
+            if let style = detail.style {
+                styleEntity = StyleEntity(style: style, defaultId: defaultStyleId)
+            } else {
+                styleEntity = nil
+            }
+            
+            return .init(id: Int(detail.post.id!), date: Date(nanoSecondSince1970: detail.post.creationTime!), text: text, originalImage: (originalURL != nil) ? IntentFile(fileURL: originalURL!) : nil, isPinned: detail.post.isPinned, style: styleEntity)
+        }
+        
+        return result
     }
 }

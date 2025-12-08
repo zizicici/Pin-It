@@ -173,7 +173,11 @@ class MainViewController: UIViewController {
     func addAction(text: String) {
         let editorViewController = EditorViewController(postDetail: Post.Detail(post: Post.placeholder(), images: [], texts: [PostText(postId: -1, content: text, order: 0)])) { detail in
             if let postText = detail.texts.first {
-                _ = DataManager.shared.createPost(content: postText.content, expirationTime: detail.post.expirationTime)
+                let post = DataManager.shared.createPost(content: postText.content, expirationTime: detail.post.expirationTime, styleId: nil)
+                if let style = detail.style, let styleId = style.id, let postId = post?.id {
+                    let decoration = PostDecoration(styleId: styleId, postId: postId)
+                    _ = DataManager.shared.add(decoration: decoration)
+                }
             }
         }
         
@@ -597,6 +601,29 @@ extension MainViewController: PostCellDelegate {
         
         enterImageDetail(for: detail)
     }
+    
+    func getStyleButtonMenu(for post: Post.Detail) -> UIMenu {
+        var elements: [UIMenuElement] = []
+        
+        let defaultStyleAction = UIAction(title: PostStyle.noneTitle, state: post.style == nil ? .on : .off) { _ in
+            _ = DataManager.shared.update(post: post.post, styleId: nil)
+        }
+        elements.append(defaultStyleAction)
+        
+        let styles = DataManager.shared.fetchAllStyles()
+        
+        let styleActions = styles.map({ style in
+            let action = UIAction(title: style.name, state: post.style == style ? .on : .off) {  _ in
+                _ = DataManager.shared.update(post: post.post, styleId: style.id)
+            }
+            return action
+        })
+        let currentPageDivider = UIMenu(title: "", options: .displayInline, children: styleActions)
+
+        elements.append(currentPageDivider)
+        
+        return UIMenu(title: "", children: elements)
+    }
 }
 
 extension MainViewController {
@@ -703,6 +730,9 @@ extension MainViewController {
             }
             for image in detail.images {
                 _ = DataManager.shared.update(image: image)
+            }
+            if let style = detail.style {
+                _ = DataManager.shared.update(post: detail.post, styleId: style.id)
             }
             _ = DataManager.shared.update(post: detail.post)
         }
@@ -940,7 +970,7 @@ extension MainViewController: CropViewControllerDelegate {
             }
         } else {
             if let currentImage = currentImage, let original = ImageCacheManager.shared.storeImage(currentImage, type: .original), let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
-                _ = DataManager.shared.createPost(original: original, processed: processed, rect: cropRect, orientation: angle, expirationTime: Post.getDefaultExpirationTime())
+                _ = DataManager.shared.createPost(original: original, processed: processed, rect: cropRect, orientation: angle, expirationTime: Post.getDefaultExpirationTime(), styleId: nil)
             }
         }
     }

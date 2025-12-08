@@ -28,7 +28,6 @@ struct PinInfoPageIndex {
     
     static func setValue(_ value: Int) {
         UserDefaults(suiteName: appGroupId)?.set(value, forKey: key)
-        UserDefaults(suiteName: appGroupId)?.synchronize()
     }
 }
 
@@ -42,9 +41,9 @@ class PinInfoManager: NSObject {
             PinInfoPageIndex.setValue(current)
         }
     }
-    private(set) var posts: [SyncPost] = [] {
+    private(set) var pinInfo: (posts: [SyncPost], styles: [PostStyle]) = ([], []) {
         didSet {
-            if oldValue != posts {
+            if oldValue != pinInfo {
                 updateCurrentIfNeeded()
                 updateDebounce.emit(value: 0)
             }
@@ -55,7 +54,7 @@ class PinInfoManager: NSObject {
         super.init()
         
         updateDebounce = Debounce(duration: 0.1, block: { [weak self] _ in
-            self?.commitUpdate()
+            await self?.commitUpdate()
         })
         
         updatePosts()
@@ -66,17 +65,15 @@ class PinInfoManager: NSObject {
         NotificationCenter.default.addObserver(self, selector: #selector(showPinIfNeeded), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
     
-    private func commitUpdate() {
-        if posts.count > 0, AutoStartLiveActivity.current == .withContent {
-            Task {
-                await LiveActivityManager.shared.start()
-            }
+    private func commitUpdate() async {
+        if pinInfo.posts.count > 0, AutoStartLiveActivity.current == .withContent {
+            await LiveActivityManager.shared.start()
         }
     }
     
     @objc
     private func updatePosts() {
-        posts = (try? getPosts()) ?? []
+        self.pinInfo = (try? getPinInfo()) ?? ([], [])
     }
     
     public func resetCurrentIndex() async {
@@ -105,7 +102,7 @@ class PinInfoManager: NSObject {
         Task {
             switch AutoStartLiveActivity.current {
             case .withContent:
-                if posts.count > 0 {
+                if pinInfo.posts.count > 0 {
                     updateDebounce.emit(value: 0)
                 } else {
                     await LiveActivityManager.shared.update()
@@ -119,29 +116,34 @@ class PinInfoManager: NSObject {
     @objc
     private func showPinIfNeeded() {
         Task {
-            if AutoStartLiveActivity.current == .appLaunch {
+            switch AutoStartLiveActivity.current {
+            case .withContent:
+                updateDebounce.emit(value: 0)
+            case .appLaunch:
                 await LiveActivityManager.shared.start()
+            case .disable:
+                break
             }
         }
     }
     
-    private func getPosts() throws -> [SyncPost] {
-        let syncPostStorage = try SyncDataManager.read(SyncPostStorage.self)
+    private func getPinInfo() throws -> ([SyncPost], [PostStyle]) {
+        guard let syncPostStorage = try SyncDataManager.read(SyncPostStorage.self) else { return ([], [])}
         
         let actionStorage = try SyncDataManager.read(SyncActionStorage.self)
         
         let unpinIds = actionStorage?.actions.filter{ $0.actionType == .unpin }.map{ $0.id } ?? []
         
-        let posts: [SyncPost] = (syncPostStorage?.posts ?? []).filter { post in
+        let posts: [SyncPost] = (syncPostStorage.posts).filter { post in
             return !unpinIds.contains(post.id) && !post.isExpired()
         }
         
-        return posts
+        return (posts, syncPostStorage.styles)
     }
     
     public func getCurrentPost() throws -> SyncPost? {
-        if (current >= 0) && (current < posts.count) {
-            return posts[current]
+        if (current >= 0) && (current < pinInfo.posts.count) {
+            return pinInfo.posts[current]
         } else {
             return nil
         }
@@ -159,7 +161,7 @@ class PinInfoManager: NSObject {
     public func previousAction() async {
         var newIndex: Int
         if current == 0 {
-            newIndex = posts.count - 1
+            newIndex = pinInfo.posts.count - 1
         } else {
             newIndex = current - 1
         }
@@ -168,7 +170,7 @@ class PinInfoManager: NSObject {
     
     public func nextAction() async {
         var newIndex: Int
-        if current == posts.count - 1 {
+        if current == pinInfo.posts.count - 1 {
             newIndex = 0
         } else {
             newIndex = current + 1
@@ -177,20 +179,20 @@ class PinInfoManager: NSObject {
     }
     
     private func updateCurrent(newValue: Int) async {
-        current = max(0, min(newValue, posts.count - 1))
+        current = max(0, min(newValue, pinInfo.posts.count - 1))
         await LiveActivityManager.shared.update()
-        for id in posts.map({ $0.id }) {
+        for id in pinInfo.posts.map({ $0.id }) {
             await SyncCompletionManager.shared.notifyCompletion(for: id)
         }
     }
     
     public func getCurrentContentState() -> (content: PinAttributes.ContentState?, shouldEnd: Bool) {
-        guard !((posts.count == 0) && (AutoEndLiveActivity.current == .noContent)) else {
+        guard !((pinInfo.posts.count == 0) && (AutoEndLiveActivity.current == .noContent)) else {
             return (nil, true)
         }
         let target = try? getCurrentPost()
         
-        return (PinAttributes.ContentState(id: Int(target?.id ?? -1), index: current, total: posts.count, text: target?.text, imageName: target?.image, isLeftToRight: Language.type() != .ar), false)
+        return (PinAttributes.ContentState(id: target?.id, index: current, total: pinInfo.posts.count, isLeftToRight: Language.type() != .ar), false)
     }
 }
 

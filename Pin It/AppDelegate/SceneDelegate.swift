@@ -85,7 +85,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
     
     func handle(_ url: URL) {
-        if url.absoluteString.starts(with: BoardLiveActivity.url) {
+        if url.absoluteString.starts(with: BoardURL.url) {
             guard let tabbarController = window?.rootViewController as? UITabBarController else { return }
             
             switch User.shared.proTier() {

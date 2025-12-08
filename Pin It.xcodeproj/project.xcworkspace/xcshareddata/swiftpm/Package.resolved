@@ -1,5 +1,5 @@
 {
-  "originHash" : "f02486f1c1159e53faa1e11db3a172708fdb43e9c59cd26aea9c3760bf0648ae",
+  "originHash" : "c7bae2ea235875bfde091864de37b9af986b3b4565273131a0ffa764913dae2e",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -170,6 +170,15 @@
       "state" : {
         "revision" : "c169a5744230951031770e27e475ff6eefe51f9d",
         "version" : "1.33.3"
+      }
+    },
+    {
+      "identity" : "symbolpicker",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/xnth97/SymbolPicker",
+      "state" : {
+        "revision" : "8bb08c982235b8e601bc500a41e770d7e198759b",
+        "version" : "1.6.2"
       }
     },
     {

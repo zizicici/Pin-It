@@ -23,6 +23,7 @@ class PostSyncManager: NSObject {
         syncData()
         
         NotificationCenter.default.addObserver(self, selector: #selector(needSyncDatabaseToAppGroup), name: .DatabaseUpdated, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(needSyncDatabaseToAppGroup), name: .DefaultStyleDidChanged, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(syncData), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
     
@@ -52,8 +53,9 @@ class PostSyncManager: NSObject {
     private func syncDatabaseToAppGroup() {
         // Database -> App Group
         let pinnedPosts = DataManager.shared.fetchAllPostDetails(isPinned: true).compactMap { $0.convertToSyncPost() }
+        let styles = DataManager.shared.fetchAllStyles()
         
-        try? SyncDataManager.write(SyncPostStorage(posts: pinnedPosts))
+        try? SyncDataManager.write(SyncPostStorage(posts: pinnedPosts, styles: styles))
     }
     
     private func commitUpdate() {
@@ -65,10 +67,17 @@ extension Post.Detail {
     func convertToSyncPost() -> SyncPost? {
         guard let id = post.id else { return nil }
         
-        var syncText: String?
-        if let content = texts.first?.content {
-            syncText = String(content.prefix(160))
+        var content: SyncPost.Content
+        if let text = texts.first?.content {
+            content = .text(String(text.prefix(500)))
+        } else if let image = images.first?.processed {
+            content = .image(image)
+        } else {
+            content = .empty
         }
-        return .init(id: id, text: syncText, image: images.first?.processed, expirationTime: post.expirationTime)
+        
+        let defaultStyleId = Int64(DefaultStyle.getValue().rawValue)
+        
+        return .init(id: id, content: content, expirationTime: post.expirationTime, styleId: style?.id ?? defaultStyleId, defaultStyleId: defaultStyleId)
     }
 }

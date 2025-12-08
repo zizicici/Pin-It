@@ -23,6 +23,8 @@ class SettingsViewController: UIViewController {
         case automatic
         case action
         case advanced
+        case style
+        case styleList
         case shortcuts
         case reset
         
@@ -38,6 +40,10 @@ class SettingsViewController: UIViewController {
                 return nil
             case .advanced:
                 return nil
+            case .style:
+                return String(localized: "style.title")
+            case .styleList:
+                return String(localized: "style.list")
             case .shortcuts:
                 return String(localized: "more.section.shortcuts")
             case .reset:
@@ -185,6 +191,9 @@ class SettingsViewController: UIViewController {
         case automatic(AutomaticItem)
         case action(ActionItem)
         case advanced(AdvancedItem)
+        case defaultStyle(DefaultStyle)
+        case style(PostStyle)
+        case addStyle
         case shortcuts(ShortcutsItem)
         case reset
         
@@ -215,6 +224,12 @@ class SettingsViewController: UIViewController {
                 case .expirationTime:
                     return DefaultExpirationTime.getTitle()
                 }
+            case .defaultStyle(let style):
+                return String(localized: "style.default")
+            case .style(let style):
+                return style.name
+            case .addStyle:
+                return String(localized: "style.add")
             case .shortcuts(let item):
                 return item.title
             case .reset:
@@ -348,6 +363,33 @@ class SettingsViewController: UIViewController {
                 content.secondaryText = item.value
                 cell.contentConfiguration = content
                 return cell
+            case .defaultStyle(let style):
+                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                cell.accessoryType = .disclosureIndicator
+                var content = UIListContentConfiguration.valueCell()
+                content.text = identifier.title
+                content.textProperties.color = .label
+                content.secondaryText = style.getName()
+                cell.contentConfiguration = content
+                return cell
+            case .style:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                cell.accessoryType = .disclosureIndicator
+                var content = UIListContentConfiguration.valueCell()
+                content.text = identifier.title
+                content.textProperties.color = .label
+                content.secondaryText = nil
+                cell.contentConfiguration = content
+                return cell
+            case .addStyle:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                cell.accessoryType = .none
+                var content = UIListContentConfiguration.subtitleCell()
+                content.text = identifier.title
+                content.textProperties.color = .systemRed
+                content.textProperties.alignment = .center
+                cell.contentConfiguration = content
+                return cell
             case .shortcuts(let item):
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
                 cell.accessoryType = .disclosureIndicator
@@ -398,6 +440,12 @@ class SettingsViewController: UIViewController {
         snapshot.appendSections([.advanced])
         snapshot.appendItems([.advanced(.expirationAction(ExpirationAction.getValue())), .advanced(.expirationTime(DefaultExpirationTime.getValue()))], toSection: .advanced)
         
+        let styles = DataManager.shared.fetchAllStyles()
+        snapshot.appendSections([.style, .styleList])
+        snapshot.appendItems([.defaultStyle(DefaultStyle.getValue())], toSection: .style)
+        snapshot.appendItems(styles.map{ Item.style($0) }, toSection: .styleList)
+        snapshot.appendItems([Item.addStyle], toSection: .styleList)
+
         snapshot.appendSections([.shortcuts])
         if Language.type() == .zh {
             snapshot.appendItems([.shortcuts(.first), .shortcuts(.second), .shortcuts(.ai), .shortcuts(.pasteboard), .shortcuts(.copy)], toSection: .shortcuts)
@@ -447,11 +495,50 @@ extension SettingsViewController: UITableViewDelegate {
                 case .expirationTime:
                     enterSettings(DefaultExpirationTime.self)
                 }
+            case .defaultStyle:
+                enterSettings(DefaultStyle.self)
+            case .style(let style):
+                enterStyleDetail(for: style)
+            case .addStyle:
+                addStyle()
             case .shortcuts(let item):
                 handle(shortcutsItem: item)
             case .reset:
                 showResetAlert()
             }
+        }
+    }
+}
+
+extension SettingsViewController {
+    func enterStyleDetail(for style: PostStyle) {
+        let styleViewController = StyleViewController(style: style)
+        styleViewController.delegate = self
+        
+        let nav = UINavigationController(rootViewController: styleViewController)
+        
+        present(nav, animated: ConsideringUser.animated)
+    }
+    
+    func addStyle() {
+        let style: PostStyle = PostStyle.placeholder
+        let styleViewController = StyleViewController(style: style)
+        styleViewController.delegate = self
+        
+        let nav = UINavigationController(rootViewController: styleViewController)
+        
+        present(nav, animated: ConsideringUser.animated)
+    }
+}
+
+extension SettingsViewController: StyleEditorDelegate {
+    func styleEditor(_ editor: StyleViewController, didUpdateStyle style: PostStyle) {
+        if style.id == nil {
+            // Create
+            _ = DataManager.shared.add(style: style)
+        } else {
+            // Update
+            _ = DataManager.shared.update(style: style)
         }
     }
 }

@@ -13,6 +13,7 @@ struct Post: Identifiable, Hashable, Codable {
         var post: Post
         var images: [PostImage]
         var texts: [PostText]
+        var style: PostStyle?
         
         var title: String {
             return texts.first?.content ?? ""
@@ -76,6 +77,10 @@ extension Post {
     }
 }
 
+extension Post {
+    static let decoration = hasOne(PostDecoration.self)
+}
+
 let formatter = DateFormatter()
 
 extension Post {
@@ -112,6 +117,20 @@ extension Post.Detail {
         } else {
             return .text
         }
+    }
+    
+    var activedStyle: PostStyle? {
+        var result: PostStyle?
+        if style == nil {
+            let id = Int64(DefaultStyle.getValue().rawValue)
+            result = DataManager.shared.fetchStyle(by: id)
+        } else {
+            result = style
+        }
+        if result == nil {
+            result = DataManager.shared.fetchAllStyles().first
+        }
+        return result
     }
 }
 

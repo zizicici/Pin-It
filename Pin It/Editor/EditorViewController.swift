@@ -92,6 +92,7 @@ class EditorViewController: UIViewController {
         case text(String?)
         case image(UIImage)
         case imageAction(ImageAction)
+        case style(PostStyle?)
         case expirationToggle(Bool)
         case expiration(Int64?)
     }
@@ -146,6 +147,12 @@ class EditorViewController: UIViewController {
     
     weak var commentCell: TextViewCell?
     
+    private var style: PostStyle? {
+        didSet {
+            reloadData()
+        }
+    }
+    
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
     }
@@ -157,6 +164,7 @@ class EditorViewController: UIViewController {
     convenience init(postDetail: Post.Detail, editorClosure: @escaping (Post.Detail) -> ()) {
         self.init()
         self.detail = postDetail
+        self.style = detail.style
         self.editorClosure = editorClosure
         
         expirationToggle = (expirationTime != nil)
@@ -209,6 +217,7 @@ class EditorViewController: UIViewController {
         tableView.register(TextViewCell.self, forCellReuseIdentifier: NSStringFromClass(TextViewCell.self))
         tableView.register(PostImageCell.self, forCellReuseIdentifier: NSStringFromClass(PostImageCell.self))
         tableView.register(DateCell.self, forCellReuseIdentifier: NSStringFromClass(DateCell.self))
+        tableView.register(OptionCell<PostStyle>.self, forCellReuseIdentifier: NSStringFromClass(OptionCell<PostStyle>.self))
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 50.0
         tableView.delegate = self
@@ -245,22 +254,46 @@ class EditorViewController: UIViewController {
             case .imageAction(let action):
                 let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(UITableViewCell.self), for: indexPath)
                 cell.accessoryType = .none
+                cell.accessoryView = nil
+                
                 var content = UIListContentConfiguration.valueCell()
                 content.text = action.title
+                content.textProperties.color = AppColor.text
                 content.image = action.image
                 content.imageProperties.tintColor = .systemRed
                 cell.contentConfiguration = content
                 return cell
+            case .style(let style):
+                let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(OptionCell<PostStyle>.self), for: indexPath)
+                if let cell = cell as? OptionCell<PostStyle> {
+                    cell.update(with: style)
+                    let noneAction = UIAction(title: PostStyle.noneTitle, state: style == nil ? .on : .off) { [weak self] _ in
+                        self?.style = nil
+                    }
+                    let actions = DataManager.shared.fetchAllStyles().map { target in
+                        let action = UIAction(title: target.title, subtitle: target.subtitle, state: style == target ? .on : .off) { [weak self] _ in
+                            self?.style = target
+                        }
+                        return action
+                    }
+                    let divider = UIMenu(title: "", options: . displayInline, children: actions)
+                    
+                    let menu = UIMenu(children: [noneAction, divider])
+                    cell.valueButton.menu = menu
+                }
+                return cell
             case .expirationToggle(let enable):
                 let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(UITableViewCell.self), for: indexPath)
+                
                 let itemSwitch = UISwitch()
                 itemSwitch.isOn = enable
                 itemSwitch.addTarget(self, action: #selector(self.toggle(_:)), for: .touchUpInside)
                 itemSwitch.onTintColor = .systemRed
+                cell.accessoryView = itemSwitch
+                
                 var content = cell.defaultContentConfiguration()
                 content.text = String(localized: "editor.expiration.toggle")
-                content.textProperties.color = .label
-                cell.accessoryView = itemSwitch
+                content.textProperties.color = AppColor.text
                 cell.contentConfiguration = content
                 return cell
             case .expiration(let startTime):
@@ -297,7 +330,9 @@ class EditorViewController: UIViewController {
                 snapshot.appendItems([.image(imageInfo.image), .imageAction(.fullScreen), .imageAction(.crop)], toSection: .image)
             }
         }
+        
         snapshot.appendSections([.advanced])
+        snapshot.appendItems([.style(style)], toSection: .advanced)
         snapshot.appendItems([.expirationToggle(expirationToggle)], toSection: .advanced)
         if expirationToggle {
             snapshot.appendItems([.expiration(expirationTime)], toSection: .advanced)
@@ -316,6 +351,11 @@ class EditorViewController: UIViewController {
     }
     
     private func saveToDetail() {
+        saveImageInfoToDetail()
+        detail.style = style
+    }
+    
+    private func saveImageInfoToDetail() {
         guard let imageInfo = imageInfo else { return }
         let image = imageInfo.image
         let cropRect = imageInfo.rect
@@ -381,6 +421,8 @@ extension EditorViewController: UITableViewDelegate {
             }
         case .expirationToggle, .expiration:
             break
+        case .style(let style):
+            self.style = style
         }
     }
 }
@@ -442,15 +484,5 @@ extension EditorViewController: CropViewControllerDelegate {
 extension String {
     func isValidRecordComment() -> Bool{
         return count > 0
-    }
-}
-
-class UIDraggableTableView: UITableView {
-    override func touchesShouldCancel(in view: UIView) -> Bool {
-        if view.isKind(of: UIButton.self) {
-            return true
-        } else {
-            return super.touchesShouldCancel(in: view)
-        }
     }
 }
