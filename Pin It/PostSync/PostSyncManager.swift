@@ -78,6 +78,6 @@ extension Post.Detail {
         
         let defaultStyleId = Int64(DefaultStyle.getValue().rawValue)
         
-        return .init(id: id, content: content, expirationTime: post.expirationTime, styleId: style?.id ?? defaultStyleId, defaultStyleId: defaultStyleId)
+        return .init(id: id, content: content, expirationTime: post.expirationTime, styleId: style?.id ?? defaultStyleId, defaultStyleId: defaultStyleId, actionLink: post.actionLink)
     }
 }

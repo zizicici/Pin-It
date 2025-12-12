@@ -173,7 +173,7 @@ class MainViewController: UIViewController {
     func addAction(text: String) {
         let editorViewController = EditorViewController(postDetail: Post.Detail(post: Post.placeholder(), images: [], texts: [PostText(postId: -1, content: text, order: 0)])) { detail in
             if let postText = detail.texts.first {
-                let post = DataManager.shared.createPost(content: postText.content, expirationTime: detail.post.expirationTime, styleId: nil)
+                let post = DataManager.shared.createPost(content: postText.content, actionLink: "", expirationTime: detail.post.expirationTime, styleId: nil)
                 if let style = detail.style, let styleId = style.id, let postId = post?.id {
                     let decoration = PostDecoration(styleId: styleId, postId: postId)
                     _ = DataManager.shared.add(decoration: decoration)
@@ -570,6 +570,14 @@ extension MainViewController: PostCellDelegate {
             let currentPageDivider = UIMenu(title: String(localized: "pin.copy"), image: UIImage(systemName: "doc.on.clipboard"), options: [], children: [copyOriginalAction, copyProcessedAction])
             
             elements.append(currentPageDivider)
+        }
+        
+        if !post.post.actionLink.isEmpty, let url = URL(string: post.post.actionLink), UIApplication.shared.canOpenURL(url) {
+            let actionLinkAction = UIAction(title: String(localized: "actionLink.action"), image: UIImage(systemName: "arrow.up.forward.square")) { _ in
+                UIApplication.shared.open(url)
+            }
+            
+            elements.append(actionLinkAction)
         }
         
         let deleteAction = UIAction(title: String(localized: "pin.delete"), image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
@@ -970,7 +978,7 @@ extension MainViewController: CropViewControllerDelegate {
             }
         } else {
             if let currentImage = currentImage, let original = ImageCacheManager.shared.storeImage(currentImage, type: .original), let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
-                _ = DataManager.shared.createPost(original: original, processed: processed, rect: cropRect, orientation: angle, expirationTime: Post.getDefaultExpirationTime(), styleId: nil)
+                _ = DataManager.shared.createPost(original: original, processed: processed, rect: cropRect, orientation: angle, actionLink: "", expirationTime: Post.getDefaultExpirationTime(), styleId: nil)
             }
         }
     }

@@ -62,6 +62,18 @@ class EditorViewController: UIViewController {
         }
     }
     
+    private var actionLink: String {
+        get {
+            return detail.post.actionLink
+        }
+        set {
+            if detail.post.actionLink != newValue {
+                detail.post.actionLink = newValue
+                reloadData()
+            }
+        }
+    }
+    
     private var editorClosure: ((Post.Detail) -> ())?
     
     enum Section: Int, Hashable {
@@ -93,6 +105,7 @@ class EditorViewController: UIViewController {
         case image(UIImage)
         case imageAction(ImageAction)
         case style(PostStyle?)
+        case actionLink(String)
         case expirationToggle(Bool)
         case expiration(Int64?)
     }
@@ -282,6 +295,21 @@ class EditorViewController: UIViewController {
                     cell.valueButton.menu = menu
                 }
                 return cell
+            case .actionLink(let link):
+                let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(UITableViewCell.self), for: indexPath)
+                cell.accessoryType = .disclosureIndicator
+                cell.accessoryView = nil
+                
+                var content = UIListContentConfiguration.valueCell()
+                content.text = String(localized: "actionLink.title")
+                content.textProperties.color = AppColor.text
+                if link.isEmpty {
+                    content.secondaryText = String(localized: "actionLink.none")
+                } else {
+                    content.secondaryText = link
+                }
+                cell.contentConfiguration = content
+                return cell
             case .expirationToggle(let enable):
                 let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(UITableViewCell.self), for: indexPath)
                 
@@ -333,6 +361,7 @@ class EditorViewController: UIViewController {
         
         snapshot.appendSections([.advanced])
         snapshot.appendItems([.style(style)], toSection: .advanced)
+        snapshot.appendItems([.actionLink(actionLink)], toSection: .advanced)
         snapshot.appendItems([.expirationToggle(expirationToggle)], toSection: .advanced)
         if expirationToggle {
             snapshot.appendItems([.expiration(expirationTime)], toSection: .advanced)
@@ -399,6 +428,26 @@ class EditorViewController: UIViewController {
     func toggle(_ expirationSwitch: UISwitch) {
         expirationToggle = expirationSwitch.isOn
     }
+    
+    func editActionLink() {
+        let alertController = UIAlertController(title: String(localized: "actionLink.alert.title"), message: String(localized: "actionLink.alert.message"), preferredStyle: .alert)
+        alertController.addTextField { [weak self] textField in
+            guard let self = self else { return }
+            textField.placeholder = String(localized: "actionLink.none")
+            textField.text = self.actionLink
+            textField.addTarget(alertController, action: #selector(alertController.textDidChangeInActionLink), for: .editingChanged)
+        }
+        let cancelAction = UIAlertAction(title: String(localized: "button.cancel"), style: .cancel) { _ in
+            //
+        }
+        let okAction = UIAlertAction(title: String(localized: "button.confirm"), style: .default) { [weak self] _ in
+            self?.actionLink = alertController.textFields?.first?.text ?? ""
+        }
+
+        alertController.addAction(cancelAction)
+        alertController.addAction(okAction)
+        present(alertController, animated: ConsideringUser.animated, completion: nil)
+    }
 }
 
 
@@ -419,6 +468,8 @@ extension EditorViewController: UITableViewDelegate {
             case .fullScreen:
                 enterImageDetail(for: detail)
             }
+        case .actionLink:
+            editActionLink()
         case .expirationToggle, .expiration:
             break
         case .style(let style):
@@ -484,5 +535,14 @@ extension EditorViewController: CropViewControllerDelegate {
 extension String {
     func isValidRecordComment() -> Bool{
         return count > 0
+    }
+}
+
+extension UIAlertController {
+    @objc
+    func textDidChangeInActionLink() {
+        if let content = textFields?[0].text, let action = actions.last {
+            action.isEnabled = (content.count >= 0)
+        }
     }
 }

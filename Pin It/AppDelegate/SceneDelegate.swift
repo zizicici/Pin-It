@@ -97,6 +97,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     main.scrollToPost(by: id)
                     if url.pathComponents.contains("detail") {
                         main.viewDetail(for: id)
+                    } else if url.pathComponents.contains("action") {
+                        if let post = DataManager.shared.fetchPostDetail(for: [id]).first {
+                            let actionLink = post.post.actionLink
+                            if let url = URL(string: actionLink), UIApplication.shared.canOpenURL(url) {
+                                UIApplication.shared.open(url)
+                            }
+                        }
                     }
                 }
             case .none:

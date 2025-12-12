@@ -109,6 +109,13 @@ final class AppDatabase {
             }
         }
         
+        migrator.registerMigration("post____action____link") { db in
+            try db.alter(table: "post") { table in
+                table.add(column: "action_link", .text).notNull()
+                    .defaults(to: "")
+            }
+        }
+        
         return migrator
     }
     
