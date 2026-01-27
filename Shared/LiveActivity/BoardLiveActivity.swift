@@ -50,9 +50,11 @@ struct PinContentView: View {
     
     var body: some View {
         ZStack {
-            Image("Clear")
-                .resizable()
-                .privacySensitive(false)
+            if #available(iOS 18.0, *) {
+                Image("Clear")
+                    .resizable()
+                    .privacySensitive(false)
+            }
             if context.state.total == 0 {
                 AutoSizeText(text: String(localized: "content.no"), color: textColor, textAlignment: textAlignment, textSize: textSize)
             } else {
@@ -254,9 +256,11 @@ struct BoardMediumView: View {
     var body: some View {
         if context.state.needTransparentControl {
             ZStack {
-                Image("Clear")
-                    .resizable()
-                    .privacySensitive(false)
+                if #available(iOS 18.0, *) {
+                    Image("Clear")
+                        .resizable()
+                        .privacySensitive(false)
+                }
                 HStack {
                     VStack {
                         Button(intent: ResetAndUpdateIntent()) {
