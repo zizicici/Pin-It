@@ -7,6 +7,7 @@
 
 import Foundation
 import AppIntents
+import MoreKit
 
 struct PostEntity: AppEntity {
     static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "intent.post.type")

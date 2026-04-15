@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import MoreKit
 
 extension UserDefaults {
     enum Settings: String {
@@ -23,83 +24,7 @@ extension UserDefaults {
 }
 
 extension Notification.Name {
-    static let SettingsUpdate = Notification.Name(rawValue: "com.zizicici.common.settings.updated")
     static let DefaultStyleDidChanged = Notification.Name(rawValue: "com.zizicici.pin.defaultStyle.didChanged")
-}
-
-protocol SettingsOption: Hashable, Equatable {
-    func getName() -> String
-    static func getHeader() -> String?
-    static func getFooter() -> String?
-    static func getTitle() -> String
-    static func getOptions() -> [Self]
-    static var current: Self { get }
-    static func setCurrent(_ value: Self) throws
-}
-
-extension SettingsOption {
-    static func getHeader() -> String? {
-        return nil
-    }
-    
-    static func getFooter() -> String? {
-        return nil
-    }
-}
-
-extension SettingsOption {
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        if type(of: lhs) != type(of: rhs) {
-            return false
-        } else {
-            return lhs.hashValue == rhs.hashValue
-        }
-    }
-}
-
-protocol UserDefaultSettable: SettingsOption {
-    static func getKey() -> UserDefaults.Settings
-    static var defaultOption: Self { get }
-}
-
-extension UserDefaultSettable where Self: RawRepresentable, Self.RawValue == Int {
-    static func getValue() -> Self {
-        if let intValue = UserDefaults(suiteName: appGroupId)?.getInt(forKey: getKey().rawValue), let value = Self(rawValue: intValue) {
-            return value
-        } else {
-            return defaultOption
-        }
-    }
-    
-    static func setValue(_ value: Self) {
-        UserDefaults(suiteName: appGroupId)?.set(value.rawValue, forKey: getKey().rawValue)
-        UserDefaults(suiteName: appGroupId)?.synchronize()
-        NotificationCenter.default.post(name: NSNotification.Name.SettingsUpdate, object: nil)
-    }
-    
-    static func getOptions<T: CaseIterable>() -> [T] {
-        return Array(T.allCases)
-    }
-    
-    static var current: Self {
-        get {
-            return getValue()
-        }
-    }
-}
-
-extension UserDefaults {
-    func getInt(forKey key: String) -> Int? {
-        return object(forKey: key) as? Int
-    }
-    
-    func getBool(forKey key: String) -> Bool? {
-        return object(forKey: key) as? Bool
-    }
-    
-    func getString(forKey key: String) -> String? {
-        return object(forKey: key) as? String
-    }
 }
 
 enum AutoBackup: Int, CaseIterable, Codable {
@@ -108,24 +33,20 @@ enum AutoBackup: Int, CaseIterable, Codable {
 }
 
 extension AutoBackup: UserDefaultSettable {
-    static func getKey() -> UserDefaults.Settings {
-        return .AutoBackup
+    static func getKey() -> String {
+        return UserDefaults.Settings.AutoBackup.rawValue
     }
-    
+
     static var defaultOption: AutoBackup {
         return .disable
     }
-    
+
     func getName() -> String {
         return "\(rawValue)"
     }
-    
+
     static func getTitle() -> String {
         return ""
-    }
-    
-    static func setCurrent(_ value: AutoBackup) throws {
-        setValue(value)
     }
 }
 
@@ -136,14 +57,14 @@ enum AutoStartLiveActivity: Int, CaseIterable, Codable {
 }
 
 extension AutoStartLiveActivity: UserDefaultSettable {
-    static func getKey() -> UserDefaults.Settings {
-        .AutoStartLiveActivity
+    static func getKey() -> String {
+        UserDefaults.Settings.AutoStartLiveActivity.rawValue
     }
-    
+
     static var defaultOption: AutoStartLiveActivity {
         return .withContent
     }
-    
+
     func getName() -> String {
         switch self {
         case .withContent:
@@ -154,13 +75,9 @@ extension AutoStartLiveActivity: UserDefaultSettable {
             return String(localized: "settings.disable")
         }
     }
-    
+
     static func getTitle() -> String {
         return String(localized: "settings.autoStartLiveActivity.title")
-    }
-    
-    static func setCurrent(_ value: AutoStartLiveActivity) throws {
-        setValue(value)
     }
 }
 
@@ -170,14 +87,14 @@ enum AutoEndLiveActivity: Int, CaseIterable, Codable {
 }
 
 extension AutoEndLiveActivity: UserDefaultSettable {
-    static func getKey() -> UserDefaults.Settings {
-        .AutoEndLiveActivity
+    static func getKey() -> String {
+        UserDefaults.Settings.AutoEndLiveActivity.rawValue
     }
-    
+
     static var defaultOption: AutoEndLiveActivity {
         return .noContent
     }
-    
+
     func getName() -> String {
         switch self {
         case .noContent:
@@ -186,13 +103,9 @@ extension AutoEndLiveActivity: UserDefaultSettable {
             return String(localized: "settings.disable")
         }
     }
-    
+
     static func getTitle() -> String {
         return String(localized: "settings.autoEndLiveActivity.title")
-    }
-    
-    static func setCurrent(_ value: AutoEndLiveActivity) throws {
-        setValue(value)
     }
 }
 
@@ -202,8 +115,8 @@ enum MaxPinnedPosts: Int, CaseIterable, Codable {
 }
 
 extension MaxPinnedPosts: UserDefaultSettable {
-    static func getKey() -> UserDefaults.Settings {
-        .MaxPinnedPosts
+    static func getKey() -> String {
+        UserDefaults.Settings.MaxPinnedPosts.rawValue
     }
     
     static var defaultOption: Self {
@@ -244,24 +157,20 @@ enum ThanksEntryState: Int, CaseIterable, Codable {
 }
 
 extension ThanksEntryState: UserDefaultSettable {
-    static func getKey() -> UserDefaults.Settings {
-        .ThanksEntryState
+    static func getKey() -> String {
+        UserDefaults.Settings.ThanksEntryState.rawValue
     }
-    
+
     static var defaultOption: Self {
         return .display
     }
-    
+
     func getName() -> String {
         return "\(rawValue)"
     }
-    
+
     static func getTitle() -> String {
         return ""
-    }
-    
-    static func setCurrent(_ value: Self) throws {
-        setValue(value)
     }
 }
 
@@ -272,14 +181,14 @@ enum DeleteOperationConfirmation: Int, CaseIterable, Codable {
 }
 
 extension DeleteOperationConfirmation: UserDefaultSettable {
-    static func getKey() -> UserDefaults.Settings {
-        .DeleteOperationConfirmation
+    static func getKey() -> String {
+        UserDefaults.Settings.DeleteOperationConfirmation.rawValue
     }
-    
+
     static var defaultOption: Self {
         return .enable
     }
-    
+
     func getName() -> String {
         switch self {
         case .enable:
@@ -290,13 +199,9 @@ extension DeleteOperationConfirmation: UserDefaultSettable {
             return String(localized: "settings.deleteOperationConfirmation.disableUntilAppBackgrounds")
         }
     }
-    
+
     static func getTitle() -> String {
         return String(localized: "settings.deleteOperationConfirmation.title")
-    }
-    
-    static func setCurrent(_ value: Self) throws {
-        setValue(value)
     }
 }
 
@@ -306,14 +211,14 @@ enum ExpirationAction: Int, CaseIterable, Codable {
 }
 
 extension ExpirationAction: UserDefaultSettable {
-    static func getKey() -> UserDefaults.Settings {
-        return .ExpirationAction
+    static func getKey() -> String {
+        UserDefaults.Settings.ExpirationAction.rawValue
     }
-    
+
     static var defaultOption: Self {
         return .unpin
     }
-    
+
     func getName() -> String {
         switch self {
         case .unpin:
@@ -322,15 +227,11 @@ extension ExpirationAction: UserDefaultSettable {
             return String(localized: "settings.expirationAction.delete")
         }
     }
-    
+
     static func getTitle() -> String {
         return String(localized: "settings.expirationAction.title")
     }
-    
-    static func setCurrent(_ value: Self) throws {
-        setValue(value)
-    }
-    
+
     static func getFooter() -> String? {
         return String(localized: "settings.expirationAction.footer")
     }
@@ -375,14 +276,14 @@ enum DefaultExpirationTime: Int, CaseIterable, Codable {
 }
 
 extension DefaultExpirationTime: UserDefaultSettable {
-    static func getKey() -> UserDefaults.Settings {
-        return .DefaultExpirationTime
+    static func getKey() -> String {
+        UserDefaults.Settings.DefaultExpirationTime.rawValue
     }
-    
+
     static var defaultOption: Self {
         return .none
     }
-    
+
     func getName() -> String {
         switch self {
         case .none:
@@ -391,23 +292,26 @@ extension DefaultExpirationTime: UserDefaultSettable {
             return localized() ?? ""
         }
     }
-    
+
     static func getTitle() -> String {
         return String(localized: "settings.defaultExpirationTime.title")
     }
-    
-    static func setCurrent(_ value: Self) throws {
-        setValue(value)
-    }
-    
+
     static func getFooter() -> String? {
         return String(localized: "settings.defaultExpirationTime.footer")
     }
 }
 
-enum SettingsError: Swift.Error {
+enum SettingsError: Swift.Error, LocalizedError {
     case needsPro
-    
+
+    var errorDescription: String? {
+        switch self {
+        case .needsPro:
+            return String(localized: "error.needsPro.message")
+        }
+    }
+
     var message: String {
         switch self {
         case .needsPro:

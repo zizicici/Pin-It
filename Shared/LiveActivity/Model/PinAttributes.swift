@@ -9,6 +9,7 @@ import Foundation
 import ActivityKit
 import SwiftUI
 import WidgetKit
+import MoreKit
 
 struct PinAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {

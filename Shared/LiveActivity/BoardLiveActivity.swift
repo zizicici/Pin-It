@@ -10,6 +10,7 @@ import WidgetKit
 import SwiftUI
 import AppIntents
 import NaturalLanguage
+import MoreKit
 
 struct PinContentView: View {
     enum DisplayType {

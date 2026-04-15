@@ -21,6 +21,8 @@
 		14AA37282EA0907300685425 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 14AA37272EA0907300685425 /* GRDB */; };
 		14AE7AD42ECB17A0006B7467 /* JXPhotoBrowser in Frameworks */ = {isa = PBXBuildFile; productRef = 14AE7AD32ECB17A0006B7467 /* JXPhotoBrowser */; };
 		14B4B4AD2ED4A63A00B09600 /* SymbolPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 14B4B4AC2ED4A63A00B09600 /* SymbolPicker */; };
+		14C0DE012F0D000000000001 /* MoreKit in Frameworks */ = {isa = PBXBuildFile; productRef = 14C0DE002F0D000000000001 /* MoreKit */; };
+		14C0DE032F0D000000000003 /* MoreKit in Frameworks */ = {isa = PBXBuildFile; productRef = 14C0DE022F0D000000000002 /* MoreKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -138,8 +140,6 @@
 				Database/Model/PostStyle.swift,
 				Extension/AppColor.swift,
 				Extension/Debounce.swift,
-				"Extension/UIColor+Extension.swift",
-				More/Store.swift,
 				Resource/Assets.xcassets,
 				Settings/Settings.swift,
 			);
@@ -200,6 +200,7 @@
 				1461E6AB2EB5EC9900E47262 /* FirebaseAnalytics in Frameworks */,
 				14AE7AD42ECB17A0006B7467 /* JXPhotoBrowser in Frameworks */,
 				14AA37282EA0907300685425 /* GRDB in Frameworks */,
+				14C0DE012F0D000000000001 /* MoreKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,6 +217,7 @@
 			files = (
 				1481AB082E9D547700E359C9 /* SwiftUI.framework in Frameworks */,
 				1481AB062E9D547700E359C9 /* WidgetKit.framework in Frameworks */,
+				14C0DE032F0D000000000003 /* MoreKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -287,6 +289,7 @@
 				14AE7AD32ECB17A0006B7467 /* JXPhotoBrowser */,
 				1484F81C2ECCB01800802024 /* ZCCalendar */,
 				14B4B4AC2ED4A63A00B09600 /* SymbolPicker */,
+				14C0DE002F0D000000000001 /* MoreKit */,
 			);
 			productName = "Pin It";
 			productReference = 1481AAB72E9D4CFD00E359C9 /* Pin It.app */;
@@ -331,6 +334,7 @@
 			);
 			name = Board;
 			packageProductDependencies = (
+				14C0DE022F0D000000000002 /* MoreKit */,
 			);
 			productName = Board;
 			productReference = 1481AB032E9D547700E359C9 /* Board.appex */;
@@ -391,6 +395,7 @@
 				14AE7AD22ECB17A0006B7467 /* XCRemoteSwiftPackageReference "PhotoBrowser" */,
 				1484F81B2ECCB01800802024 /* XCRemoteSwiftPackageReference "ZCCalendar" */,
 				14B4B4AB2ED4A63A00B09600 /* XCRemoteSwiftPackageReference "SymbolPicker" */,
+				14C0DEFF2F0D000000000000 /* XCRemoteSwiftPackageReference "MoreKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1481AAB82E9D4CFD00E359C9 /* Products */;
@@ -925,6 +930,14 @@
 				minimumVersion = 1.6.2;
 			};
 		};
+		14C0DEFF2F0D000000000000 /* XCRemoteSwiftPackageReference "MoreKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/zizicici/MoreKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -977,6 +990,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 14B4B4AB2ED4A63A00B09600 /* XCRemoteSwiftPackageReference "SymbolPicker" */;
 			productName = SymbolPicker;
+		};
+		14C0DE002F0D000000000001 /* MoreKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 14C0DEFF2F0D000000000000 /* XCRemoteSwiftPackageReference "MoreKit" */;
+			productName = MoreKit;
+		};
+		14C0DE022F0D000000000002 /* MoreKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 14C0DEFF2F0D000000000000 /* XCRemoteSwiftPackageReference "MoreKit" */;
+			productName = MoreKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

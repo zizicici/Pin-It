@@ -7,6 +7,7 @@
 
 import UIKit
 import os.log
+import MoreKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
@@ -30,7 +31,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let tabbarController = UITabBarController()
         tabbarController.view.tintColor = .systemRed
         tabbarController.tabBar.tintColor = .systemRed
-        tabbarController.viewControllers = [UINavigationController(rootViewController: MainViewController()), UINavigationController(rootViewController: SettingsViewController()), UINavigationController(rootViewController: MoreViewController())]
+        tabbarController.viewControllers = [UINavigationController(rootViewController: MainViewController()), UINavigationController(rootViewController: SettingsViewController()), UINavigationController(rootViewController: MoreViewController.makePinIt())]
         
         window?.rootViewController = tabbarController
         window?.makeKeyAndVisible()

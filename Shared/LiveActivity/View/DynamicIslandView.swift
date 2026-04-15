@@ -8,6 +8,7 @@
 import SwiftUI
 import WidgetKit
 import AppIntents
+import MoreKit
 
 struct DynamicIslandView: View {
     enum Position {

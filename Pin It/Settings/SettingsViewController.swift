@@ -10,10 +10,34 @@ import SnapKit
 import SafariServices
 import AppInfo
 import StoreKit
+import MoreKit
+
+enum PinItPromotion {
+    static var promotionConfig: PromotionCellConfiguration {
+        PromotionCellConfiguration(
+            title: String(localized: "promotion.title"),
+            titleHighlight: "Pro",
+            features: [
+                String(localized: "promotion.first"),
+                String(localized: "promotion.second"),
+                String(localized: "promotion.future")
+            ],
+            gradientColors: [.systemRed.withAlphaComponent(0.7), .systemRed.withAlphaComponent(0.8)]
+        )
+    }
+
+    static var gratefulConfig: GratefulCellConfiguration {
+        GratefulCellConfiguration(
+            title: String(localized: "grateful.title"),
+            titleHighlight: "Pro",
+            content: String(localized: "grateful.content"),
+            gradientColors: [.systemRed.withAlphaComponent(0.7), .systemRed.withAlphaComponent(0.8)],
+            titleHighlightColor: .systemYellow
+        )
+    }
+}
 
 class SettingsViewController: UIViewController {
-    static let supportEmail = "pin@zi.ci"
-
     private var tableView: UITableView!
     private var dataSource: DataSource!
     
@@ -224,7 +248,7 @@ class SettingsViewController: UIViewController {
                 case .expirationTime:
                     return DefaultExpirationTime.getTitle()
                 }
-            case .defaultStyle(let style):
+            case .defaultStyle:
                 return String(localized: "style.default")
             case .style(let style):
                 return style.name
@@ -262,7 +286,7 @@ class SettingsViewController: UIViewController {
     }
     
     deinit {
-        print("MoreViewController is deinited")
+        print("SettingsViewController is deinited")
     }
     
     override func viewDidLoad() {
@@ -294,7 +318,7 @@ class SettingsViewController: UIViewController {
         tableView.backgroundColor = AppColor.background
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "reuseIdentifier")
         tableView.register(AppCell.self, forCellReuseIdentifier: NSStringFromClass(AppCell.self))
-        tableView.register(PromotionCell.self, forCellReuseIdentifier: NSStringFromClass(PromotionCell.self))
+        tableView.register(PinItPromotionCell.self, forCellReuseIdentifier: NSStringFromClass(PinItPromotionCell.self))
         tableView.register(GratefulCell.self, forCellReuseIdentifier: NSStringFromClass(GratefulCell.self))
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.rowHeight = UITableView.automaticDimension
@@ -313,19 +337,23 @@ class SettingsViewController: UIViewController {
             guard let identifier = dataSource.itemIdentifier(for: indexPath) else { return nil }
             switch identifier {
             case .promotion(let price):
-                let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(PromotionCell.self), for: indexPath)
-                if let cell = cell as? PromotionCell {
-                    cell.update(price: price)
-                    cell.purchaseClosure = { [weak self] in
+                let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(PinItPromotionCell.self), for: indexPath)
+                if let promotionCell = cell as? PromotionCellConfigurable {
+                    promotionCell.update(configuration: PinItPromotion.promotionConfig)
+                    promotionCell.update(price: price)
+                    promotionCell.purchaseClosure = { [weak self] in
                         self?.lifetimeAction()
                     }
-                    cell.restoreClosure = { [weak self] in
+                    promotionCell.restoreClosure = { [weak self] in
                         self?.restorePurchases()
                     }
                 }
                 return cell
             case .thanks:
                 let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(GratefulCell.self), for: indexPath)
+                if let cell = cell as? GratefulCell {
+                    cell.update(configuration: PinItPromotion.gratefulConfig)
+                }
                 return cell
             case .general(let item):
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
@@ -625,19 +653,6 @@ extension SettingsViewController {
             }
             
             hideOverlayViewController()
-        }
-    }
-    
-    func manageAction() {
-        if Store.shared.needRetry {
-            Store.shared.retryRequestProducts()
-        } else {
-            switch User.shared.proTier() {
-            case .lifetime:
-                restorePurchases()
-            case .none:
-                restorePurchases()
-            }
         }
     }
     

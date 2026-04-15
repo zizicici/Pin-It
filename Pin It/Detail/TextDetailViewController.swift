@@ -8,6 +8,7 @@
 import Foundation
 import UIKit
 import SnapKit
+import MoreKit
 
 class TextDetailViewController: UIViewController {
     var textInfo: PostText!

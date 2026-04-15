@@ -7,6 +7,7 @@
 
 import Foundation
 import GRDB
+import MoreKit
 
 struct Post: Identifiable, Hashable, Codable {
     struct Detail: Codable, FetchableRecord, Hashable {

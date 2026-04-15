@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import MoreKit
 
 extension PostStyle: OptionItem {
     static var noneTitle: String {

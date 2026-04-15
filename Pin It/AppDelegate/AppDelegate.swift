@@ -12,6 +12,7 @@ import FirebaseCore
 #endif
 import Kingfisher
 import StoreKit
+import MoreKit
 
 extension UserDefaults {
     enum Support: String {
@@ -29,7 +30,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 #endif
         
         try? Tips.configure()
-        
+
+        MoreKit.configure(
+            productIDs: ["com.zizicici.pin.pro"],
+            appGroupID: appGroupId,
+            membershipKey: "com.zizicici.pin.Store.LifetimeMembership"
+        )
+        MoreKitAppearance.shared = MoreKitAppearance(
+            backgroundColor: AppColor.background,
+            tintColor: .systemRed
+        )
+
         _ = AppDatabase.shared
         _ = PinInfoManager.shared
         _ = PostSyncManager.shared

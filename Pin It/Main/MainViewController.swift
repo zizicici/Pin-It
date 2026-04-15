@@ -11,6 +11,7 @@ import PhotosUI
 import CropViewController
 import TipKit
 import JXPhotoBrowser
+import MoreKit
 
 class MainViewController: UIViewController {
     private var collectionView: UICollectionView!
