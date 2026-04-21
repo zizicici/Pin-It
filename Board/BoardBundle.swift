@@ -12,8 +12,7 @@ import MoreKit
 @main
 struct BoardBundle: WidgetBundle {
     init() {
-        MoreKit.configure(
-            productID: "com.zizicici.pin.pro",
+        MoreKit.configureForReadOnlyAccess(
             appGroupID: appGroupId,
             membershipKey: "com.zizicici.pin.Store.LifetimeMembership"
         )
