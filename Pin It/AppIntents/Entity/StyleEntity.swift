@@ -8,6 +8,7 @@
 import Foundation
 import AppIntents
 import UIKit
+import MoreKit
 
 struct StyleEntity: AppEntity {
     static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "intent.style.type")

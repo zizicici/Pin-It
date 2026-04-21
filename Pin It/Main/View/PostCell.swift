@@ -7,6 +7,7 @@
 
 import UIKit
 import SnapKit
+import MoreKit
 
 fileprivate extension UIConfigurationStateCustomKey {
     static let postItem = UIConfigurationStateCustomKey("com.zizicici.pin.post.cell.item")

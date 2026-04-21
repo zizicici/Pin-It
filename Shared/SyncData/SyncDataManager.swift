@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import MoreKit
 
 extension Notification.Name {
     static let SyncDataUpdated = Notification.Name(rawValue: "com.zizicici.common.syncData.updated")

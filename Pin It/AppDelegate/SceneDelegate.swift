@@ -7,6 +7,7 @@
 
 import UIKit
 import os.log
+import MoreKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
@@ -30,7 +31,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let tabbarController = UITabBarController()
         tabbarController.view.tintColor = .systemRed
         tabbarController.tabBar.tintColor = .systemRed
-        tabbarController.viewControllers = [UINavigationController(rootViewController: MainViewController()), UINavigationController(rootViewController: SettingsViewController()), UINavigationController(rootViewController: MoreViewController())]
+        tabbarController.viewControllers = [UINavigationController(rootViewController: MainViewController()), UINavigationController(rootViewController: SettingsViewController()), UINavigationController(rootViewController: MoreViewController.makePinIt())]
         
         window?.rootViewController = tabbarController
         window?.makeKeyAndVisible()
@@ -100,8 +101,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     } else if url.pathComponents.contains("action") {
                         if let post = DataManager.shared.fetchPostDetail(for: [id]).first {
                             let actionLink = post.post.actionLink
-                            if let url = URL(string: actionLink), UIApplication.shared.canOpenURL(url) {
-                                UIApplication.shared.open(url)
+                            if let url = URL(string: actionLink) {
+                                UIApplication.shared.open(url, options: [:], completionHandler: nil)
                             }
                         }
                     }

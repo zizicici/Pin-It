@@ -7,6 +7,7 @@
 
 import UIKit
 import SnapKit
+import MoreKit
 
 // MARK: - 样式编辑器委托
 protocol StyleEditorDelegate: AnyObject {
@@ -1052,11 +1053,11 @@ struct DefaultStyle: RawRepresentable, UserDefaultSettable {
     init(rawValue: Int) {
         self.rawValue = rawValue
     }
-    
+
     var rawValue: Int
-    
-    static func getKey() -> UserDefaults.Settings {
-        .DefaultStyle
+
+    static func getKey() -> String {
+        UserDefaults.Settings.DefaultStyle.rawValue
     }
     
     static var defaultOption: DefaultStyle = Self.init(rawValue: 0)

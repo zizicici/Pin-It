@@ -10,6 +10,7 @@ import SnapKit
 import JXPhotoBrowser
 import CropViewController
 import ZCCalendar
+import MoreKit
 
 class EditorViewController: UIViewController {
     struct ImageInfo {

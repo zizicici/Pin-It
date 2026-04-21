@@ -8,6 +8,7 @@
 import UIKit
 import SwiftUI
 import SymbolPicker
+import MoreKit
 
 extension UIViewController {
     func presentSymbolPicker(currentSymbol: String, onSelect: @escaping (String) -> Void) {
