@@ -573,9 +573,9 @@ extension MainViewController: PostCellDelegate {
             elements.append(currentPageDivider)
         }
         
-        if !post.post.actionLink.isEmpty, let url = URL(string: post.post.actionLink), UIApplication.shared.canOpenURL(url) {
+        if !post.post.actionLink.isEmpty, let url = URL(string: post.post.actionLink) {
             let actionLinkAction = UIAction(title: String(localized: "actionLink.action"), image: UIImage(systemName: "arrow.up.forward.square")) { _ in
-                UIApplication.shared.open(url)
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }
             
             elements.append(actionLinkAction)

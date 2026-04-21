@@ -101,8 +101,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     } else if url.pathComponents.contains("action") {
                         if let post = DataManager.shared.fetchPostDetail(for: [id]).first {
                             let actionLink = post.post.actionLink
-                            if let url = URL(string: actionLink), UIApplication.shared.canOpenURL(url) {
-                                UIApplication.shared.open(url)
+                            if let url = URL(string: actionLink) {
+                                UIApplication.shared.open(url, options: [:], completionHandler: nil)
                             }
                         }
                     }
