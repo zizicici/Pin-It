@@ -32,7 +32,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         try? Tips.configure()
 
         MoreKit.configure(
-            productIDs: ["com.zizicici.pin.pro"],
+            productID: "com.zizicici.pin.pro",
             appGroupID: appGroupId,
             membershipKey: "com.zizicici.pin.Store.LifetimeMembership"
         )

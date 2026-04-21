@@ -1,5 +1,5 @@
 {
-  "originHash" : "8c5fb4c0ae452894f2022d1f844b9753bf3e5535039b1210eed7fd88e977fdee",
+  "originHash" : "b950c4dbb0850e020767549d1f8aee57813cbcca80165ee84f904dc53d4ae2b1",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -17,15 +17,6 @@
       "state" : {
         "revision" : "61b85103a1aeed8218f17c794687781505fbbef5",
         "version" : "11.2.0"
-      }
-    },
-    {
-      "identity" : "appinfo",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/zizicici/AppInfo",
-      "state" : {
-        "revision" : "37f8f1c2136c55c370aa779e54dcd88ffa6636f0",
-        "version" : "1.4.0"
       }
     },
     {
@@ -132,8 +123,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/zizicici/MoreKit",
       "state" : {
-        "revision" : "fede3e08ee98b59be792faef9fbdbcd8ffcf346a",
-        "version" : "1.1.0"
+        "revision" : "ce42e8d2b448a9cea055ea8b19e14b0762ed5b03",
+        "version" : "1.8.1"
       }
     },
     {

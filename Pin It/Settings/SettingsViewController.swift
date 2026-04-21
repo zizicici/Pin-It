@@ -8,7 +8,6 @@
 import UIKit
 import SnapKit
 import SafariServices
-import AppInfo
 import StoreKit
 import MoreKit
 
@@ -317,7 +316,6 @@ class SettingsViewController: UIViewController {
         tableView = UITableView(frame: .zero, style: .insetGrouped)
         tableView.backgroundColor = AppColor.background
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "reuseIdentifier")
-        tableView.register(AppCell.self, forCellReuseIdentifier: NSStringFromClass(AppCell.self))
         tableView.register(PinItPromotionCell.self, forCellReuseIdentifier: NSStringFromClass(PinItPromotionCell.self))
         tableView.register(GratefulCell.self, forCellReuseIdentifier: NSStringFromClass(GratefulCell.self))
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -644,22 +642,25 @@ extension SettingsViewController {
         showOverlayViewController()
         Task {
             do {
-                if let _ = try await Store.shared.purchaseLifetimeMembership() {
+                switch try await Store.shared.purchaseLifetimeMembership() {
+                case .success, .alreadyOwned:
                     reloadData()
+                case .pending, .cancelled:
+                    break
                 }
             }
             catch {
                 showAlert(title: String(localized: "membership.purchases.order.failure", comment: "Order Failure"), message: error.localizedDescription)
             }
-            
+
             hideOverlayViewController()
         }
     }
-    
+
     func restorePurchases() {
         Task {
             showOverlayViewController()
-            await Store.shared.sync()
+            try? await Store.shared.sync()
             hideOverlayViewController()
         }
     }

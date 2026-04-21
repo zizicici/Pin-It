@@ -7,7 +7,6 @@
 
 import UIKit
 import MoreKit
-import AppInfo
 
 extension MoreViewController {
     static func makePinIt() -> MoreViewController {
@@ -17,12 +16,8 @@ extension MoreViewController {
             promotionCellClass: PinItPromotionCell.self,
             promotionConfig: PinItPromotion.promotionConfig,
             gratefulConfig: PinItPromotion.gratefulConfig,
-            contactItems: [
-                ContactItemConfiguration(id: "email", title: String(localized: "more.item.contact.email"), value: "pin@zi.ci", image: UIImage(systemName: "envelope.circle"), handler: .email("pin@zi.ci")),
-                ContactItemConfiguration(id: "xiaohongshu", title: String(localized: "more.item.contact.xiaohongshu"), value: "@App君", image: UIImage(systemName: "book.closed.circle"), handler: .url("https://www.xiaohongshu.com/user/profile/63f05fc5000000001001e524")),
-            ],
+            email: "pin@zi.ci",
             appStoreId: "6753946385",
-            eulaURL: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
             privacyPolicyURL: "https://zizicici.medium.com/privacy-policy-for-pin-it-app-c7215143c58c",
             specificationsConfig: SpecificationsConfiguration(
                 summaryItems: [
@@ -30,8 +25,8 @@ extension MoreViewController {
                     .init(type: .version, value: SpecificationsViewController.getAppVersion() ?? ""),
                     .init(type: .manufacturer, value: "@App君"),
                     .init(type: .publisher, value: "ZIZICICI LIMITED"),
-                    .init(type: .dateOfProduction, value: "2026/01/27"),
-                    .init(type: .license, value: "\u{7ca4}ICP\u{5907}2025448771\u{53f7}-4A"),
+                    .init(type: .dateOfProduction, value: "2026/04/21"),
+                    .init(type: .license, value: "粤ICP备2025448771号-4A"),
                 ],
                 thirdPartyLibraries: [
                     .init(name: "SnapKit", version: "5.7.1", urlString: "https://github.com/SnapKit/SnapKit"),
@@ -42,8 +37,10 @@ extension MoreViewController {
                     .init(name: "SymbolPicker", version: "1.6.2", urlString: "https://github.com/xnth97/SymbolPicker"),
                 ]
             ),
-            otherApps: [.coconut, .moontake, .lemon, .offDay, .tagDay, .one, .pigeon],
-            otherAppsDisplayCount: 3
+            appShowcase: AppShowcaseConfiguration(
+                apps: [.lemon, .moontake, .coconut, .festivals, .pigeon, .one, .offDay, .tagDay, .campfire, .watermelon, .doufu],
+                displayCount: 3
+            )
         )
         return MoreViewController(configuration: config, dataSource: PinItMoreDataSource())
     }

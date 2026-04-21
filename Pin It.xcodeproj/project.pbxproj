@@ -11,7 +11,6 @@
 		1461E6AB2EB5EC9900E47262 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 1461E6AA2EB5EC9900E47262 /* FirebaseAnalytics */; };
 		1461E6AD2EB5EC9900E47262 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 1461E6AC2EB5EC9900E47262 /* FirebaseCrashlytics */; };
 		147EC1922EBF7DC000ECAB46 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 147EC1912EBF7DC000ECAB46 /* Kingfisher */; };
-		147F4C3E2EAE7DAC00F8DD7E /* AppInfo in Frameworks */ = {isa = PBXBuildFile; productRef = 147F4C3D2EAE7DAC00F8DD7E /* AppInfo */; };
 		1481AAF92E9D543400E359C9 /* Box.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1481AAEF2E9D543400E359C9 /* Box.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1481AB062E9D547700E359C9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1481AB052E9D547700E359C9 /* WidgetKit.framework */; };
 		1481AB082E9D547700E359C9 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1481AB072E9D547700E359C9 /* SwiftUI.framework */; };
@@ -190,7 +189,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				147F4C3E2EAE7DAC00F8DD7E /* AppInfo in Frameworks */,
 				14A187452EB20CC8008E6492 /* CropViewController in Frameworks */,
 				147EC1922EBF7DC000ECAB46 /* Kingfisher in Frameworks */,
 				14558D072E9E8CE1007A67E2 /* SnapKit in Frameworks */,
@@ -281,7 +279,6 @@
 			packageProductDependencies = (
 				14558D062E9E8CE1007A67E2 /* SnapKit */,
 				14AA37272EA0907300685425 /* GRDB */,
-				147F4C3D2EAE7DAC00F8DD7E /* AppInfo */,
 				14A187442EB20CC8008E6492 /* CropViewController */,
 				1461E6AA2EB5EC9900E47262 /* FirebaseAnalytics */,
 				1461E6AC2EB5EC9900E47262 /* FirebaseCrashlytics */,
@@ -389,7 +386,6 @@
 				14558D052E9E8CE1007A67E2 /* XCRemoteSwiftPackageReference "SnapKit" */,
 				1477252C2E9F4E8A001A3EBD /* XCRemoteSwiftPackageReference "TOCropViewController" */,
 				14AA37262EA0907300685425 /* XCRemoteSwiftPackageReference "GRDB" */,
-				147F4C3C2EAE7DAC00F8DD7E /* XCRemoteSwiftPackageReference "AppInfo" */,
 				1461E6A92EB5EC9900E47262 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				147EC1902EBF7DC000ECAB46 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				14AE7AD22ECB17A0006B7467 /* XCRemoteSwiftPackageReference "PhotoBrowser" */,
@@ -495,7 +491,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.2.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -535,7 +531,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.2.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -694,7 +690,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin.Box;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -729,7 +725,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin.Box;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -765,7 +761,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin.Board;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -800,7 +796,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zizicici.pin.Board;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -890,14 +886,6 @@
 				minimumVersion = 8.6.1;
 			};
 		};
-		147F4C3C2EAE7DAC00F8DD7E /* XCRemoteSwiftPackageReference "AppInfo" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/zizicici/AppInfo";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.2.0;
-			};
-		};
 		1484F81B2ECCB01800802024 /* XCRemoteSwiftPackageReference "ZCCalendar" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/zizicici/ZCCalendar";
@@ -935,7 +923,7 @@
 			repositoryURL = "https://github.com/zizicici/MoreKit";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
+				minimumVersion = 1.8.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -960,11 +948,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 147EC1902EBF7DC000ECAB46 /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
-		};
-		147F4C3D2EAE7DAC00F8DD7E /* AppInfo */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 147F4C3C2EAE7DAC00F8DD7E /* XCRemoteSwiftPackageReference "AppInfo" */;
-			productName = AppInfo;
 		};
 		1484F81C2ECCB01800802024 /* ZCCalendar */ = {
 			isa = XCSwiftPackageProductDependency;

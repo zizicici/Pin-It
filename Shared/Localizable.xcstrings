@@ -10406,6 +10406,7 @@
       }
     },
     "more.item.contact.email" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -10506,6 +10507,7 @@
       }
     },
     "more.item.contact.xiaohongshu" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
