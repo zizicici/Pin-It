@@ -100,17 +100,14 @@ class ImageCacheManager {
         }
     }
     
-    // 获取下一个文件名
-    private func getNextFileName() -> String {
-        indexLock.lock()
-        defer {
-            saveCurrentFileIndex()
-            indexLock.unlock()
+    private func getNextFileNameWithoutLock(in folderURL: URL) -> String {
+        while true {
+            let fileName = String(format: "%08d", currentFileIndex)
+            currentFileIndex += 1
+            if !fileManager.fileExists(atPath: folderURL.appendingPathComponent(fileName).path) {
+                return fileName
+            }
         }
-        
-        let fileName = String(format: "%08d", currentFileIndex)
-        currentFileIndex += 1
-        return fileName
     }
     
     // 获取文件夹 URL
@@ -134,25 +131,91 @@ class ImageCacheManager {
             return nil
         }
         
-        let fileName = getNextFileName()
-        let fileURL = folderURL.appendingPathComponent(fileName)
-        
         // 将 UIImage 转换为 Data
         guard let imageData = image.jpegData(compressionQuality: 0.6) else {
             print("Error: Unable to convert UIImage to HEIC data")
             return nil
         }
+
+        let temporaryURL = fileManager.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).tmp")
         
         do {
-            try imageData.write(to: fileURL)
+            try imageData.write(to: temporaryURL)
+
+            indexLock.lock()
+            defer {
+                saveCurrentFileIndex()
+                indexLock.unlock()
+            }
+
+            createDirectoryIfNeeded(at: folderURL)
+            let fileName = getNextFileNameWithoutLock(in: folderURL)
+            let fileURL = folderURL.appendingPathComponent(fileName)
+            try fileManager.moveItem(at: temporaryURL, to: fileURL)
             print("Successfully stored image at: \(fileURL.path)")
             return fileName
         } catch {
+            if fileManager.fileExists(atPath: temporaryURL.path) {
+                try? fileManager.removeItem(at: temporaryURL)
+            }
             print("Error storing image: \(error)")
             return nil
         }
     }
     
+    func copyImage(from sourceURL: URL, preferredFileName: String, type: CacheImageType, overwrite: Bool) throws -> String {
+        guard let folderURL = getFolderURL(for: type) else {
+            throw NSError(domain: "ImageCacheManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unable to get folder URL"])
+        }
+
+        let sanitizedPreferredFileName = sanitizedFileName(preferredFileName)
+        let temporaryURL = fileManager.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).tmp")
+
+        do {
+            try fileManager.copyItem(at: sourceURL, to: temporaryURL)
+
+            indexLock.lock()
+            defer { indexLock.unlock() }
+
+            createDirectoryIfNeeded(at: folderURL)
+            let fileName = overwrite ? sanitizedPreferredFileName : availableFileName(sanitizedPreferredFileName, in: folderURL)
+            let fileURL = folderURL.appendingPathComponent(fileName)
+            if overwrite, fileManager.fileExists(atPath: fileURL.path) {
+                try fileManager.removeItem(at: fileURL)
+            }
+            try fileManager.moveItem(at: temporaryURL, to: fileURL)
+            return fileName
+        } catch {
+            if fileManager.fileExists(atPath: temporaryURL.path) {
+                try? fileManager.removeItem(at: temporaryURL)
+            }
+            throw error
+        }
+    }
+
+    private func availableFileName(_ preferredFileName: String, in folderURL: URL) -> String {
+        guard fileManager.fileExists(atPath: folderURL.appendingPathComponent(preferredFileName).path) else {
+            return preferredFileName
+        }
+
+        let base = NSString(string: preferredFileName).deletingPathExtension
+        let pathExtension = NSString(string: preferredFileName).pathExtension
+        var index = 1
+        while true {
+            let candidateBase = "\(base)-\(index)"
+            let candidate = pathExtension.isEmpty ? candidateBase : "\(candidateBase).\(pathExtension)"
+            if !fileManager.fileExists(atPath: folderURL.appendingPathComponent(candidate).path) {
+                return candidate
+            }
+            index += 1
+        }
+    }
+
+    private func sanitizedFileName(_ fileName: String) -> String {
+        let lastPathComponent = URL(fileURLWithPath: fileName).lastPathComponent
+        return lastPathComponent.isEmpty ? UUID().uuidString : lastPathComponent
+    }
+
     // 根据文件名和类型读取图片
     func retrieveImage(fileName: String, type: CacheImageType) -> UIImage? {
         guard let folderURL = getFolderURL(for: type) else { return nil }
@@ -176,6 +239,9 @@ class ImageCacheManager {
     // 根据文件名和类型删除图片
     func deleteImage(fileName: String, type: CacheImageType) -> Bool {
         guard let folderURL = getFolderURL(for: type) else { return false }
+
+        indexLock.lock()
+        defer { indexLock.unlock() }
         
         let fileURL = folderURL.appendingPathComponent(fileName)
         
@@ -238,6 +304,9 @@ class ImageCacheManager {
     // 清空所有缓存
     func clearAllCache() {
         guard let containerURL = containerURL else { return }
+
+        indexLock.lock()
+        defer { indexLock.unlock() }
         
         let cacheURL = containerURL.appendingPathComponent(cacheFolderName)
         
@@ -253,6 +322,33 @@ class ImageCacheManager {
             print("Error clearing cache: \(error)")
         }
     }
+
+    @discardableResult
+    func deleteUnreferencedImages(originalNames: Set<String>, processedNames: Set<String>) -> Int {
+        indexLock.lock()
+        defer { indexLock.unlock() }
+
+        let originalDeleted = deleteUnreferencedImages(type: .original, keeping: originalNames)
+        let processedDeleted = deleteUnreferencedImages(type: .processed, keeping: processedNames)
+        return originalDeleted + processedDeleted
+    }
+
+    private func deleteUnreferencedImages(type: CacheImageType, keeping referencedFileNames: Set<String>) -> Int {
+        guard let folderURL = getFolderURL(for: type) else { return 0 }
+        guard let fileNames = try? fileManager.contentsOfDirectory(atPath: folderURL.path) else { return 0 }
+
+        var deletedCount = 0
+        for fileName in fileNames where !referencedFileNames.contains(fileName) {
+            let fileURL = folderURL.appendingPathComponent(fileName)
+            do {
+                try fileManager.removeItem(at: fileURL)
+                deletedCount += 1
+            } catch {
+                print("Error deleting unreferenced image at \(fileURL.path): \(error)")
+            }
+        }
+        return deletedCount
+    }
 }
 
 extension ImageCacheManager {
@@ -260,5 +356,11 @@ extension ImageCacheManager {
         guard let url = getFolderURL(for: type) else { return nil }
         
         return url.appending(component: name).path()
+    }
+
+    func getURL(name: String, type: CacheImageType) -> URL? {
+        guard let path = getPath(name: name, type: type) else { return nil }
+        guard fileManager.fileExists(atPath: path) else { return nil }
+        return URL(filePath: path)
     }
 }

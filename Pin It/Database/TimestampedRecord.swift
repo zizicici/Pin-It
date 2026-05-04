@@ -11,6 +11,7 @@ import Foundation
 /// A record type that tracks its creation and modification dates. See
 /// <https://swiftpackageindex.com/groue/grdb.swift/documentation/grdb/recordtimestamps>
 protocol TimestampedRecord: MutablePersistableRecord {
+    var id: Int64? { get set }
     var creationTime: Int64? { get set }
     var modificationTime: Int64? { get set }
 }
@@ -48,7 +49,7 @@ extension TimestampedRecord {
     /// - parameter modificationTime: The modification date. If nil, the
     ///   transaction date is used.
     mutating func updateWithTimestamp(_ db: Database, modificationTime: Date? = nil) throws {
-        self.modificationTime = try modificationTime?.nanoSecondSince1970 ?? db.transactionDate.nanoSecondSince1970
+        self.modificationTime = try nextModificationTime(db, modificationTime: modificationTime)
         try update(db)
     }
     
@@ -92,8 +93,9 @@ extension TimestampedRecord {
         }
         
         // Update modification date and grab its column name
+        let timestamp = try nextModificationTime(db, modificationTime: modificationTime)
         let dateChanges = try databaseChanges(modify: {
-            $0.modificationTime = try modificationTime?.nanoSecondSince1970 ?? db.transactionDate.nanoSecondSince1970
+            $0.modificationTime = timestamp
         })
         
         // Update the modified columns
@@ -109,15 +111,39 @@ extension TimestampedRecord {
     /// - parameter modificationTime: The modification date. If nil, the
     ///   transaction date is used.
     mutating func touch(_ db: Database, modificationTime: Date? = nil) throws {
+        let timestamp = try nextModificationTime(db, modificationTime: modificationTime)
         try updateChanges(db) {
-            $0.modificationTime = try modificationTime?.nanoSecondSince1970 ?? db.transactionDate.nanoSecondSince1970
+            $0.modificationTime = timestamp
         }
+    }
+
+    func nextModificationTime(_ db: Database, modificationTime: Date?) throws -> Int64 {
+        let timestamp = try modificationTime?.nanoSecondSince1970 ?? db.transactionDate.nanoSecondSince1970
+        let storedModificationTime = try persistedModificationTime(in: db)
+        let currentModificationTime = max(self.modificationTime ?? 0, storedModificationTime ?? 0)
+        guard currentModificationTime > 0 else { return timestamp }
+        return max(timestamp, currentModificationTime + 1)
+    }
+
+    private func persistedModificationTime(in db: Database) throws -> Int64? {
+        guard let id else { return nil }
+        let row = try Row.fetchOne(
+            db,
+            sql: "SELECT modification_time FROM \"\(Self.databaseTableName)\" WHERE id = ?",
+            arguments: [id]
+        )
+        return row?["modification_time"]
     }
 }
 
 extension Date {
+    var millisecondsSince1970: Int64 {
+        Int64(timeIntervalSince1970 * 1000.0)
+    }
+
+    /// Historical name kept for existing call sites. The stored unit is milliseconds.
     var nanoSecondSince1970: Int64 {
-        return Int64(timeIntervalSince1970 * 1000.0)
+        millisecondsSince1970
     }
     
     init(nanoSecondSince1970: Int64) {

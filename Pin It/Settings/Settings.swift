@@ -20,16 +20,127 @@ extension UserDefaults {
         case ExpirationAction = "com.zizicici.pin.settings.ExpirationAction"
         case DefaultExpirationTime = "com.zizicici.pin.settings.DefaultExpirationTime"
         case DefaultStyle = "com.zizicici.pin.settings.DefaultStyle"
+        case DefaultStyleSyncId = "com.zizicici.pin.settings.DefaultStyleSyncId"
+        case DefaultStyleModificationTime = "com.zizicici.pin.settings.DefaultStyleModificationTime"
+        case DefaultStylePendingCloudKitSyncId = "com.zizicici.pin.settings.DefaultStylePendingCloudKitSyncId"
+        case DefaultStylePendingCloudKitModificationTime = "com.zizicici.pin.settings.DefaultStylePendingCloudKitModificationTime"
+        case OnboardingSeedState = "com.zizicici.pin.settings.OnboardingSeedState"
+        case CloudKitSync = "com.zizicici.pin.settings.CloudKitSync"
+        case CloudKitSyncLastError = "com.zizicici.pin.settings.CloudKitSyncLastError"
+        case CloudKitRemoteDataMayExist = "com.zizicici.pin.settings.CloudKitRemoteDataMayExist"
+        case CloudKitPendingRemoteReset = "com.zizicici.pin.settings.CloudKitPendingRemoteReset"
     }
 }
 
 extension Notification.Name {
     static let DefaultStyleDidChanged = Notification.Name(rawValue: "com.zizicici.pin.defaultStyle.didChanged")
+    static let cloudKitSyncDidChange = Notification.Name(rawValue: "com.zizicici.pin.cloudKitSync.didChange")
 }
 
 enum AutoBackup: Int, CaseIterable, Codable {
     case enable
     case disable
+}
+
+enum CloudKitSync: Int, CaseIterable, Codable {
+    case disable = 0
+    case enable
+}
+
+extension CloudKitSync: UserDefaultSettable {
+    static func getKey() -> String {
+        UserDefaults.Settings.CloudKitSync.rawValue
+    }
+
+    static var defaultOption: Self {
+        return .disable
+    }
+
+    func getName() -> String {
+        switch self {
+        case .enable:
+            return String(localized: "settings.enable")
+        case .disable:
+            return String(localized: "settings.disable")
+        }
+    }
+
+    static func getTitle() -> String {
+        return String(localized: "settings.cloudKitSync.title")
+    }
+
+    static func getFooter() -> String? {
+        var parts = [String(localized: "settings.cloudKitSync.footer")]
+        if let lastError {
+            parts.append(lastError)
+        }
+        if current == .enable {
+            parts.append(String(localized: "settings.cloudKitSync.rebuild.footer"))
+        }
+        return parts.joined(separator: "\n")
+    }
+
+    static func setCurrent(_ value: CloudKitSync) throws {
+        let oldValue = getValue()
+        guard oldValue != value else { return }
+
+        setLastError(nil, postsUpdate: false)
+        setValue(value)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .SettingsUpdate, object: nil)
+            NotificationCenter.default.post(name: .cloudKitSyncDidChange, object: nil)
+        }
+    }
+
+    static func disableAfterAccountChange() {
+        setValue(.disable)
+        setLastError(String(localized: "settings.cloudKitSync.error.accountChanged"), postsUpdate: false)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .SettingsUpdate, object: nil)
+            NotificationCenter.default.post(name: .cloudKitSyncDidChange, object: nil)
+        }
+    }
+
+    static var lastError: String? {
+        userDefaults.getString(forKey: UserDefaults.Settings.CloudKitSyncLastError.rawValue)
+    }
+
+    static func setLastError(_ message: String?, postsUpdate: Bool = true) {
+        if let message, !message.isEmpty {
+            userDefaults.set(message, forKey: UserDefaults.Settings.CloudKitSyncLastError.rawValue)
+        } else {
+            userDefaults.removeObject(forKey: UserDefaults.Settings.CloudKitSyncLastError.rawValue)
+        }
+
+        guard postsUpdate else { return }
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .SettingsUpdate, object: nil)
+        }
+    }
+
+    static var remoteDataMayExist: Bool {
+        userDefaults.bool(forKey: UserDefaults.Settings.CloudKitRemoteDataMayExist.rawValue)
+    }
+
+    static var pendingRemoteReset: Bool {
+        userDefaults.bool(forKey: UserDefaults.Settings.CloudKitPendingRemoteReset.rawValue)
+    }
+
+    static func markRemoteDataMayExist() {
+        userDefaults.set(true, forKey: UserDefaults.Settings.CloudKitRemoteDataMayExist.rawValue)
+    }
+
+    static func clearRemoteDataMayExist() {
+        userDefaults.removeObject(forKey: UserDefaults.Settings.CloudKitRemoteDataMayExist.rawValue)
+    }
+
+    static func setPendingRemoteReset(_ value: Bool) {
+        if value {
+            userDefaults.set(true, forKey: UserDefaults.Settings.CloudKitPendingRemoteReset.rawValue)
+        } else {
+            userDefaults.removeObject(forKey: UserDefaults.Settings.CloudKitPendingRemoteReset.rawValue)
+        }
+    }
 }
 
 extension AutoBackup: UserDefaultSettable {

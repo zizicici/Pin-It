@@ -28,6 +28,7 @@ struct Post: Identifiable, Hashable, Codable {
     }
     
     var id: Int64?
+    var syncId: String = UUID().uuidString
     
     var creationTime: Int64?
     var modificationTime: Int64?
@@ -44,10 +45,11 @@ struct Post: Identifiable, Hashable, Codable {
         
         static let isPinned = Column(CodingKeys.isPinned)
         static let modificationTime = Column(CodingKeys.modificationTime)
+        static let syncId = Column(CodingKeys.syncId)
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, creationTime = "creation_time", modificationTime = "modification_time", expirationTime = "expiration_time", actionLink = "action_link", isPinned = "is_pinned", order
+        case id, syncId = "sync_id", creationTime = "creation_time", modificationTime = "modification_time", expirationTime = "expiration_time", actionLink = "action_link", isPinned = "is_pinned", order
     }
 }
 
@@ -66,13 +68,27 @@ extension Post: TimestampedRecord {
 }
 
 extension Post {
-    static let images = hasMany(PostImage.self).forKey("images").order(PostImage.Columns.order.asc)
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(Int64.self, forKey: .id)
+        syncId = try container.decodeIfPresent(String.self, forKey: .syncId) ?? UUID().uuidString
+        creationTime = try container.decodeIfPresent(Int64.self, forKey: .creationTime)
+        modificationTime = try container.decodeIfPresent(Int64.self, forKey: .modificationTime)
+        expirationTime = try container.decodeIfPresent(Int64.self, forKey: .expirationTime)
+        actionLink = try container.decodeIfPresent(String.self, forKey: .actionLink) ?? ""
+        isPinned = try container.decodeIfPresent(Bool.self, forKey: .isPinned) ?? true
+        order = try container.decodeIfPresent(Int64.self, forKey: .order) ?? 0
+    }
+}
+
+extension Post {
+    static let images = hasMany(PostImage.self, using: PostImage.postForeignKey).forKey("images").order(PostImage.Columns.order.asc)
     
     var images: QueryInterfaceRequest<PostImage> {
         request(for: Post.images)
     }
     
-    static let texts = hasMany(PostText.self).forKey("texts").order(PostText.Columns.order.asc)
+    static let texts = hasMany(PostText.self, using: PostText.postForeignKey).forKey("texts").order(PostText.Columns.order.asc)
     
     var texts: QueryInterfaceRequest<PostText> {
         request(for: Post.texts)
@@ -80,7 +96,7 @@ extension Post {
 }
 
 extension Post {
-    static let decoration = hasOne(PostDecoration.self)
+    static let decoration = hasOne(PostDecoration.self, using: PostDecoration.postForeignKey)
 }
 
 let formatter = DateFormatter()

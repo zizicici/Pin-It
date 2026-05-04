@@ -372,6 +372,13 @@ class MainViewController: UIViewController {
     
     @objc
     func reloadData() {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?.reloadData()
+            }
+            return
+        }
+
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         
         let pinnedPostDetails = DataManager.shared.fetchAllPostDetails(isPinned: true)

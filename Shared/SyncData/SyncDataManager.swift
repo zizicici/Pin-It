@@ -63,6 +63,7 @@ private struct VersionedContainer<T: Codable>: Codable {
 struct SyncDataManager {
     enum DataVersion: String, Codable {
         case v1 = "1.0.0"
+        case v2 = "2.0.0"
     }
     
     private static let appGroupUserDefaults = UserDefaults(suiteName: appGroupId)
@@ -97,7 +98,7 @@ struct SyncDataManager {
     }
     
     // MARK: - 写入数据
-    static func write<T: Codable>(_ data: T, version: DataVersion = .v1) throws {
+    static func write<T: Codable>(_ data: T, version: DataVersion = .v2) throws {
         guard let userDefaults = appGroupUserDefaults else {
             throw NSError(domain: "SyncDataError", code: -1, userInfo: [NSLocalizedDescriptionKey: "无法访问 App Group UserDefaults"])
         }
@@ -116,7 +117,9 @@ struct SyncDataManager {
             userDefaults.set(jsonData, forKey: dataKey)
             userDefaults.set(version.rawValue, forKey: versionKey)
             
-            NotificationCenter.default.post(name: .SyncDataUpdated, object: nil)
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .SyncDataUpdated, object: nil)
+            }
         } catch {
             throw NSError(domain: "SyncDataError", code: -3, userInfo: [
                 NSLocalizedDescriptionKey: "数据编码失败: \(error.localizedDescription)"
@@ -125,7 +128,7 @@ struct SyncDataManager {
     }
     
     // MARK: - 读取数据
-    static func read<T: Codable>(_ type: T.Type, currentVersion: DataVersion = .v1) throws -> T? {
+    static func read<T: Codable>(_ type: T.Type, currentVersion: DataVersion = .v2) throws -> T? {
         // 检查版本并执行必要的迁移
         migrateIfNeeded(to: currentVersion, for: type)
         

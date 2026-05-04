@@ -39,10 +39,17 @@ enum PinItPromotion {
 class SettingsViewController: UIViewController {
     private var tableView: UITableView!
     private var dataSource: DataSource!
+    private var isRebuildingCloudKitSync = false
+    private var isChangingCloudKitSync = false
+    private var isClearingCloudKitData = false
+    private var isResettingData = false
+    private var cloudKitFailedOutboxSummary: String?
+    private var isLoadingCloudKitFailedOutboxSummary = false
     
     enum Section: Hashable {
         case membership
         case general
+        case cloudKit
         case automatic
         case action
         case advanced
@@ -57,6 +64,8 @@ class SettingsViewController: UIViewController {
                 return nil
             case .general:
                 return String(localized: "more.section.general")
+            case .cloudKit:
+                return nil
             case .automatic:
                 return nil
             case .action:
@@ -99,11 +108,14 @@ class SettingsViewController: UIViewController {
         }
         
         enum AutomaticItem: Hashable {
+            case cloudKitSync(CloudKitSync)
             case autoStart(AutoStartLiveActivity)
             case autoEnd(AutoEndLiveActivity)
 
             var value: String {
                 switch self {
+                case .cloudKitSync(let cloudKitSync):
+                    return cloudKitSync.getName()
                 case .autoStart(let autoStartLiveActivity):
                     return autoStartLiveActivity.getName()
                 case .autoEnd(let autoEndLiveActivity):
@@ -218,6 +230,8 @@ class SettingsViewController: UIViewController {
         case style(PostStyle)
         case addStyle
         case shortcuts(ShortcutsItem)
+        case rebuildCloudKitSync
+        case clearCloudKitData
         case reset
         
         var title: String {
@@ -228,6 +242,8 @@ class SettingsViewController: UIViewController {
                 return item.title
             case .automatic(let item):
                 switch item {
+                case .cloudKitSync:
+                    return CloudKitSync.getTitle()
                 case .autoStart:
                     return AutoStartLiveActivity.getTitle()
                 case .autoEnd:
@@ -255,6 +271,10 @@ class SettingsViewController: UIViewController {
                 return String(localized: "style.add")
             case .shortcuts(let item):
                 return item.title
+            case .rebuildCloudKitSync:
+                return String(localized: "settings.cloudKitSync.rebuild")
+            case .clearCloudKitData:
+                return String(localized: "settings.cloudKitSync.clear")
             case .reset:
                 return String(localized: "settings.reset")
             }
@@ -262,6 +282,8 @@ class SettingsViewController: UIViewController {
     }
     
     class DataSource: UITableViewDiffableDataSource<Section, Item> {
+        weak var owner: SettingsViewController?
+
         override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
             let sectionKind = sectionIdentifier(for: section)
             return sectionKind?.header
@@ -269,7 +291,60 @@ class SettingsViewController: UIViewController {
         
         override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
             let sectionKind = sectionIdentifier(for: section)
+            if sectionKind == .cloudKit {
+                return owner?.cloudKitSyncFooter()
+            }
             return sectionKind?.footer
+        }
+    }
+
+    func cloudKitSyncFooter() -> String? {
+        var parts = [CloudKitSync.getFooter()].compactMap(\.self)
+        if let failedOutboxSummary = cloudKitFailedOutboxSummary {
+            parts.append(failedOutboxSummary)
+        }
+        return parts.joined(separator: "\n")
+    }
+
+    private static func loadCloudKitFailedOutboxSummary() -> String? {
+        var failedCount = 0
+        var entries: [CloudKitOutboxEntry] = []
+        do {
+            try AppDatabase.shared.dbWriter?.read { db in
+                failedCount = try CloudKitOutboxEntry.failedCount(in: db)
+                entries = try CloudKitOutboxEntry.failedEntries(limit: 3, in: db)
+            }
+        } catch {
+            return error.localizedDescription
+        }
+
+        guard failedCount > 0 else { return nil }
+        var lines = ["\(String(localized: "settings.cloudKitSync.failedRecords")): \(failedCount)"]
+        lines.append(contentsOf: entries.map { entry in
+            "\(cloudKitRecordTypeName(entry.cloudKitRecordType)): \(entry.lastError ?? String(localized: "settings.cloudKitSync.unknownError"))"
+        })
+        if failedCount > entries.count {
+            lines.append("\(String(localized: "settings.cloudKitSync.moreFailedRecords")): \(failedCount - entries.count)")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private static func cloudKitRecordTypeName(_ recordType: CloudKitRecordType?) -> String {
+        switch recordType {
+        case .post:
+            return String(localized: "settings.cloudKitSync.recordType.post")
+        case .text:
+            return String(localized: "settings.cloudKitSync.recordType.text")
+        case .image:
+            return String(localized: "settings.cloudKitSync.recordType.image")
+        case .style:
+            return String(localized: "settings.cloudKitSync.recordType.style")
+        case .decoration:
+            return String(localized: "settings.cloudKitSync.recordType.decoration")
+        case .setting:
+            return String(localized: "settings.cloudKitSync.recordType.setting")
+        case .none:
+            return String(localized: "settings.cloudKitSync.recordType.unknown")
         }
     }
     
@@ -368,7 +443,11 @@ class SettingsViewController: UIViewController {
                 var content = UIListContentConfiguration.valueCell()
                 content.text = identifier.title
                 content.textProperties.color = .label
-                content.secondaryText = item.value
+                if case .cloudKitSync = item, isChangingCloudKitSync {
+                    content.secondaryText = String(localized: "settings.cloudKitSync.checking")
+                } else {
+                    content.secondaryText = item.value
+                }
                 cell.contentConfiguration = content
                 return cell
             case .action(let item):
@@ -426,21 +505,53 @@ class SettingsViewController: UIViewController {
                 content.image = item.image
                 cell.contentConfiguration = content
                 return cell
+            case .rebuildCloudKitSync:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                cell.accessoryType = .none
+                var content = UIListContentConfiguration.subtitleCell()
+                content.text = identifier.title
+                content.secondaryText = isRebuildingCloudKitSync ? String(localized: "settings.cloudKitSync.rebuilding") : nil
+                content.textProperties.color = isRebuildingCloudKitSync ? .secondaryLabel : .systemRed
+                content.textProperties.alignment = .center
+                cell.contentConfiguration = content
+                cell.isUserInteractionEnabled = !isRebuildingCloudKitSync
+                return cell
+            case .clearCloudKitData:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                cell.accessoryType = .none
+                var content = UIListContentConfiguration.subtitleCell()
+                content.text = identifier.title
+                content.secondaryText = isClearingCloudKitData ? String(localized: "settings.cloudKitSync.clearing") : nil
+                content.textProperties.color = isClearingCloudKitData ? .secondaryLabel : .systemRed
+                content.textProperties.alignment = .center
+                cell.contentConfiguration = content
+                cell.isUserInteractionEnabled = !isClearingCloudKitData
+                return cell
             case .reset:
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
                 cell.accessoryType = .none
                 var content = UIListContentConfiguration.subtitleCell()
                 content.text = identifier.title
-                content.textProperties.color = .systemRed
+                content.secondaryText = isResettingData ? String(localized: "settings.resetting") : nil
+                content.textProperties.color = isResettingData ? .secondaryLabel : .systemRed
                 content.textProperties.alignment = .center
                 cell.contentConfiguration = content
+                cell.isUserInteractionEnabled = !isResettingData
                 return cell
             }
         }
+        dataSource.owner = self
     }
     
     @objc
     func reloadData() {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?.reloadData()
+            }
+            return
+        }
+
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         
         switch User.shared.proTier() {
@@ -460,6 +571,9 @@ class SettingsViewController: UIViewController {
         snapshot.appendSections([.action])
         snapshot.appendItems([.action(.maxPinned(MaxPinnedPosts.getValue())), .action(.deletionConfirm(DeleteOperationConfirmation.getValue()))], toSection: .action)
         
+        snapshot.appendSections([.cloudKit])
+        snapshot.appendItems([.automatic(.cloudKitSync(CloudKitSync.getValue()))], toSection: .cloudKit)
+
         snapshot.appendSections([.automatic])
         snapshot.appendItems([.automatic(.autoStart(AutoStartLiveActivity.getValue())), .automatic(.autoEnd(AutoEndLiveActivity.getValue()))], toSection: .automatic)
         
@@ -480,9 +594,30 @@ class SettingsViewController: UIViewController {
         }
         
         snapshot.appendSections([.reset])
+        if CloudKitSync.current == .enable {
+            snapshot.appendItems([.rebuildCloudKitSync], toSection: .reset)
+        } else if CloudKitSync.remoteDataMayExist || CloudKitSync.pendingRemoteReset {
+            snapshot.appendItems([.clearCloudKitData], toSection: .reset)
+        }
         snapshot.appendItems([.reset], toSection: .reset)
 
         dataSource.apply(snapshot, animatingDifferences: false)
+        refreshCloudKitFailedOutboxSummary()
+    }
+
+    private func refreshCloudKitFailedOutboxSummary() {
+        guard !isLoadingCloudKitFailedOutboxSummary else { return }
+        isLoadingCloudKitFailedOutboxSummary = true
+        Task { [weak self] in
+            let summary = Self.loadCloudKitFailedOutboxSummary()
+            await MainActor.run {
+                guard let self else { return }
+                self.isLoadingCloudKitFailedOutboxSummary = false
+                guard self.cloudKitFailedOutboxSummary != summary else { return }
+                self.cloudKitFailedOutboxSummary = summary
+                self.tableView.reloadData()
+            }
+        }
     }
 }
 
@@ -502,6 +637,8 @@ extension SettingsViewController: UITableViewDelegate {
                 }
             case .automatic(let item):
                 switch item {
+                case .cloudKitSync:
+                    showCloudKitSyncAlert()
                 case .autoStart:
                     enterSettings(AutoStartLiveActivity.self)
                 case .autoEnd:
@@ -529,6 +666,10 @@ extension SettingsViewController: UITableViewDelegate {
                 addStyle()
             case .shortcuts(let item):
                 handle(shortcutsItem: item)
+            case .rebuildCloudKitSync:
+                showCloudKitRebuildAlert()
+            case .clearCloudKitData:
+                showCloudKitClearAlert()
             case .reset:
                 showResetAlert()
             }
@@ -588,8 +729,70 @@ extension SettingsViewController {
 }
 
 extension SettingsViewController {
+    func showCloudKitSyncAlert() {
+        if CloudKitSync.current == .enable {
+            let alertController = UIAlertController(
+                title: String(localized: "settings.cloudKitSync.disable.alert.title"),
+                message: String(localized: "settings.cloudKitSync.disable.alert.message"),
+                preferredStyle: .alert
+            )
+            alertController.addAction(UIAlertAction(title: String(localized: "settings.disable"), style: .destructive) { [weak self] _ in
+                self?.setCloudKitSync(.disable)
+            })
+            alertController.addAction(UIAlertAction(title: String(localized: "button.cancel"), style: .cancel))
+            present(alertController, animated: ConsideringUser.animated)
+        } else {
+            let alertController = UIAlertController(
+                title: String(localized: "settings.cloudKitSync.enable.alert.title"),
+                message: String(localized: "settings.cloudKitSync.enable.alert.message"),
+                preferredStyle: .alert
+            )
+            alertController.addAction(UIAlertAction(title: String(localized: "settings.enable"), style: .default) { [weak self] _ in
+                self?.setCloudKitSync(.enable)
+            })
+            alertController.addAction(UIAlertAction(title: String(localized: "button.cancel"), style: .cancel))
+            present(alertController, animated: ConsideringUser.animated)
+        }
+    }
+
+    func setCloudKitSync(_ value: CloudKitSync) {
+        guard !isChangingCloudKitSync else { return }
+        isChangingCloudKitSync = true
+        reloadData()
+        Task { [weak self] in
+            defer {
+                Task { @MainActor in
+                    self?.isChangingCloudKitSync = false
+                    self?.reloadData()
+                }
+            }
+            do {
+                if value == .enable {
+                    try await CloudKitRecordSyncManager.shared.validateAccountForEnabling()
+                }
+                try CloudKitSync.setCurrent(value)
+            } catch {
+                CloudKitSync.setLastError(error.localizedDescription)
+                await MainActor.run {
+                    self?.showCloudKitResultAlert(
+                        title: String(localized: "settings.cloudKitSync.enable.failure.title"),
+                        message: error.localizedDescription
+                    )
+                }
+            }
+        }
+    }
+
     func showResetAlert() {
-        let alertController = UIAlertController(title: String(localized: "settings.reset.alert.title"), message: nil, preferredStyle: .alert)
+        let message: String?
+        if CloudKitSync.current == .enable {
+            message = String(localized: "settings.reset.alert.cloudKit.message")
+        } else if CloudKitSync.remoteDataMayExist || CloudKitSync.pendingRemoteReset {
+            message = String(localized: "settings.reset.alert.cloudKitDisabled.message")
+        } else {
+            message = nil
+        }
+        let alertController = UIAlertController(title: String(localized: "settings.reset.alert.title"), message: message, preferredStyle: .alert)
         let deleteAction = UIAlertAction(title: String(localized: "settings.reset"), style: .destructive) { [weak self] _ in
             alertController.dismiss(animated: ConsideringUser.animated)
             self?.reset()
@@ -601,7 +804,142 @@ extension SettingsViewController {
     }
     
     func reset() {
-        DataManager.shared.reset()
+        guard !isResettingData else { return }
+        isResettingData = true
+        reloadData()
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            DataManager.shared.reset()
+            DispatchQueue.main.async {
+                self?.isResettingData = false
+                self?.reloadData()
+            }
+        }
+    }
+
+    func showCloudKitRebuildAlert() {
+        let message = [
+            String(localized: "settings.cloudKitSync.rebuild.alert.message"),
+            cloudKitLocalRecordSummary()
+        ].compactMap(\.self).joined(separator: "\n\n")
+        let alertController = UIAlertController(
+            title: String(localized: "settings.cloudKitSync.rebuild.alert.title"),
+            message: message,
+            preferredStyle: .alert
+        )
+        let rebuildAction = UIAlertAction(title: String(localized: "settings.cloudKitSync.rebuild"), style: .destructive) { [weak self] _ in
+            self?.rebuildCloudKitSync()
+        }
+        let cancelAction = UIAlertAction(title: String(localized: "button.cancel"), style: .cancel)
+        alertController.addAction(rebuildAction)
+        alertController.addAction(cancelAction)
+        present(alertController, animated: ConsideringUser.animated)
+    }
+
+    func showCloudKitClearAlert() {
+        let alertController = UIAlertController(
+            title: String(localized: "settings.cloudKitSync.clear.alert.title"),
+            message: String(localized: "settings.cloudKitSync.clear.alert.message"),
+            preferredStyle: .alert
+        )
+        let clearAction = UIAlertAction(title: String(localized: "settings.cloudKitSync.clear"), style: .destructive) { [weak self] _ in
+            self?.clearCloudKitData()
+        }
+        let cancelAction = UIAlertAction(title: String(localized: "button.cancel"), style: .cancel)
+        alertController.addAction(clearAction)
+        alertController.addAction(cancelAction)
+        present(alertController, animated: ConsideringUser.animated)
+    }
+
+    func rebuildCloudKitSync() {
+        guard !isRebuildingCloudKitSync else { return }
+        isRebuildingCloudKitSync = true
+        reloadData()
+        Task { [weak self] in
+            defer {
+                Task { @MainActor in
+                    self?.isRebuildingCloudKitSync = false
+                    self?.reloadData()
+                }
+            }
+            do {
+                let hasOutboxFailures = try await CloudKitRecordSyncManager.shared.rebuildCloudKitData()
+                await MainActor.run {
+                    self?.showCloudKitResultAlert(
+                        title: hasOutboxFailures
+                        ? String(localized: "settings.cloudKitSync.rebuild.partial.title")
+                        : String(localized: "settings.cloudKitSync.rebuild.success.title"),
+                        message: hasOutboxFailures
+                        ? String(localized: "settings.cloudKitSync.rebuild.partial.message")
+                        : String(localized: "settings.cloudKitSync.rebuild.success.message")
+                    )
+                }
+            } catch {
+                await MainActor.run {
+                    self?.showCloudKitResultAlert(
+                        title: String(localized: "settings.cloudKitSync.rebuild.failure.title"),
+                        message: error.localizedDescription
+                    )
+                }
+            }
+        }
+    }
+
+    func clearCloudKitData() {
+        guard !isClearingCloudKitData else { return }
+        isClearingCloudKitData = true
+        reloadData()
+        Task { [weak self] in
+            defer {
+                Task { @MainActor in
+                    self?.isClearingCloudKitData = false
+                    self?.reloadData()
+                }
+            }
+            do {
+                try await CloudKitRecordSyncManager.shared.clearCloudKitData()
+                await MainActor.run {
+                    self?.showCloudKitResultAlert(
+                        title: String(localized: "settings.cloudKitSync.clear.success.title"),
+                        message: String(localized: "settings.cloudKitSync.clear.success.message")
+                    )
+                }
+            } catch {
+                await MainActor.run {
+                    self?.showCloudKitResultAlert(
+                        title: String(localized: "settings.cloudKitSync.clear.failure.title"),
+                        message: error.localizedDescription
+                    )
+                }
+            }
+        }
+    }
+
+    func cloudKitLocalRecordSummary() -> String? {
+        var postCount = 0
+        var styleCount = 0
+        do {
+            try AppDatabase.shared.dbWriter?.read { db in
+                postCount = try Post.fetchCount(db)
+                styleCount = try PostStyle.fetchCount(db)
+            }
+        } catch {
+            return nil
+        }
+        return String(
+            format: String(localized: "settings.cloudKitSync.localRecordSummary"),
+            postCount,
+            styleCount
+        )
+    }
+
+    func showCloudKitResultAlert(title: String, message: String) {
+        guard view.window != nil, presentedViewController == nil else {
+            CloudKitSync.setLastError(message)
+            return
+        }
+        let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alertController.addAction(UIAlertAction(title: String(localized: "button.done"), style: .default))
+        present(alertController, animated: ConsideringUser.animated)
     }
 }
 

@@ -163,6 +163,12 @@ class PostCell: PostBaseCell {
     
     @objc
     private func reloadMenus() {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?.reloadMenus()
+            }
+            return
+        }
         if let postItem = configurationState.postItem {
             styleButton.menu = delegate?.getStyleButtonMenu(for: postItem)
             

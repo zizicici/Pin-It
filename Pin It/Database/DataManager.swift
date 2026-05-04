@@ -145,131 +145,84 @@ final class DataManager {
     }
     
     public func updateImage(original: String, processed: String, rect: CGRect, orientation: Int, to post: Post) -> Bool {
-        guard let postId = post.id, let detail = fetchPostDetail(for: postId) else {
+        guard let postId = post.id,
+              let deletedImages = AppDatabase.shared.replacePostBodyWithImage(
+                postId: postId,
+                original: original,
+                processed: processed,
+                rect: rect,
+                orientation: orientation
+              ) else {
+            _ = ImageCacheManager.shared.deleteImage(fileName: original, type: .original)
+            _ = ImageCacheManager.shared.deleteImage(fileName: processed, type: .processed)
             return false
         }
-        let deleteImage = AppDatabase.shared.delete(images: detail.images)
-        if deleteImage {
-            for image in detail.images {
-                _ = ImageCacheManager.shared.deleteImage(fileName: image.original, type: .original)
-                _ = ImageCacheManager.shared.deleteImage(fileName: image.processed, type: .processed)
-            }
+        for image in deletedImages {
+            _ = ImageCacheManager.shared.deleteImage(fileName: image.original, type: .original)
+            _ = ImageCacheManager.shared.deleteImage(fileName: image.processed, type: .processed)
         }
-        _ = AppDatabase.shared.delete(texts: detail.texts)
-        
-        let newPostImage = PostImage(postId: postId, original: original, processed: processed, orientation: Int64(orientation), minX: Int64(rect.minX), minY: Int64(rect.minY), maxX: Int64(rect.maxX), maxY: Int64(rect.maxY), order: 0)
-        let result = AppDatabase.shared.add(image: newPostImage)
-        
-        return result
+        return true
     }
     
     public func updateText(content: String, to post: Post) -> Bool {
-        guard let postId = post.id, let detail = fetchPostDetail(for: postId) else {
+        guard let postId = post.id,
+              let deletedImages = AppDatabase.shared.replacePostBodyWithText(postId: postId, content: content) else {
             return false
         }
-        let deleteImage = AppDatabase.shared.delete(images: detail.images)
-        if deleteImage {
-            for image in detail.images {
-                _ = ImageCacheManager.shared.deleteImage(fileName: image.original, type: .original)
-                _ = ImageCacheManager.shared.deleteImage(fileName: image.processed, type: .processed)
-            }
+        for image in deletedImages {
+            _ = ImageCacheManager.shared.deleteImage(fileName: image.original, type: .original)
+            _ = ImageCacheManager.shared.deleteImage(fileName: image.processed, type: .processed)
         }
-        _ = AppDatabase.shared.delete(texts: detail.texts)
-        
-        let newPostText = PostText(postId: postId, content: content, order: 0)
-        let result = AppDatabase.shared.add(text: newPostText)
-        
-        return result
+        return true
     }
     
     public func createPost(content: String, actionLink: String, isPinned: Bool = true, expirationTime: Int64?, styleId: Int64?) -> Post? {
-        // Fetch Last Post
-        switch MaxPinnedPosts.current {
-        case .unlimited:
-            break
-        case .one:
-            if isPinned {
-                _ = unpinAllPinnedPosts()
-            }
-        }
-        
-        let newOrder = getNewOrder(isPinned: true)
-        let newPost = Post(expirationTime: expirationTime, actionLink: actionLink, isPinned: isPinned, order: newOrder)
-        guard let savedPost = AppDatabase.shared.add(post: newPost), let postId = savedPost.id else {
-            return nil
-        }
-        
-        let newPostText = PostText(postId: postId, content: content, order: 0)
-        guard AppDatabase.shared.add(text: newPostText) else {
-            _ = AppDatabase.shared.delete(post: newPost)
-            return nil
-        }
-        
-        if let styleId = styleId {
-            let decoration = PostDecoration(styleId: styleId, postId: postId)
-            _ = AppDatabase.shared.add(decoration: decoration)
-        }
-        
-        return savedPost
+        AppDatabase.shared.createTextPost(
+            content: content,
+            actionLink: actionLink,
+            isPinned: isPinned,
+            expirationTime: expirationTime,
+            styleId: styleId,
+            enforcesSinglePinnedPost: MaxPinnedPosts.current == .one
+        )
     }
     
     public func createPost(original: String, processed: String, rect: CGRect, orientation: Int, actionLink: String, isPinned: Bool = true, expirationTime: Int64?, styleId: Int64?) -> Post? {
-        switch MaxPinnedPosts.current {
-        case .unlimited:
-            break
-        case .one:
-            if isPinned {
-                _ = unpinAllPinnedPosts()
-            }
+        let post = AppDatabase.shared.createImagePost(
+            original: original,
+            processed: processed,
+            rect: rect,
+            orientation: orientation,
+            actionLink: actionLink,
+            isPinned: isPinned,
+            expirationTime: expirationTime,
+            styleId: styleId,
+            enforcesSinglePinnedPost: MaxPinnedPosts.current == .one
+        )
+        if post == nil {
+            _ = ImageCacheManager.shared.deleteImage(fileName: original, type: .original)
+            _ = ImageCacheManager.shared.deleteImage(fileName: processed, type: .processed)
         }
-        let newOrder = getNewOrder(isPinned: isPinned)
-        let newPost = Post(expirationTime: expirationTime, actionLink: actionLink, isPinned: isPinned, order: newOrder)
-        guard let savedPost = AppDatabase.shared.add(post: newPost), let postId = savedPost.id else {
-            return nil
-        }
-        
-        let newPostImage = PostImage(postId: postId, original: original, processed: processed, orientation: Int64(orientation), minX: Int64(rect.minX), minY: Int64(rect.minY), maxX: Int64(rect.maxX), maxY: Int64(rect.maxY), order: 0)
-        guard AppDatabase.shared.add(image: newPostImage) else {
-            _ = AppDatabase.shared.delete(post: newPost)
-            return nil
-        }
-        
-        if let styleId = styleId {
-            let decoration = PostDecoration(styleId: styleId, postId: postId)
-            _ = AppDatabase.shared.add(decoration: decoration)
-        }
-        
-        return savedPost
+        return post
     }
     
     public func update(post: Post, isPinned: Bool) -> Bool {
-        switch MaxPinnedPosts.current {
-        case .unlimited:
-            return updatePost(post, isPinned: isPinned, order: getNewOrder(isPinned: isPinned))
-        case .one:
-            if isPinned {
-                _ = unpinAllPinnedPosts()
-            }
-            let order: Int64 = isPinned ? 0 : getNewOrder(isPinned: isPinned)
-            return updatePost(post, isPinned: isPinned, order: order)
-        }
+        guard let postId = post.id else { return false }
+        return AppDatabase.shared.updatePostPinnedState(
+            postId: postId,
+            isPinned: isPinned,
+            enforcesSinglePinnedPost: MaxPinnedPosts.current == .one
+        )
     }
     
-    private func unpinAllPinnedPosts() -> Bool {
-        let pinnedPostIds = fetchAllPostDetails(isPinned: true).compactMap { $0.post.id }
-        return update(postIds: pinnedPostIds, isPinned: false)
-    }
-    
-    private func updatePost(_ post: Post, isPinned: Bool, order: Int64) -> Bool {
-        var newPost = post
-        newPost.isPinned = isPinned
-        newPost.order = order
-        return AppDatabase.shared.update(post: newPost)
-    }
-    
-    public func update(postIds: [Int64], isPinned: Bool) -> Bool {
+    public func update(postIds: [Int64], isPinned: Bool, promotesLocalOnboarding: Bool = true) -> Bool {
         let newOrder = getNewOrder(isPinned: isPinned)
-        return AppDatabase.shared.update(postIds: postIds, isPinned: isPinned, newOrder: newOrder)
+        return AppDatabase.shared.update(
+            postIds: postIds,
+            isPinned: isPinned,
+            newOrder: newOrder,
+            promotesLocalOnboarding: promotesLocalOnboarding
+        )
     }
     
     public func update(post: Post) -> Bool {
@@ -349,6 +302,12 @@ final class DataManager {
 extension DataManager {
     @objc
     func updateStyles() {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?.updateStyles()
+            }
+            return
+        }
         styles = fetchAllStyles()
     }
     
@@ -386,6 +345,22 @@ extension DataManager {
         return result
     }
     
+    func fetchStyle(bySyncId syncId: String) -> PostStyle? {
+        var result: PostStyle? = nil
+        do {
+            try AppDatabase.shared.reader?.read{ db in
+                result = try PostStyle
+                    .filter(PostStyle.Columns.syncId == syncId)
+                    .fetchOne(db)
+            }
+        }
+        catch {
+            print(error)
+        }
+
+        return result
+    }
+
     func fetchStyles(by ids: [Int64]) -> [PostStyle] {
         var result: [PostStyle] = []
         do {
@@ -446,6 +421,7 @@ extension DataManager {
     func update(post: Post, styleId: Int64?) -> Bool {
         guard let postId = post.id else { return false }
         if let styleId = styleId {
+            guard fetchStyle(by: styleId) != nil else { return false }
             if var decoration = fetchDecoration(by: postId) {
                 decoration.styleId = styleId
                 return update(decoration: decoration)
@@ -464,11 +440,35 @@ extension DataManager {
 }
 
 extension DataManager {
+    public func cleanupUnreferencedImageCache() {
+        var originalNames = Set<String>()
+        var processedNames = Set<String>()
+        do {
+            guard let reader = AppDatabase.shared.reader else { return }
+            try reader.read { db in
+                for image in try PostImage.fetchAll(db) {
+                    originalNames.insert(image.original)
+                    processedNames.insert(image.processed)
+                }
+            }
+            _ = ImageCacheManager.shared.deleteUnreferencedImages(
+                originalNames: originalNames,
+                processedNames: processedNames
+            )
+        } catch {
+            print(error)
+        }
+    }
+
     public func reset() {
+        let shouldRebuildCloudKit = CloudKitSync.current == .enable
         let reset = AppDatabase.shared.reset()
         if reset {
             ImageCacheManager.shared.clearAllCache()
             OnboardingManager.shared.setupOnboardingDataIfNeeded()
+            if shouldRebuildCloudKit {
+                CloudKitRecordSyncManager.shared.rebuildCloudKitDataAfterLocalReset()
+            }
         }
     }
     
@@ -476,7 +476,7 @@ extension DataManager {
         let expiredIds = fetchAllPosts().filter({ $0.isExpired() }).compactMap({ $0.id })
         switch ExpirationAction.current {
         case .unpin:
-            _ = update(postIds: expiredIds, isPinned: false)
+            _ = update(postIds: expiredIds, isPinned: false, promotesLocalOnboarding: false)
         case .delete:
             _ = deletePosts(by: expiredIds)
         }

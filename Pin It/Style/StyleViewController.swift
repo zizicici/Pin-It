@@ -8,6 +8,7 @@
 import UIKit
 import SnapKit
 import MoreKit
+import GRDB
 
 // MARK: - 样式编辑器委托
 protocol StyleEditorDelegate: AnyObject {
@@ -1061,6 +1062,17 @@ struct DefaultStyle: RawRepresentable, UserDefaultSettable {
     }
     
     static var defaultOption: DefaultStyle = Self.init(rawValue: 0)
+
+    static func getValue() -> DefaultStyle {
+        if let raw = userDefaults.object(forKey: getKey()) as? Int,
+           DataManager.shared.fetchStyle(by: Int64(raw)) != nil {
+            return DefaultStyle(rawValue: raw)
+        }
+        if let firstStyleId = DataManager.shared.fetchAllStyles().compactMap(\.id).min() {
+            return DefaultStyle(rawValue: Int(firstStyleId))
+        }
+        return defaultOption
+    }
     
     func getName() -> String {
         let style = DataManager.shared.fetchStyle(by: Int64(rawValue))
@@ -1078,8 +1090,185 @@ struct DefaultStyle: RawRepresentable, UserDefaultSettable {
     }
     
     static func setCurrent(_ value: DefaultStyle) throws {
+        try setCurrent(value, promotesLocalOnboarding: true)
+    }
+
+    static func setCurrent(_ value: DefaultStyle, promotesLocalOnboarding: Bool) throws {
+        if promotesLocalOnboarding {
+            try promoteLocalOnboardingStyleIfNeeded(value)
+        }
+        let modificationTime = Date().nanoSecondSince1970
+        if promotesLocalOnboarding {
+            if let style = DataManager.shared.fetchStyle(by: Int64(value.rawValue)) {
+                try AppDatabase.shared.enqueueDefaultStyleCloudKitSync(
+                    styleId: style.id,
+                    syncId: style.syncId,
+                    modificationTime: modificationTime
+                )
+            } else {
+                try AppDatabase.shared.enqueueDefaultStyleCloudKitSync(
+                    styleId: nil,
+                    syncId: nil,
+                    modificationTime: modificationTime
+                )
+            }
+        }
         setValue(value)
         
-        NotificationCenter.default.post(name: NSNotification.Name.DefaultStyleDidChanged, object: nil)
+        postOnMain(.DefaultStyleDidChanged)
     }
+
+    private static func promoteLocalOnboardingStyleIfNeeded(_ value: DefaultStyle) throws {
+        guard let style = DataManager.shared.fetchStyle(by: Int64(value.rawValue)),
+              let styleId = style.id else {
+            return
+        }
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            try OnboardingManager.shared.promoteStyleToUserContent(styleId: styleId, in: db)
+        }
+    }
+
+    static func currentStyleSyncIdForCloudKit() -> String? {
+        let localSyncId = DataManager.shared.fetchStyle(by: Int64(getValue().rawValue))?.syncId
+        guard CloudKitSync.remoteDataMayExist else {
+            return localSyncId
+        }
+        if let syncId = cloudKitSetting()?.defaultStyleSyncId,
+           DataManager.shared.fetchStyle(bySyncId: syncId) != nil {
+            return syncId
+        }
+
+        return localSyncId
+    }
+
+    @discardableResult
+    static func replaceDeletedStyleIfNeeded(
+        deletedStyle: PostStyle,
+        fallbackStyle: PostStyle?,
+        modificationTime: Int64,
+        updatesCloudKitSetting: Bool = true,
+        in db: Database
+    ) throws -> Bool {
+        guard let deletedStyleId = deletedStyle.id else { return false }
+
+        let setting = try CloudKitSettingRecord.current(in: db)
+        let storedSyncId = setting.defaultStyleSyncId
+        let storedLocalId = userDefaults.object(forKey: getKey()) as? Int
+        if updatesCloudKitSetting {
+            _ = try CloudKitSettingRecord.clearPendingDefaultStyle(syncId: deletedStyle.syncId, in: db)
+        }
+        guard storedSyncId == deletedStyle.syncId || storedLocalId == Int(deletedStyleId) else {
+            return false
+        }
+
+        let fallbackSyncId: String?
+        let fallbackLocalId: Int?
+        if let fallbackStyle, let fallbackStyleId = fallbackStyle.id {
+            fallbackLocalId = Int(fallbackStyleId)
+            if updatesCloudKitSetting,
+               try OnboardingLocalRecord.isMarked(recordType: .style, syncId: fallbackStyle.syncId, in: db) {
+                fallbackSyncId = nil
+            } else {
+                fallbackSyncId = fallbackStyle.syncId
+            }
+        } else {
+            fallbackSyncId = nil
+            fallbackLocalId = nil
+        }
+        if updatesCloudKitSetting {
+            try CloudKitSettingRecord.saveDefaultStyle(syncId: fallbackSyncId, modificationTime: modificationTime, in: db)
+        }
+        db.afterNextTransaction { _ in
+            if let fallbackLocalId {
+                userDefaults.set(fallbackLocalId, forKey: getKey())
+            } else {
+                userDefaults.removeObject(forKey: getKey())
+            }
+            postOnMain(.SettingsUpdate, isCloudKitOriginated: true)
+            postOnMain(.DefaultStyleDidChanged, isCloudKitOriginated: true)
+        }
+        return true
+    }
+
+    static func applyCloudKitDefaultStyle(syncId: String, localId: Int64, modificationTime: Int64, in db: Database) throws -> Bool {
+        let setting = try CloudKitSettingRecord.current(in: db)
+        guard modificationTime > setting.defaultStyleModificationTime else { return false }
+
+        let value = DefaultStyle(rawValue: Int(localId))
+        try CloudKitSettingRecord.saveDefaultStyle(syncId: syncId, modificationTime: modificationTime, in: db)
+        db.afterNextTransaction { _ in
+            userDefaults.set(value.rawValue, forKey: getKey())
+            postOnMain(.SettingsUpdate, isCloudKitOriginated: true)
+            postOnMain(.DefaultStyleDidChanged, isCloudKitOriginated: true)
+        }
+        return true
+    }
+
+    static func clearCloudKitDefaultStyle(modificationTime: Int64, in db: Database) throws -> Bool {
+        let setting = try CloudKitSettingRecord.current(in: db)
+        guard modificationTime > setting.defaultStyleModificationTime else { return false }
+
+        try CloudKitSettingRecord.saveDefaultStyle(syncId: nil, modificationTime: modificationTime, in: db)
+        db.afterNextTransaction { _ in
+            userDefaults.removeObject(forKey: getKey())
+            postOnMain(.SettingsUpdate, isCloudKitOriginated: true)
+            postOnMain(.DefaultStyleDidChanged, isCloudKitOriginated: true)
+        }
+        return true
+    }
+
+    static func storePendingCloudKitDefaultStyle(syncId: String, modificationTime: Int64, in db: Database) throws -> Bool {
+        try CloudKitSettingRecord.storePendingDefaultStyle(syncId: syncId, modificationTime: modificationTime, in: db)
+    }
+
+    static func applyPendingCloudKitDefaultStyleIfPossible(styleIdBySyncId: [String: Int64], in db: Database) throws -> Bool {
+        let setting = try CloudKitSettingRecord.current(in: db)
+        guard let syncId = setting.pendingDefaultStyleSyncId,
+              let modificationTime = setting.pendingDefaultStyleModificationTime else {
+            return false
+        }
+        guard modificationTime > setting.defaultStyleModificationTime else {
+            _ = try CloudKitSettingRecord.clearPendingDefaultStyle(in: db)
+            return false
+        }
+        guard let styleId = styleIdBySyncId[syncId] else { return false }
+        return try applyCloudKitDefaultStyle(syncId: syncId, localId: styleId, modificationTime: modificationTime, in: db)
+    }
+
+    static func clearCloudKitStateForMissingRemoteSetting(in db: Database) throws -> Bool {
+        guard try CloudKitSettingRecord.clearDefaultStyleSyncState(in: db) else { return false }
+        db.afterNextTransaction { _ in
+            postOnMain(.SettingsUpdate, isCloudKitOriginated: true)
+            postOnMain(.DefaultStyleDidChanged, isCloudKitOriginated: true)
+        }
+        return true
+    }
+
+    static func clearPendingCloudKitDefaultStyleIfNeeded(syncId: String, in db: Database) throws -> Bool {
+        guard try CloudKitSettingRecord.clearPendingDefaultStyle(syncId: syncId, in: db) else { return false }
+        db.afterNextTransaction { _ in
+            postOnMain(.SettingsUpdate, isCloudKitOriginated: true)
+            postOnMain(.DefaultStyleDidChanged, isCloudKitOriginated: true)
+        }
+        return true
+    }
+
+    private static func cloudKitSetting() -> CloudKitSettingRecord? {
+        var setting: CloudKitSettingRecord?
+        try? AppDatabase.shared.reader?.read { db in
+            setting = try CloudKitSettingRecord.current(in: db)
+        }
+        return setting
+    }
+
+    private static func postOnMain(_ name: Notification.Name, isCloudKitOriginated: Bool = false) {
+        DispatchQueue.main.async {
+            if isCloudKitOriginated {
+                CloudKitRecordSyncManager.shared.postCloudKitOriginatedUpdate(name)
+            } else {
+                NotificationCenter.default.post(name: name, object: nil)
+            }
+        }
+    }
+
 }

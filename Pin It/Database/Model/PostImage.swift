@@ -11,6 +11,10 @@ import UIKit
 
 struct PostImage: Identifiable, Hashable, Codable {
     var id: Int64?
+    var syncId: String = UUID().uuidString
+
+    var creationTime: Int64?
+    var modificationTime: Int64?
     
     var postId: Int64
     var original: String
@@ -25,10 +29,13 @@ struct PostImage: Identifiable, Hashable, Codable {
     
     enum Columns: String, ColumnExpression {
         case order
+
+        static let postId = Column(CodingKeys.postId)
+        static let syncId = Column(CodingKeys.syncId)
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, postId = "post_id", original, processed, orientation, minX = "min_x", minY = "min_y", maxX = "max_x", maxY = "max_y", order
+        case id, syncId = "sync_id", creationTime = "creation_time", modificationTime = "modification_time", postId = "post_id", original, processed, orientation, minX = "min_x", minY = "min_y", maxX = "max_x", maxY = "max_y", order
     }
 }
 
@@ -42,8 +49,31 @@ extension PostImage: FetchableRecord {
     }
 }
 
-extension PostImage: MutablePersistableRecord {
+extension PostImage: TimestampedRecord {
     
+}
+
+extension PostImage {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(Int64.self, forKey: .id)
+        syncId = try container.decodeIfPresent(String.self, forKey: .syncId) ?? UUID().uuidString
+        creationTime = try container.decodeIfPresent(Int64.self, forKey: .creationTime)
+        modificationTime = try container.decodeIfPresent(Int64.self, forKey: .modificationTime)
+        postId = try container.decode(Int64.self, forKey: .postId)
+        original = try container.decode(String.self, forKey: .original)
+        processed = try container.decode(String.self, forKey: .processed)
+        orientation = try container.decodeIfPresent(Int64.self, forKey: .orientation) ?? 0
+        minX = try container.decodeIfPresent(Int64.self, forKey: .minX) ?? 0
+        minY = try container.decodeIfPresent(Int64.self, forKey: .minY) ?? 0
+        maxX = try container.decodeIfPresent(Int64.self, forKey: .maxX) ?? 0
+        maxY = try container.decodeIfPresent(Int64.self, forKey: .maxY) ?? 0
+        order = try container.decodeIfPresent(Int64.self, forKey: .order) ?? 0
+    }
+}
+
+extension PostImage {
+    static let postForeignKey = ForeignKey([Columns.postId])
 }
 
 extension PostImage {

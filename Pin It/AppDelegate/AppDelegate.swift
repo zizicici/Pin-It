@@ -42,9 +42,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         )
 
         _ = AppDatabase.shared
+        let dataManager = DataManager.shared
+        DispatchQueue.global(qos: .utility).async {
+            dataManager.cleanupUnreferencedImageCache()
+        }
         _ = PinInfoManager.shared
         _ = PostSyncManager.shared
-        _ = OnboardingManager.shared
+        if CloudKitSync.current == .enable {
+            if CloudKitSync.pendingRemoteReset {
+                CloudKitRecordSyncManager.shared.rebuildCloudKitDataAfterLocalReset()
+            } else {
+                CloudKitRecordSyncManager.shared.syncIfEnabled()
+            }
+        } else {
+            OnboardingManager.shared.setupOnboardingDataIfNeeded()
+        }
         _ = User.shared
         
         resetSettingsIfNeeded()
@@ -56,6 +68,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         NotificationCenter.default.addObserver(self, selector: #selector(resetSettingsIfNeeded), name: UIApplication.didEnterBackgroundNotification, object: nil)
         
         NotificationCenter.default.addObserver(self, selector: #selector(clearExpiredPosts), name: UIApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(cloudKitSyncSettingDidChange), name: .cloudKitSyncDidChange, object: nil)
         
         return true
     }
@@ -85,6 +98,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     @objc
     func clearExpiredPosts() {
         DataManager.shared.clearExpiredPosts()
+    }
+
+    @objc
+    func cloudKitSyncSettingDidChange() {
+        if CloudKitSync.current == .enable {
+            if CloudKitSync.pendingRemoteReset {
+                CloudKitRecordSyncManager.shared.rebuildCloudKitDataAfterLocalReset()
+            } else {
+                CloudKitRecordSyncManager.shared.syncIfEnabled()
+            }
+        } else {
+            CloudKitRecordSyncManager.shared.disableSyncAndClearLocalState()
+        }
     }
 }
 

@@ -1,0 +1,3445 @@
+//
+//  CloudKitRecordSyncManager.swift
+//  Pin It
+//
+//  Created by OpenAI on 2026/5/3.
+//
+
+import CloudKit
+import Foundation
+import GRDB
+import UIKit
+
+private struct CloudKitSyncDisabledError: LocalizedError {
+    var errorDescription: String? {
+        String(localized: "settings.cloudKitSync.error.disabled")
+    }
+}
+
+private struct CloudKitOutboxBuildError: LocalizedError {
+    var recordName: String
+    var reason: String
+
+    var errorDescription: String? {
+        let prefix = String(localized: "settings.cloudKitSync.error.recordBuildFailed")
+        return "\(prefix): \(recordName) (\(reason))"
+    }
+}
+
+private struct CloudKitSyncInProgressError: LocalizedError {
+    var errorDescription: String? {
+        String(localized: "settings.cloudKitSync.error.syncInProgress")
+    }
+}
+
+private struct CloudKitUserVisibleError: LocalizedError {
+    var message: String
+
+    var errorDescription: String? {
+        message
+    }
+}
+
+final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
+    static let shared = CloudKitRecordSyncManager()
+    private static let tombstoneRetentionMilliseconds: Int64 = 30 * 24 * 60 * 60 * 1000
+
+    private let client: CloudKitDatabaseClient
+
+    private lazy var updateDebounce = Debounce<Int>(duration: 1.0) { [weak self] _ in
+        await self?.sync()
+    }
+    private let stateLock = NSLock()
+    private var isSyncing = false
+    private var needsFollowUpSync = false
+    private var isApplyingRemoteChanges = false
+    private var isPostingCloudKitOriginatedUpdate = false
+    private var isLocalResetRebuildQueued = false
+    private var didFinishInitialCloudGate = false
+    private var wantsBackgroundTask = false
+    private var backgroundTaskIdentifier: UIBackgroundTaskIdentifier = .invalid
+    private var activeOperations: [ObjectIdentifier: CKDatabaseOperation] = [:]
+    private var syncEngine: CKSyncEngine?
+    private var fetchAccumulator: FetchAccumulator?
+    private var needsFullFetchAfterCurrentSync = false
+    private var uploadAssetFilesByRecordName: [String: [URL]] = [:]
+    private var syncRunID: UInt64 = 0
+    private var engineGeneration: UInt64 = 0
+
+    init(client: CloudKitDatabaseClient = LiveCloudKitDatabaseClient()) {
+        self.client = client
+
+        super.init()
+
+        cleanupTemporaryUploadAssetDirectory()
+        NotificationCenter.default.addObserver(self, selector: #selector(databaseDidUpdate), name: .DatabaseUpdated, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(settingsDidUpdate), name: .DefaultStyleDidChanged, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(applicationDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(applicationDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
+    }
+
+    func syncIfEnabled() {
+        guard CloudKitSync.current == .enable else { return }
+        if CloudKitSync.pendingRemoteReset {
+            rebuildCloudKitDataAfterLocalReset()
+            return
+        }
+        Task {
+            await sync()
+        }
+    }
+
+    func rebuildCloudKitData() async throws -> Bool {
+        guard CloudKitSync.current == .enable else {
+            throw CloudKitSyncDisabledError()
+        }
+        beginBackgroundTaskIfNeeded()
+        guard let syncRun = beginSync() else {
+            endBackgroundTaskIfNeeded()
+            throw CloudKitSyncInProgressError()
+        }
+
+        do {
+            clearFollowUpSync(runID: syncRun)
+            try ensureSyncEnabled()
+            let accountStatus = try await fetchAccountStatus()
+            guard accountStatus == .available else {
+                throw CloudKitUserVisibleError(message: cloudKitAccountStatusMessage(accountStatus))
+            }
+
+            OnboardingManager.shared.markExistingOnboardingRecordsIfNeeded()
+            try cleanupLocalCloudKitOrphans()
+            try validateLocalCloudKitSnapshotForRebuild()
+            CloudKitSync.setPendingRemoteReset(true)
+            try await deleteRecordZoneIfExists()
+            try rebuildLocalCloudKitStateForCurrentDevice()
+            try await ensureRecordZone()
+            let syncGeneration = currentEngineGeneration()
+            let engine = try syncEngineInstance(expectedGeneration: syncGeneration)
+            try syncEnginePendingChangesFromOutbox(engine)
+            try markRemoteDataMayExistBeforeSendingOutboxIfNeeded()
+            try await sendChangesAndCleanupUploadAssets(engine)
+            try ensureEngineGeneration(syncGeneration)
+            try syncEnginePendingChangesFromOutbox(engine)
+            let hasOutboxFailures = try hasOutboxFailures()
+            try markRemoteDataMayExistIfCloudKitStateExists()
+            CloudKitSync.setPendingRemoteReset(false)
+            CloudKitSync.setLastError(
+                hasOutboxFailures ? String(localized: "settings.cloudKitSync.error.uploadFailed") : nil
+            )
+            runOnboardingAfterInitialCloudGateIfNeeded()
+            let needsSync = finishExclusiveSync(runID: syncRun)
+            if needsSync {
+                syncIfEnabled()
+            }
+            return hasOutboxFailures
+        } catch is CancellationError {
+            _ = finishExclusiveSync(runID: syncRun)
+            throw CancellationError()
+        } catch {
+            CloudKitSync.setLastError(error.localizedDescription)
+            _ = finishExclusiveSync(runID: syncRun)
+            throw error
+        }
+    }
+
+    func validateAccountForEnabling() async throws {
+        let accountStatus = try await fetchAccountStatus()
+        guard accountStatus == .available else {
+            throw CloudKitUserVisibleError(message: cloudKitAccountStatusMessage(accountStatus))
+        }
+    }
+
+    func clearCloudKitData() async throws {
+        beginBackgroundTaskIfNeeded()
+        guard let syncRun = beginSync() else {
+            endBackgroundTaskIfNeeded()
+            throw CloudKitSyncInProgressError()
+        }
+
+        do {
+            clearFollowUpSync(runID: syncRun)
+            try await validateAccountForEnabling()
+            try await deleteRecordZoneIfExists(requiresSyncEnabled: false)
+            try clearLocalCloudKitState()
+            CloudKitSync.setPendingRemoteReset(false)
+            CloudKitSync.clearRemoteDataMayExist()
+            CloudKitSync.setLastError(nil)
+            _ = finishExclusiveSync(runID: syncRun)
+        } catch {
+            CloudKitSync.setLastError(error.localizedDescription)
+            _ = finishExclusiveSync(runID: syncRun)
+            throw error
+        }
+    }
+
+    @objc
+    private func databaseDidUpdate() {
+        guard CloudKitSync.current == .enable else { return }
+        guard !localResetRebuildIsQueued() else { return }
+        if shouldDebounceDatabaseUpdate() {
+            updateDebounce.emit(value: 0)
+        }
+    }
+
+    @objc
+    private func settingsDidUpdate() {
+        guard !shouldIgnoreCloudKitOriginatedUpdate() else { return }
+        syncIfEnabled()
+    }
+
+    @objc
+    private func applicationDidBecomeActive() {
+        syncIfEnabled()
+    }
+
+    @objc
+    private func applicationDidEnterBackground() {
+        guard CloudKitSync.current == .enable else { return }
+        beginBackgroundTaskIfNeeded()
+        syncIfEnabled()
+    }
+
+    private func sync() async {
+        guard CloudKitSync.current == .enable else {
+            endBackgroundTaskIfNeeded()
+            return
+        }
+        guard !CloudKitSync.pendingRemoteReset else {
+            rebuildCloudKitDataAfterLocalReset()
+            endBackgroundTaskIfNeeded()
+            return
+        }
+        guard let runID = beginSync() else { return }
+
+        while true {
+            clearFollowUpSync(runID: runID)
+            do {
+                try ensureSyncEnabled()
+                try await performSync()
+            } catch is CloudKitSyncDisabledError {
+                runOnboardingAfterInitialCloudGateIfNeeded()
+            } catch is CancellationError {
+                runOnboardingAfterInitialCloudGateIfNeeded()
+            } catch {
+                guard CloudKitSync.current == .enable else {
+                    runOnboardingAfterInitialCloudGateIfNeeded()
+                    continue
+                }
+                guard !isOperationCancelled(error) else {
+                    runOnboardingAfterInitialCloudGateIfNeeded()
+                    if finishSyncIfNoFollowUp(runID: runID) {
+                        return
+                    }
+                    continue
+                }
+                print("CloudKit sync failed: \(error.localizedDescription)")
+                CloudKitSync.setLastError(error.localizedDescription)
+                runOnboardingAfterInitialCloudGateIfNeeded()
+            }
+
+            if finishSyncIfNoFollowUp(runID: runID) {
+                return
+            }
+        }
+    }
+
+    private func performSync() async throws {
+        try ensureSyncEnabled()
+        guard !CloudKitSync.pendingRemoteReset else {
+            rebuildCloudKitDataAfterLocalReset()
+            return
+        }
+        let accountStatus = try await fetchAccountStatus()
+        guard accountStatus == .available else {
+            let message = cloudKitAccountStatusMessage(accountStatus)
+            print("CloudKit sync skipped: \(message)")
+            CloudKitSync.setLastError(message)
+            runOnboardingAfterInitialCloudGateIfNeeded()
+            return
+        }
+
+        try await ensureRecordZone()
+        OnboardingManager.shared.markExistingOnboardingRecordsIfNeeded()
+
+        let syncGeneration = currentEngineGeneration()
+        let hasEngineState = hasActiveSyncEngine() ? true : try hasStoredSyncEngineState()
+        try cleanupLocalCloudKitOrphans()
+
+        let freshEngineMode = try freshEngineMode(hasStoredEngineState: hasEngineState)
+        if freshEngineMode.bootstrapsLocalRecords {
+            try enqueueBootstrapOutbox()
+        }
+
+        let engine = try syncEngineInstance(expectedGeneration: syncGeneration)
+        try ensureEngineGeneration(syncGeneration)
+        try syncEnginePendingChangesFromOutbox(engine)
+
+        beginFetchAccumulation(
+            isFullSnapshot: !hasEngineState,
+            prunesMissingLocalRecords: freshEngineMode.prunesMissingLocalRecords
+        )
+        do {
+            try await engine.fetchChanges()
+        } catch {
+            discardFetchAccumulation()
+            if isZoneNotFound(error) || isChangeTokenExpired(error) {
+                try resetSyncEngineStateForFullFetch(suppressesBootstrap: false, preservesLocalRecords: true)
+                requestFollowUpSync()
+                CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.fullRefresh"))
+                runOnboardingAfterInitialCloudGateIfNeeded()
+                return
+            }
+            throw error
+        }
+        try ensureEngineGeneration(syncGeneration)
+        try applyAccumulatedFetchIfNeeded()
+
+        if try resetForRequestedFullFetchIfNeeded() {
+            runOnboardingAfterInitialCloudGateIfNeeded()
+            return
+        }
+
+        try ensureEngineGeneration(syncGeneration)
+        try syncEnginePendingChangesFromOutbox(engine)
+        try ensureSyncEnabled()
+        try markRemoteDataMayExistBeforeSendingOutboxIfNeeded()
+        try await sendChangesAndCleanupUploadAssets(engine)
+        try ensureEngineGeneration(syncGeneration)
+        try syncEnginePendingChangesFromOutbox(engine)
+
+        if try enqueueExpiredTombstonePurgesIfNeeded() {
+            try syncEnginePendingChangesFromOutbox(engine)
+            try ensureSyncEnabled()
+            try markRemoteDataMayExistBeforeSendingOutboxIfNeeded()
+            try await sendChangesAndCleanupUploadAssets(engine)
+            try ensureEngineGeneration(syncGeneration)
+            try syncEnginePendingChangesFromOutbox(engine)
+        }
+
+        if try resetForRequestedFullFetchIfNeeded() {
+            runOnboardingAfterInitialCloudGateIfNeeded()
+            return
+        }
+
+        let hasOutboxFailures = try hasOutboxFailures()
+        try markRemoteDataMayExistIfCloudKitStateExists()
+        CloudKitSync.setLastError(
+            hasOutboxFailures ? String(localized: "settings.cloudKitSync.error.uploadFailed") : nil
+        )
+        runOnboardingAfterInitialCloudGateIfNeeded()
+    }
+}
+
+extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
+    func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
+        guard isCurrentSyncEngine(syncEngine) else { return }
+        do {
+            switch event {
+            case .stateUpdate(let stateUpdate):
+                try persistSyncEngineStateSerialization(stateUpdate.stateSerialization)
+            case .accountChange:
+                try handleAccountChange()
+                requestFollowUpSync()
+            case .fetchedDatabaseChanges(let changes):
+                try handleFetchedDatabaseChanges(changes)
+            case .fetchedRecordZoneChanges(let changes):
+                try handleFetchedRecordZoneChanges(changes)
+            case .sentDatabaseChanges(let changes):
+                try handleSentDatabaseChanges(changes, syncEngine: syncEngine)
+            case .sentRecordZoneChanges(let changes):
+                try handleSentRecordZoneChanges(changes, syncEngine: syncEngine)
+            case .didFetchRecordZoneChanges(let changes):
+                if let error = changes.error, isZoneNotFound(error) || isChangeTokenExpired(error) {
+                    discardFetchAccumulation()
+                    try resetSyncEngineStateForFullFetch(suppressesBootstrap: false, preservesLocalRecords: true)
+                    CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.fullRefresh"))
+                    requestFollowUpSync()
+                }
+            case .didFetchChanges:
+                try applyAccumulatedFetchIfNeeded()
+            case .willFetchChanges,
+                 .willFetchRecordZoneChanges,
+                 .willSendChanges,
+                 .didSendChanges:
+                break
+            @unknown default:
+                break
+            }
+        } catch {
+            print("CloudKit sync engine event failed: \(error.localizedDescription)")
+            CloudKitSync.setLastError(error.localizedDescription)
+            requestFollowUpSync()
+        }
+    }
+
+    func nextRecordZoneChangeBatch(
+        _ context: CKSyncEngine.SendChangesContext,
+        syncEngine: CKSyncEngine
+    ) async -> CKSyncEngine.RecordZoneChangeBatch? {
+        do {
+            return try await makeRecordZoneChangeBatch(context: context, syncEngine: syncEngine)
+        } catch {
+            print("CloudKit sync engine batch failed: \(error.localizedDescription)")
+            CloudKitSync.setLastError(error.localizedDescription)
+            requestFollowUpSync()
+            return nil
+        }
+    }
+}
+
+extension CloudKitRecordSyncManager {
+    func shouldDebounceDatabaseUpdate() -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+
+        if isApplyingRemoteChanges {
+            needsFollowUpSync = true
+            return false
+        }
+        if isPostingCloudKitOriginatedUpdate {
+            return false
+        }
+        return true
+    }
+
+    func shouldIgnoreCloudKitOriginatedUpdate() -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return isPostingCloudKitOriginatedUpdate
+    }
+
+    func currentEngineGeneration() -> UInt64 {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return engineGeneration
+    }
+
+    func ensureEngineGeneration(_ generation: UInt64) throws {
+        stateLock.lock()
+        let isCurrent = generation == engineGeneration
+        stateLock.unlock()
+        if !isCurrent {
+            throw CancellationError()
+        }
+    }
+
+    func postCloudKitOriginatedUpdate(_ name: Notification.Name) {
+        DispatchQueue.main.async {
+            self.stateLock.lock()
+            self.isPostingCloudKitOriginatedUpdate = true
+            self.stateLock.unlock()
+            NotificationCenter.default.post(name: name, object: nil)
+            self.stateLock.lock()
+            self.isPostingCloudKitOriginatedUpdate = false
+            self.stateLock.unlock()
+        }
+    }
+
+    func beginSync() -> UInt64? {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+
+        if isSyncing {
+            needsFollowUpSync = true
+            return nil
+        }
+        syncRunID += 1
+        isSyncing = true
+        return syncRunID
+    }
+
+    func clearFollowUpSync(runID: UInt64) {
+        stateLock.lock()
+        guard runID == syncRunID else {
+            stateLock.unlock()
+            return
+        }
+        needsFollowUpSync = false
+        stateLock.unlock()
+    }
+
+    func finishSyncIfNoFollowUp(runID: UInt64) -> Bool {
+        stateLock.lock()
+        guard runID == syncRunID else {
+            stateLock.unlock()
+            return true
+        }
+        if needsFollowUpSync {
+            stateLock.unlock()
+            return false
+        }
+        isSyncing = false
+        stateLock.unlock()
+        endBackgroundTaskIfNeeded()
+        return true
+    }
+
+    func finishExclusiveSync(runID: UInt64) -> Bool {
+        stateLock.lock()
+        guard runID == syncRunID else {
+            stateLock.unlock()
+            return false
+        }
+        let needsSync = needsFollowUpSync
+        needsFollowUpSync = false
+        isSyncing = false
+        stateLock.unlock()
+        endBackgroundTaskIfNeeded()
+        return needsSync
+    }
+
+    func beginBackgroundTaskIfNeeded() {
+        stateLock.lock()
+        wantsBackgroundTask = true
+        let hasBackgroundTask = backgroundTaskIdentifier != .invalid
+        stateLock.unlock()
+        guard !hasBackgroundTask else { return }
+
+        if Thread.isMainThread {
+            beginBackgroundTaskOnMain()
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.beginBackgroundTaskOnMain()
+            }
+        }
+    }
+
+    func beginBackgroundTaskOnMain() {
+        stateLock.lock()
+        let shouldStartBackgroundTask = wantsBackgroundTask && backgroundTaskIdentifier == .invalid
+        stateLock.unlock()
+        guard shouldStartBackgroundTask else { return }
+
+        let task = UIApplication.shared.beginBackgroundTask(withName: "CloudKitRecordSync") { [weak self] in
+            self?.cancelActiveOperations()
+            self?.endBackgroundTaskIfNeeded()
+        }
+
+        stateLock.lock()
+        if wantsBackgroundTask && backgroundTaskIdentifier == .invalid {
+            backgroundTaskIdentifier = task
+            stateLock.unlock()
+        } else {
+            stateLock.unlock()
+            UIApplication.shared.endBackgroundTask(task)
+        }
+    }
+
+    func endBackgroundTaskIfNeeded() {
+        stateLock.lock()
+        wantsBackgroundTask = false
+        let task = backgroundTaskIdentifier
+        backgroundTaskIdentifier = .invalid
+        stateLock.unlock()
+
+        guard task != .invalid else { return }
+        DispatchQueue.main.async {
+            UIApplication.shared.endBackgroundTask(task)
+        }
+    }
+
+    func setApplyingRemoteChanges(_ value: Bool) {
+        stateLock.lock()
+        isApplyingRemoteChanges = value
+        stateLock.unlock()
+    }
+
+    func requestFollowUpSync() {
+        stateLock.lock()
+        needsFollowUpSync = true
+        stateLock.unlock()
+    }
+
+    func localResetRebuildIsQueued() -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return isLocalResetRebuildQueued
+    }
+
+    func setLocalResetRebuildQueued(_ value: Bool) {
+        stateLock.lock()
+        isLocalResetRebuildQueued = value
+        stateLock.unlock()
+    }
+
+    func rebuildCloudKitDataAfterLocalReset() {
+        guard !localResetRebuildIsQueued() else { return }
+        setLocalResetRebuildQueued(true)
+
+        Task {
+            defer {
+                self.setLocalResetRebuildQueued(false)
+            }
+            while CloudKitSync.current == .enable {
+                do {
+                    _ = try await self.rebuildCloudKitData()
+                    return
+                } catch is CloudKitSyncInProgressError {
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                } catch is CancellationError {
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                } catch {
+                    CloudKitSync.setLastError(error.localizedDescription)
+                    return
+                }
+            }
+        }
+    }
+
+    func disableSyncAndClearLocalState() {
+        cancelActiveOperations()
+        endBackgroundTaskIfNeeded()
+        let preservesLocalSyncIntent = CloudKitSync.remoteDataMayExist || CloudKitSync.pendingRemoteReset
+        stateLock.lock()
+        syncEngine = nil
+        stateLock.unlock()
+        do {
+            try AppDatabase.shared.dbWriter?.write { db in
+                try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
+                try CloudKitSyncState.clearBootstrapSuppression(in: db)
+                try CloudKitSyncState.clearLocalRecordPreservation(in: db)
+                if !preservesLocalSyncIntent {
+                    try CloudKitOutboxEntry.deleteAll(db)
+                    try CloudKitRecordMetadata.deleteAll(db)
+                    try CloudKitLocalTombstone.deleteAll(db)
+                    try CloudKitSettingRecord.deleteAll(db)
+                }
+            }
+        } catch {
+            CloudKitSync.setLastError(error.localizedDescription)
+        }
+    }
+
+    func cancelSyncForLocalReset() {
+        cancelActiveOperations()
+        endBackgroundTaskIfNeeded()
+    }
+
+    func runOnboardingAfterInitialCloudGateIfNeeded() {
+        stateLock.lock()
+        guard !didFinishInitialCloudGate else {
+            stateLock.unlock()
+            return
+        }
+        didFinishInitialCloudGate = true
+        stateLock.unlock()
+
+        DispatchQueue.main.async {
+            OnboardingManager.shared.setupOnboardingDataIfNeeded()
+        }
+    }
+
+    func addOperation(_ operation: CKDatabaseOperation) {
+        let identifier = ObjectIdentifier(operation)
+        stateLock.lock()
+        activeOperations[identifier] = operation
+        stateLock.unlock()
+
+        let existingCompletionBlock = operation.completionBlock
+        operation.completionBlock = { [weak self, weak operation] in
+            existingCompletionBlock?()
+            guard let operation else { return }
+            self?.unregisterOperation(operation)
+        }
+        client.add(operation)
+    }
+
+    func unregisterOperation(_ operation: CKDatabaseOperation) {
+        let identifier = ObjectIdentifier(operation)
+        stateLock.lock()
+        activeOperations.removeValue(forKey: identifier)
+        stateLock.unlock()
+    }
+
+    func cancelActiveOperations() {
+        stateLock.lock()
+        let operations = Array(activeOperations.values)
+        activeOperations.removeAll()
+        engineGeneration += 1
+        syncRunID += 1
+        isSyncing = false
+        syncEngine = nil
+        fetchAccumulator = nil
+        needsFullFetchAfterCurrentSync = false
+        needsFollowUpSync = false
+        stateLock.unlock()
+
+        for operation in operations {
+            operation.cancel()
+        }
+        cleanupAllUploadAssetFiles()
+    }
+}
+
+private extension CloudKitRecordSyncManager {
+    struct RemoteTombstone {
+        var deletedRecordType: CloudKitRecordType
+        var deletedRecordName: String
+        var deletionTime: Int64
+    }
+
+    struct PhysicalDeletedRecord {
+        var recordName: String
+        var recordType: CloudKitRecordType?
+    }
+
+    struct RemoteChangeSet {
+        var activeRecordsByType: [CloudKitRecordType: [CKRecord]]
+        var tombstonesByDeletedRecordName: [String: RemoteTombstone]
+        var hasUnexplainedPhysicalDeletes: Bool
+    }
+
+    struct FetchAccumulator {
+        var isFullSnapshot: Bool
+        var prunesMissingLocalRecords: Bool
+        var changedRecords: [CKRecord] = []
+        var physicalDeletedRecords: [PhysicalDeletedRecord] = []
+    }
+
+    struct FreshEngineMode {
+        var bootstrapsLocalRecords: Bool
+        var prunesMissingLocalRecords: Bool
+    }
+
+    struct ServerRecordState {
+        var recordsByRecordName: [String: CKRecord]
+        var activeRecordsByRecordName: [String: CKRecord]
+        var tombstonesByDeletedRecordName: [String: RemoteTombstone]
+    }
+
+    struct StagedImageAssets {
+        var originalName: String?
+        var processedName: String?
+
+        var copiedFiles: [(String, CacheImageType)] {
+            var files: [(String, CacheImageType)] = []
+            if let originalName {
+                files.append((originalName, .original))
+            }
+            if let processedName {
+                files.append((processedName, .processed))
+            }
+            return files
+        }
+    }
+
+    enum DependencyState {
+        case available(Int64)
+        case deleted(Int64)
+        case missing
+    }
+
+    enum Field {
+        static let syncId = "syncId"
+        static let creationTime = "creationTime"
+        static let modificationTime = "modificationTime"
+        static let isDeleted = "isDeleted"
+
+        static let expirationTime = "expirationTime"
+        static let actionLink = "actionLink"
+        static let isPinned = "isPinned"
+        static let order = "order"
+
+        static let postSyncId = "postSyncId"
+        static let content = "content"
+
+        static let originalFileName = "originalFileName"
+        static let processedFileName = "processedFileName"
+        static let originalAsset = "originalAsset"
+        static let processedAsset = "processedAsset"
+        static let orientation = "orientation"
+        static let minX = "minX"
+        static let minY = "minY"
+        static let maxX = "maxX"
+        static let maxY = "maxY"
+
+        static let name = "name"
+        static let lockBackgroundColor = "lockBackgroundColor"
+        static let lockTextColor = "lockTextColor"
+        static let lockTextSize = "lockTextSize"
+        static let lockTextAlignment = "lockTextAlignment"
+        static let islandTextColor = "islandTextColor"
+        static let islandTextSize = "islandTextSize"
+        static let islandTextAlignment = "islandTextAlignment"
+        static let symbol = "symbol"
+        static let symbolColor = "symbolColor"
+        static let symbolAngle = "symbolAngle"
+        static let imageDisplayMode = "imageDisplayMode"
+        static let controlAlpha = "controlAlpha"
+
+        static let styleSyncId = "styleSyncId"
+        static let defaultStyleSyncId = "defaultStyleSyncId"
+
+        static let deletedRecordType = "deletedRecordType"
+        static let deletedRecordName = "deletedRecordName"
+        static let deletionTime = "deletionTime"
+    }
+}
+
+private extension CloudKitRecordSyncManager {
+    func handleFetchedDatabaseChanges(_ changes: CKSyncEngine.Event.FetchedDatabaseChanges) throws {
+        guard changes.deletions.contains(where: { $0.zoneID == CloudKitRecordName.zoneID }) else { return }
+        try resetSyncEngineStateForFullFetch(suppressesBootstrap: false, preservesLocalRecords: true)
+        CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.fullRefresh"))
+        requestFollowUpSync()
+    }
+
+    func handleAccountChange() throws {
+        CloudKitSync.clearRemoteDataMayExist()
+        CloudKitSync.setPendingRemoteReset(false)
+        CloudKitSync.disableAfterAccountChange()
+        try resetSyncEngineStateForFullFetch(suppressesBootstrap: true, preservesLocalRecords: true)
+    }
+
+    func handleFetchedRecordZoneChanges(_ changes: CKSyncEngine.Event.FetchedRecordZoneChanges) throws {
+        appendFetchedRecordZoneChanges(changes)
+    }
+
+    func handleSentDatabaseChanges(
+        _ changes: CKSyncEngine.Event.SentDatabaseChanges,
+        syncEngine: CKSyncEngine
+    ) throws {
+        let successfulChanges: [CKSyncEngine.PendingDatabaseChange] =
+        changes.savedZones.map { .saveZone($0) }
+        + changes.deletedZoneIDs.map { .deleteZone($0) }
+
+        if !successfulChanges.isEmpty {
+            syncEngine.state.remove(pendingDatabaseChanges: successfulChanges)
+        }
+
+        if let failure = changes.failedZoneSaves.first?.error ?? changes.failedZoneDeletes.values.first {
+            throw failure
+        }
+    }
+
+    func handleSentRecordZoneChanges(
+        _ changes: CKSyncEngine.Event.SentRecordZoneChanges,
+        syncEngine: CKSyncEngine
+    ) throws {
+        let recordNotFoundDeletes = changes.failedRecordDeletes
+            .filter { isRecordNotFound($0.value) }
+            .map(\.key)
+        let deletedRecordIDs = changes.deletedRecordIDs + recordNotFoundDeletes
+        let successfulChanges: [CKSyncEngine.PendingRecordZoneChange] =
+        changes.savedRecords.map { .saveRecord($0.recordID) }
+        + deletedRecordIDs.map { .deleteRecord($0) }
+
+        if !successfulChanges.isEmpty {
+            syncEngine.state.remove(pendingRecordZoneChanges: successfulChanges)
+        }
+
+        let savedRecordVersions = Dictionary(
+            uniqueKeysWithValues: changes.savedRecords.map { ($0.recordID.recordName, modificationTime(of: $0)) }
+        )
+        let failedSaveResults = Dictionary(
+            uniqueKeysWithValues: changes.failedRecordSaves.map {
+                ($0.record.recordID.recordName, (version: modificationTime(of: $0.record), error: $0.error as Error))
+            }
+        )
+        let failedDeleteErrors = changes.failedRecordDeletes
+            .filter { !isRecordNotFound($0.value) }
+        let deletedRecordNames = Set(deletedRecordIDs.map(\.recordName))
+        var failedEntries: [(id: Int64, error: Error)] = []
+        var clearedEntryIDs: [Int64] = []
+
+        for entry in try loadOutboxEntries() {
+            guard let entryID = entry.id,
+                  let operation = entry.cloudKitOperation else {
+                continue
+            }
+            switch operation {
+            case .save, .delete:
+                if let savedVersion = savedRecordVersions[entry.recordName],
+                   savedVersion >= entry.localVersion {
+                    clearedEntryIDs.append(entryID)
+                } else if savedRecordVersions[entry.recordName] != nil {
+                    requestFollowUpSync()
+                } else if let failure = failedSaveResults[entry.recordName],
+                          failure.version >= entry.localVersion {
+                    failedEntries.append((entryID, failure.error))
+                }
+            case .purge:
+                if deletedRecordNames.contains(entry.recordName) {
+                    clearedEntryIDs.append(entryID)
+                } else if let error = failedDeleteErrors[CloudKitRecordName.recordID(entry.recordName)] {
+                    failedEntries.append((entryID, error))
+                }
+            }
+        }
+
+        if failedEntries.contains(where: { isServerRecordChanged($0.error) }) {
+            requestFollowUpSync()
+        }
+        try markOutboxFailures(failedEntries)
+        try clearOutbox(ids: clearedEntryIDs)
+        cleanupUploadAssetFiles(for: Array(Set(savedRecordVersions.keys).union(failedSaveResults.keys)))
+    }
+
+    func makeRecordZoneChangeBatch(
+        context: CKSyncEngine.SendChangesContext,
+        syncEngine: CKSyncEngine
+    ) async throws -> CKSyncEngine.RecordZoneChangeBatch? {
+        let scopedChanges = Set(syncEngine.state.pendingRecordZoneChanges.filter {
+            context.options.scope.contains($0) && isManagedRecordZoneChange($0)
+        })
+        guard !scopedChanges.isEmpty else { return nil }
+
+        let entries = try loadOutboxEntries()
+        let scopedEntries = Array(entries
+            .filter { entry in
+                pendingRecordZoneChanges(for: entry).contains { scopedChanges.contains($0) }
+            }
+            .prefix(50))
+        guard !scopedEntries.isEmpty else { return nil }
+
+        let serverRecordState = try await fetchServerRecordState(for: scopedEntries)
+        let batch = try buildRecordZoneChangeBatch(
+            entries: scopedEntries,
+            scopedChanges: scopedChanges,
+            serverRecordState: serverRecordState
+        )
+
+        if !batch.changesToRemove.isEmpty {
+            syncEngine.state.remove(pendingRecordZoneChanges: batch.changesToRemove)
+        }
+        try markOutboxFailures(batch.failedEntries)
+        try dropOutbox(ids: batch.skippedEntryIDs)
+
+        guard !batch.recordsToSave.isEmpty || !batch.recordIDsToDelete.isEmpty else {
+            return nil
+        }
+        return CKSyncEngine.RecordZoneChangeBatch(
+            recordsToSave: batch.recordsToSave,
+            recordIDsToDelete: batch.recordIDsToDelete,
+            atomicByZone: false
+        )
+    }
+
+    func buildRecordZoneChangeBatch(
+        entries: [CloudKitOutboxEntry],
+        scopedChanges: Set<CKSyncEngine.PendingRecordZoneChange>,
+        serverRecordState: ServerRecordState
+    ) throws -> (
+        recordsToSave: [CKRecord],
+        recordIDsToDelete: [CKRecord.ID],
+        skippedEntryIDs: [Int64],
+        failedEntries: [(id: Int64, error: Error)],
+        changesToRemove: [CKSyncEngine.PendingRecordZoneChange]
+    ) {
+        var recordsToSave: [CKRecord] = []
+        var recordIDsToDelete: [CKRecord.ID] = []
+        var skippedEntryIDs: [Int64] = []
+        var failedEntries: [(id: Int64, error: Error)] = []
+        var changesToRemove: [CKSyncEngine.PendingRecordZoneChange] = []
+
+        for entry in entries {
+            guard let entryID = entry.id,
+                  let type = entry.cloudKitRecordType,
+                  let operation = entry.cloudKitOperation else {
+                if let id = entry.id {
+                    skippedEntryIDs.append(id)
+                }
+                continue
+            }
+
+            let pendingChanges = pendingRecordZoneChanges(for: entry).filter { scopedChanges.contains($0) }
+            guard !pendingChanges.isEmpty else { continue }
+
+            do {
+                if serverStateWins(
+                    recordName: entry.recordName,
+                    entryModificationTime: entry.modificationTime,
+                    serverRecordState: serverRecordState
+                ) {
+                    requestFullFetchAfterCurrentSync()
+                    continue
+                }
+
+                switch operation {
+                case .save:
+                    let saveChange = CKSyncEngine.PendingRecordZoneChange.saveRecord(
+                        CloudKitRecordName.recordID(entry.recordName)
+                    )
+                    guard scopedChanges.contains(saveChange) else { continue }
+                    if let record = try makeRecord(
+                        for: entry,
+                        type: type,
+                        baseRecord: serverRecordState.recordsByRecordName[entry.recordName]
+                    ) {
+                        recordsToSave.append(record)
+                    } else {
+                        skippedEntryIDs.append(entryID)
+                        changesToRemove.append(saveChange)
+                    }
+                case .delete:
+                    let saveChange = CKSyncEngine.PendingRecordZoneChange.saveRecord(
+                        CloudKitRecordName.recordID(entry.recordName)
+                    )
+                    if scopedChanges.contains(saveChange) {
+                        recordsToSave.append(makeDeletedRecord(
+                            for: entry,
+                            deletedRecordType: type,
+                            baseRecord: serverRecordState.recordsByRecordName[entry.recordName]
+                        ))
+                    }
+                case .purge:
+                    let deleteID = CloudKitRecordName.recordID(entry.recordName)
+                    let deleteChange = CKSyncEngine.PendingRecordZoneChange.deleteRecord(deleteID)
+                    if scopedChanges.contains(deleteChange) {
+                        recordIDsToDelete.append(deleteID)
+                    }
+                }
+            } catch {
+                failedEntries.append((entryID, error))
+                changesToRemove.append(contentsOf: pendingChanges)
+            }
+        }
+
+        return (
+            recordsToSave: recordsToSave,
+            recordIDsToDelete: recordIDsToDelete,
+            skippedEntryIDs: skippedEntryIDs,
+            failedEntries: failedEntries,
+            changesToRemove: changesToRemove
+        )
+    }
+
+    func makeRemoteChangeSet(
+        changedRecords: [CKRecord],
+        physicalDeletedRecords: [PhysicalDeletedRecord]
+    ) -> RemoteChangeSet {
+        var activeRecordsByType: [CloudKitRecordType: [CKRecord]] = [:]
+        var tombstonesByDeletedRecordName: [String: RemoteTombstone] = [:]
+
+        for record in changedRecords {
+            guard let type = CloudKitRecordType(rawValue: record.recordType) else { continue }
+            if isDeletedRecord(record),
+               let tombstone = makeRemoteTombstone(from: record, type: type) {
+                if let existing = tombstonesByDeletedRecordName[tombstone.deletedRecordName],
+                   existing.deletionTime > tombstone.deletionTime {
+                    continue
+                }
+                tombstonesByDeletedRecordName[tombstone.deletedRecordName] = tombstone
+            } else {
+                activeRecordsByType[type, default: []].append(record)
+            }
+        }
+
+        let hasUnexplainedPhysicalDeletes = physicalDeletedRecords.contains { deletion in
+            return tombstonesByDeletedRecordName[deletion.recordName] == nil
+        }
+
+        return RemoteChangeSet(
+            activeRecordsByType: activeRecordsByType,
+            tombstonesByDeletedRecordName: tombstonesByDeletedRecordName,
+            hasUnexplainedPhysicalDeletes: hasUnexplainedPhysicalDeletes
+        )
+    }
+
+    func fetchAccountStatus() async throws -> CKAccountStatus {
+        try await client.accountStatus()
+    }
+
+    func ensureRecordZone() async throws {
+        try ensureSyncEnabled()
+        let zone = CKRecordZone(zoneID: CloudKitRecordName.zoneID)
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let operation = CKModifyRecordZonesOperation(recordZonesToSave: [zone], recordZoneIDsToDelete: nil)
+            operation.modifyRecordZonesResultBlock = { result in
+                switch result {
+                case .success:
+                    continuation.resume()
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+            addOperation(operation)
+        }
+    }
+
+    func deleteRecordZoneIfExists(requiresSyncEnabled: Bool = true) async throws {
+        if requiresSyncEnabled {
+            try ensureSyncEnabled()
+        }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let operation = CKModifyRecordZonesOperation(
+                recordZonesToSave: nil,
+                recordZoneIDsToDelete: [CloudKitRecordName.zoneID]
+            )
+            operation.modifyRecordZonesResultBlock = { result in
+                switch result {
+                case .success:
+                    continuation.resume()
+                case .failure(let error):
+                    if self.isZoneNotFound(error) {
+                        continuation.resume()
+                    } else {
+                        continuation.resume(throwing: error)
+                    }
+                }
+            }
+            addOperation(operation)
+        }
+    }
+
+    func clearLocalCloudKitState() throws {
+        stateLock.lock()
+        engineGeneration += 1
+        syncEngine = nil
+        fetchAccumulator = nil
+        needsFullFetchAfterCurrentSync = false
+        uploadAssetFilesByRecordName.removeAll()
+        stateLock.unlock()
+
+        cleanupTemporaryUploadAssetDirectory()
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
+            try CloudKitSyncState.clearBootstrapSuppression(in: db)
+            try CloudKitSyncState.clearLocalRecordPreservation(in: db)
+            try CloudKitOutboxEntry.deleteAll(db)
+            try CloudKitRecordMetadata.deleteAll(db)
+            try CloudKitLocalTombstone.deleteAll(db)
+            try CloudKitSettingRecord.deleteAll(db)
+        }
+    }
+
+    func ensureSyncEnabled() throws {
+        guard CloudKitSync.current == .enable else {
+            throw CloudKitSyncDisabledError()
+        }
+    }
+
+    func isChangeTokenExpired(_ error: Error) -> Bool {
+        guard let cloudKitError = error as? CKError else { return false }
+        if cloudKitError.code == .changeTokenExpired {
+            return true
+        }
+        guard cloudKitError.code == .partialFailure,
+              let partialErrors = cloudKitError.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] else {
+            return false
+        }
+        return partialErrors.values.contains { isChangeTokenExpired($0) }
+    }
+
+    func isPartialFailure(_ error: Error) -> Bool {
+        guard let cloudKitError = error as? CKError else { return false }
+        return cloudKitError.code == .partialFailure
+    }
+
+    func isRecordNotFound(_ error: Error) -> Bool {
+        guard let cloudKitError = error as? CKError else { return false }
+        return cloudKitError.code == .unknownItem
+    }
+
+    func isServerRecordChanged(_ error: Error) -> Bool {
+        guard let cloudKitError = error as? CKError else { return false }
+        if cloudKitError.code == .serverRecordChanged {
+            return true
+        }
+        guard cloudKitError.code == .partialFailure,
+              let partialErrors = cloudKitError.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] else {
+            return false
+        }
+        return partialErrors.values.contains { isServerRecordChanged($0) }
+    }
+
+    func isOperationCancelled(_ error: Error) -> Bool {
+        guard let cloudKitError = error as? CKError else { return false }
+        if cloudKitError.code == .operationCancelled {
+            return true
+        }
+        guard cloudKitError.code == .partialFailure,
+              let partialErrors = cloudKitError.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] else {
+            return false
+        }
+        return partialErrors.values.contains { isOperationCancelled($0) }
+    }
+
+    func isZoneNotFound(_ error: Error) -> Bool {
+        guard let cloudKitError = error as? CKError else { return false }
+        if cloudKitError.code == .zoneNotFound || cloudKitError.code == .unknownItem {
+            return true
+        }
+        guard cloudKitError.code == .partialFailure,
+              let partialErrors = cloudKitError.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] else {
+            return false
+        }
+        return partialErrors.values.allSatisfy { isZoneNotFound($0) }
+    }
+
+    func cloudKitAccountStatusMessage(_ status: CKAccountStatus) -> String {
+        switch status {
+        case .available:
+            return ""
+        case .noAccount:
+            return String(localized: "settings.cloudKitSync.error.noAccount")
+        case .restricted:
+            return String(localized: "settings.cloudKitSync.error.restricted")
+        case .couldNotDetermine:
+            return String(localized: "settings.cloudKitSync.error.couldNotDetermine")
+        case .temporarilyUnavailable:
+            return String(localized: "settings.cloudKitSync.error.temporarilyUnavailable")
+        @unknown default:
+            return String(localized: "settings.cloudKitSync.error.couldNotDetermine")
+        }
+    }
+}
+
+private extension CloudKitRecordSyncManager {
+    func syncEngineInstance(expectedGeneration: UInt64? = nil) throws -> CKSyncEngine {
+        stateLock.lock()
+        if let expectedGeneration, expectedGeneration != engineGeneration {
+            stateLock.unlock()
+            throw CancellationError()
+        }
+        if let syncEngine {
+            stateLock.unlock()
+            return syncEngine
+        }
+        let generation = engineGeneration
+        stateLock.unlock()
+
+        let stateSerialization = try loadSyncEngineStateSerialization()
+        var configuration = CKSyncEngine.Configuration(
+            database: client.database,
+            stateSerialization: stateSerialization,
+            delegate: self
+        )
+        configuration.automaticallySync = false
+        let engine = CKSyncEngine(configuration)
+
+        stateLock.lock()
+        guard generation == engineGeneration,
+              expectedGeneration == nil || expectedGeneration == generation else {
+            stateLock.unlock()
+            throw CancellationError()
+        }
+        if let existingEngine = syncEngine {
+            stateLock.unlock()
+            return existingEngine
+        }
+        syncEngine = engine
+        stateLock.unlock()
+        return engine
+    }
+
+    func isCurrentSyncEngine(_ engine: CKSyncEngine) -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return syncEngine === engine
+    }
+
+    func hasActiveSyncEngine() -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return syncEngine != nil
+    }
+
+    func loadSyncEngineStateSerialization() throws -> CKSyncEngine.State.Serialization? {
+        var serialization: CKSyncEngine.State.Serialization?
+        try AppDatabase.shared.dbWriter?.read { db in
+            serialization = try CloudKitSyncState.syncEngineStateSerialization(in: db)
+        }
+        return serialization
+    }
+
+    func hasStoredSyncEngineState() throws -> Bool {
+        try loadSyncEngineStateSerialization() != nil
+    }
+
+    func freshEngineMode(hasStoredEngineState: Bool) throws -> FreshEngineMode {
+        guard !hasStoredEngineState else {
+            return FreshEngineMode(bootstrapsLocalRecords: false, prunesMissingLocalRecords: false)
+        }
+        var suppressesBootstrap = false
+        var preservesLocalRecords = false
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            suppressesBootstrap = try CloudKitSyncState.consumeBootstrapSuppression(in: db)
+            preservesLocalRecords = try CloudKitSyncState.consumeLocalRecordPreservation(in: db)
+        }
+        return FreshEngineMode(
+            bootstrapsLocalRecords: preservesLocalRecords || (!suppressesBootstrap && !CloudKitSync.remoteDataMayExist),
+            prunesMissingLocalRecords: false
+        )
+    }
+
+    func persistSyncEngineStateSerialization(_ serialization: CKSyncEngine.State.Serialization) throws {
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            try CloudKitSyncState.setSyncEngineStateSerialization(serialization, in: db)
+        }
+    }
+
+    func resetSyncEngineStateForFullFetch(suppressesBootstrap: Bool, preservesLocalRecords: Bool = false) throws {
+        stateLock.lock()
+        engineGeneration += 1
+        syncEngine = nil
+        fetchAccumulator = nil
+        needsFullFetchAfterCurrentSync = false
+        stateLock.unlock()
+
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
+            if suppressesBootstrap {
+                try CloudKitSyncState.suppressBootstrapForNextFreshEngine(in: db)
+            } else {
+                try CloudKitSyncState.clearBootstrapSuppression(in: db)
+            }
+            if preservesLocalRecords {
+                try CloudKitSyncState.preserveLocalRecordsForNextFullFetch(in: db)
+            } else {
+                try CloudKitSyncState.clearLocalRecordPreservation(in: db)
+            }
+        }
+    }
+
+    func resetForRequestedFullFetchIfNeeded() throws -> Bool {
+        guard takeNeedsFullFetchAfterCurrentSync() else { return false }
+        try resetSyncEngineStateForFullFetch(suppressesBootstrap: true)
+        requestFollowUpSync()
+        CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.fullRefresh"))
+        return true
+    }
+
+    func beginFetchAccumulation(isFullSnapshot: Bool, prunesMissingLocalRecords: Bool) {
+        stateLock.lock()
+        fetchAccumulator = FetchAccumulator(
+            isFullSnapshot: isFullSnapshot,
+            prunesMissingLocalRecords: prunesMissingLocalRecords
+        )
+        stateLock.unlock()
+    }
+
+    func discardFetchAccumulation() {
+        stateLock.lock()
+        fetchAccumulator = nil
+        stateLock.unlock()
+    }
+
+    func appendFetchedRecordZoneChanges(_ changes: CKSyncEngine.Event.FetchedRecordZoneChanges) {
+        let changedRecords = changes.modifications
+            .map(\.record)
+            .filter { $0.recordID.zoneID == CloudKitRecordName.zoneID }
+        let physicalDeletedRecords = changes.deletions
+            .filter { $0.recordID.zoneID == CloudKitRecordName.zoneID }
+            .map {
+                PhysicalDeletedRecord(
+                    recordName: $0.recordID.recordName,
+                    recordType: CloudKitRecordType(rawValue: $0.recordType)
+                )
+            }
+
+        stateLock.lock()
+        if fetchAccumulator == nil {
+            fetchAccumulator = FetchAccumulator(isFullSnapshot: false, prunesMissingLocalRecords: false)
+        }
+        fetchAccumulator?.changedRecords.append(contentsOf: changedRecords)
+        fetchAccumulator?.physicalDeletedRecords.append(contentsOf: physicalDeletedRecords)
+        stateLock.unlock()
+    }
+
+    func takeFetchAccumulator() -> FetchAccumulator? {
+        stateLock.lock()
+        let accumulator = fetchAccumulator
+        fetchAccumulator = nil
+        stateLock.unlock()
+        return accumulator
+    }
+
+    func applyAccumulatedFetchIfNeeded() throws {
+        guard let accumulator = takeFetchAccumulator() else { return }
+        let remoteChanges = makeRemoteChangeSet(
+            changedRecords: accumulator.changedRecords,
+            physicalDeletedRecords: accumulator.physicalDeletedRecords
+        )
+
+        if !accumulator.isFullSnapshot, remoteChanges.hasUnexplainedPhysicalDeletes {
+            requestFullFetchAfterCurrentSync()
+            return
+        }
+
+        setApplyingRemoteChanges(true)
+        defer { setApplyingRemoteChanges(false) }
+        try applyRemoteChanges(
+            remoteChanges,
+            missingDependenciesAreOrphans: accumulator.isFullSnapshot,
+            prunesMissingLocalRecords: accumulator.isFullSnapshot && accumulator.prunesMissingLocalRecords
+        )
+    }
+
+    func requestFullFetchAfterCurrentSync() {
+        stateLock.lock()
+        needsFullFetchAfterCurrentSync = true
+        stateLock.unlock()
+    }
+
+    func takeNeedsFullFetchAfterCurrentSync() -> Bool {
+        stateLock.lock()
+        let value = needsFullFetchAfterCurrentSync
+        needsFullFetchAfterCurrentSync = false
+        stateLock.unlock()
+        return value
+    }
+
+    func validateLocalCloudKitSnapshotForRebuild() throws {
+        try AppDatabase.shared.dbWriter?.read { db in
+            if let syncId = try String.fetchOne(
+                db,
+                sql: """
+                    SELECT text.sync_id
+                    FROM text
+                    LEFT JOIN post ON post.id = text.post_id
+                    WHERE post.id IS NULL
+                    LIMIT 1
+                """
+            ) {
+                throw CloudKitOutboxBuildError(recordName: CloudKitRecordName.make(.text, syncId: syncId), reason: "parent post is missing")
+            }
+            if let syncId = try String.fetchOne(
+                db,
+                sql: """
+                    SELECT image.sync_id
+                    FROM image
+                    LEFT JOIN post ON post.id = image.post_id
+                    WHERE post.id IS NULL
+                    LIMIT 1
+                """
+            ) {
+                throw CloudKitOutboxBuildError(recordName: CloudKitRecordName.make(.image, syncId: syncId), reason: "parent post is missing")
+            }
+            for image in try PostImage.fetchAll(db) {
+                guard ImageCacheManager.shared.getURL(name: image.original, type: .original) != nil,
+                      ImageCacheManager.shared.getURL(name: image.processed, type: .processed) != nil else {
+                    throw CloudKitOutboxBuildError(recordName: image.cloudKitRecordName, reason: "cached image files are missing")
+                }
+            }
+            if let syncId = try String.fetchOne(
+                db,
+                sql: """
+                    SELECT decoration.sync_id
+                    FROM decoration
+                    LEFT JOIN post ON post.id = decoration.post_id
+                    WHERE post.id IS NULL
+                    LIMIT 1
+                """
+            ) {
+                throw CloudKitOutboxBuildError(recordName: CloudKitRecordName.make(.decoration, syncId: syncId), reason: "parent post is missing")
+            }
+            if let syncId = try String.fetchOne(
+                db,
+                sql: """
+                    SELECT decoration.sync_id
+                    FROM decoration
+                    LEFT JOIN style ON style.id = decoration.style_id
+                    WHERE style.id IS NULL
+                    LIMIT 1
+                """
+            ) {
+                throw CloudKitOutboxBuildError(recordName: CloudKitRecordName.make(.decoration, syncId: syncId), reason: "style is missing")
+            }
+        }
+    }
+
+    func cleanupLocalCloudKitOrphans() throws {
+        var deletedImageFiles: [(String, CacheImageType)] = []
+        var didChangeDatabase = false
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            for text in try PostText.fetchAll(db) {
+                guard try Post.fetchOne(db, id: text.postId) == nil else { continue }
+                try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, deletionTime: text.modificationTime ?? db.transactionDate.nanoSecondSince1970, in: db)
+                if let textId = text.id {
+                    try PostText.deleteAll(db, ids: [textId])
+                }
+                try OnboardingLocalRecord.unmark(recordType: .text, syncId: text.syncId, in: db)
+                didChangeDatabase = true
+            }
+
+            for image in try PostImage.fetchAll(db) {
+                guard try Post.fetchOne(db, id: image.postId) == nil else { continue }
+                try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, deletionTime: image.modificationTime ?? db.transactionDate.nanoSecondSince1970, in: db)
+                if let imageId = image.id {
+                    try PostImage.deleteAll(db, ids: [imageId])
+                }
+                try OnboardingLocalRecord.unmark(recordType: .image, syncId: image.syncId, in: db)
+                deletedImageFiles.append(contentsOf: imageFiles(for: [image]))
+                didChangeDatabase = true
+            }
+
+            for decoration in try PostDecoration.fetchAll(db) {
+                let hasPost = try Post.fetchOne(db, id: decoration.postId) != nil
+                let hasStyle = try PostStyle.fetchOne(db, id: decoration.styleId) != nil
+                guard !hasPost || !hasStyle else { continue }
+                try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: decoration.modificationTime ?? db.transactionDate.nanoSecondSince1970, in: db)
+                if let decorationId = decoration.id {
+                    try PostDecoration.deleteAll(db, ids: [decorationId])
+                }
+                try OnboardingLocalRecord.unmark(recordType: .decoration, syncId: decoration.syncId, in: db)
+                didChangeDatabase = true
+            }
+        }
+
+        cleanupCopiedImageFiles(deletedImageFiles)
+        if didChangeDatabase {
+            postCloudKitOriginatedUpdate(.DatabaseUpdated)
+        }
+    }
+
+    func rebuildLocalCloudKitStateForCurrentDevice() throws {
+        let defaultStyleSyncId = DataManager.shared.fetchStyle(by: Int64(DefaultStyle.getValue().rawValue))?.syncId
+        stateLock.lock()
+        engineGeneration += 1
+        syncEngine = nil
+        fetchAccumulator = nil
+        needsFullFetchAfterCurrentSync = false
+        stateLock.unlock()
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
+            try CloudKitSyncState.clearBootstrapSuppression(in: db)
+            try CloudKitSyncState.clearLocalRecordPreservation(in: db)
+            try CloudKitLocalTombstone.deleteAll(db)
+            try CloudKitOutboxEntry.deleteAll(db)
+            try CloudKitRecordMetadata.deleteAll(db)
+            try CloudKitSettingRecord.deleteAll(db)
+            try CloudKitOutboxEntry.enqueueBootstrapSaves(in: db)
+            try enqueueDefaultStyleSettingIfNeeded(syncId: defaultStyleSyncId, in: db)
+        }
+    }
+
+    func sendChangesAndCleanupUploadAssets(_ engine: CKSyncEngine) async throws {
+        defer {
+            cleanupAllUploadAssetFiles()
+        }
+        try await engine.sendChanges()
+    }
+
+    func enqueueBootstrapOutbox() throws {
+        let defaultStyleSyncId = DefaultStyle.currentStyleSyncIdForCloudKit()
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            try CloudKitOutboxEntry.enqueueBootstrapSaves(in: db)
+            try enqueueDefaultStyleSettingIfNeeded(syncId: defaultStyleSyncId, in: db)
+        }
+    }
+
+    func enqueueDefaultStyleSettingIfNeeded(syncId: String?, in db: Database) throws {
+        guard let syncId,
+              try !OnboardingLocalRecord.isMarked(recordType: .style, syncId: syncId, in: db) else {
+            return
+        }
+        let setting = try CloudKitSettingRecord.current(in: db)
+        let modificationTime: Int64
+        if setting.defaultStyleSyncId == syncId, setting.defaultStyleModificationTime > 0 {
+            modificationTime = setting.defaultStyleModificationTime
+        } else {
+            modificationTime = try db.transactionDate.nanoSecondSince1970
+        }
+        try CloudKitSettingRecord.saveDefaultStyle(syncId: syncId, modificationTime: modificationTime, in: db)
+        try CloudKitOutboxEntry.enqueueSetting(modificationTime: modificationTime, in: db)
+    }
+
+    func loadOutboxEntries() throws -> [CloudKitOutboxEntry] {
+        var entries: [CloudKitOutboxEntry] = []
+        try AppDatabase.shared.dbWriter?.read { db in
+            entries = try CloudKitOutboxEntry
+                .order(CloudKitOutboxEntry.Columns.updatedAt.asc, Column(CloudKitOutboxEntry.CodingKeys.id).asc)
+                .fetchAll(db)
+        }
+        return entries
+    }
+
+    func hasOutboxFailures() throws -> Bool {
+        var hasFailures = false
+        try AppDatabase.shared.dbWriter?.read { db in
+            hasFailures = try CloudKitOutboxEntry.failedCount(in: db) > 0
+        }
+        return hasFailures
+    }
+
+    func markRemoteDataMayExistBeforeSendingOutboxIfNeeded() throws {
+        var hasOutbox = false
+        try AppDatabase.shared.dbWriter?.read { db in
+            hasOutbox = try CloudKitOutboxEntry.fetchCount(db) > 0
+        }
+        if hasOutbox {
+            CloudKitSync.markRemoteDataMayExist()
+        }
+    }
+
+    func markRemoteDataMayExistIfCloudKitStateExists() throws {
+        var hasState = false
+        try AppDatabase.shared.dbWriter?.read { db in
+            let hasOutbox = try CloudKitOutboxEntry.fetchCount(db) > 0
+            let hasMetadata = try CloudKitRecordMetadata.fetchCount(db) > 0
+            hasState = hasOutbox || hasMetadata
+        }
+        if hasState {
+            CloudKitSync.markRemoteDataMayExist()
+        } else {
+            CloudKitSync.clearRemoteDataMayExist()
+        }
+    }
+
+    func enqueueExpiredTombstonePurgesIfNeeded() throws -> Bool {
+        var didEnqueue = false
+        let cutoff = Date().nanoSecondSince1970 - Self.tombstoneRetentionMilliseconds
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            let tombstones = try Row.fetchAll(
+                db,
+                sql: """
+                    SELECT record_name, record_type
+                    FROM cloudkit_record_metadata
+                    WHERE is_deleted = 1
+                      AND updated_at <= ?
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM cloudkit_outbox
+                          WHERE cloudkit_outbox.record_name = cloudkit_record_metadata.record_name
+                      )
+                """,
+                arguments: [cutoff]
+            )
+
+            for tombstone in tombstones {
+                let recordName: String = tombstone["record_name"]
+                let rawRecordType: String = tombstone["record_type"]
+                guard let recordType = CloudKitRecordType(rawValue: rawRecordType) else { continue }
+                try CloudKitOutboxEntry.enqueuePurge(
+                    recordType: recordType,
+                    recordName: recordName,
+                    in: db
+                )
+                didEnqueue = true
+            }
+        }
+        return didEnqueue
+    }
+
+    func syncEnginePendingChangesFromOutbox(_ engine: CKSyncEngine) throws {
+        let desiredChanges = Set(try loadOutboxEntries().flatMap { pendingRecordZoneChanges(for: $0) })
+        let currentChanges = Set(engine.state.pendingRecordZoneChanges.filter(isManagedRecordZoneChange))
+        let staleChanges = currentChanges.subtracting(desiredChanges)
+        let newChanges = desiredChanges.subtracting(currentChanges)
+
+        if !staleChanges.isEmpty {
+            engine.state.remove(pendingRecordZoneChanges: Array(staleChanges))
+        }
+        if !newChanges.isEmpty {
+            engine.state.add(pendingRecordZoneChanges: Array(newChanges))
+        }
+    }
+
+    func pendingRecordZoneChanges(for entry: CloudKitOutboxEntry) -> [CKSyncEngine.PendingRecordZoneChange] {
+        guard let operation = entry.cloudKitOperation else { return [] }
+        let recordID = CloudKitRecordName.recordID(entry.recordName)
+        switch operation {
+        case .save:
+            return [.saveRecord(recordID)]
+        case .delete:
+            return [.saveRecord(recordID)]
+        case .purge:
+            return [.deleteRecord(recordID)]
+        }
+    }
+
+    func isManagedRecordZoneChange(_ change: CKSyncEngine.PendingRecordZoneChange) -> Bool {
+        recordID(for: change)?.zoneID == CloudKitRecordName.zoneID
+    }
+
+    func recordID(for change: CKSyncEngine.PendingRecordZoneChange) -> CKRecord.ID? {
+        switch change {
+        case .saveRecord(let recordID), .deleteRecord(let recordID):
+            return recordID
+        @unknown default:
+            return nil
+        }
+    }
+
+    func markOutboxFailures(_ failures: [(id: Int64, error: Error)]) throws {
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            for failure in failures {
+                try CloudKitOutboxEntry.markFailed(ids: [failure.id], error: failure.error, in: db)
+            }
+        }
+    }
+
+    func clearOutbox(ids: [Int64]) throws {
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            try CloudKitOutboxEntry.clear(ids: ids, in: db)
+        }
+    }
+
+    func dropOutbox(ids: [Int64]) throws {
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            try CloudKitOutboxEntry.drop(ids: ids, in: db)
+        }
+    }
+
+    func fetchServerRecordState(for entries: [CloudKitOutboxEntry]) async throws -> ServerRecordState {
+        let recordIDs = entries.map { CloudKitRecordName.recordID($0.recordName) }
+        let recordsByName = try await fetchRecords(recordIDs: Array(Dictionary(uniqueKeysWithValues: recordIDs.map { ($0.recordName, $0) }).values))
+        var activeRecordsByRecordName: [String: CKRecord] = [:]
+        var tombstonesByDeletedRecordName: [String: RemoteTombstone] = [:]
+        for record in recordsByName.values {
+            guard let type = CloudKitRecordType(rawValue: record.recordType) else { continue }
+            if isDeletedRecord(record),
+               let tombstone = makeRemoteTombstone(from: record, type: type) {
+                tombstonesByDeletedRecordName[tombstone.deletedRecordName] = tombstone
+            } else {
+                activeRecordsByRecordName[record.recordID.recordName] = record
+            }
+        }
+        return ServerRecordState(
+            recordsByRecordName: recordsByName,
+            activeRecordsByRecordName: activeRecordsByRecordName,
+            tombstonesByDeletedRecordName: tombstonesByDeletedRecordName
+        )
+    }
+
+    func fetchRecords(recordIDs: [CKRecord.ID]) async throws -> [String: CKRecord] {
+        try ensureSyncEnabled()
+        return try await withCheckedThrowingContinuation { continuation in
+            final class RecordBox {
+                private let lock = NSLock()
+                private var recordsByName: [String: CKRecord] = [:]
+                private var firstError: Error?
+
+                func store(recordID: CKRecord.ID, result: Result<CKRecord, Error>, recordNotFoundIsSuccess: (Error) -> Bool) {
+                    lock.lock()
+                    defer { lock.unlock() }
+                    switch result {
+                    case .success(let record):
+                        recordsByName[recordID.recordName] = record
+                    case .failure(let error):
+                        if !recordNotFoundIsSuccess(error), firstError == nil {
+                            firstError = error
+                        }
+                    }
+                }
+
+                func result() throws -> [String: CKRecord] {
+                    lock.lock()
+                    defer { lock.unlock() }
+                    if let firstError {
+                        throw firstError
+                    }
+                    return recordsByName
+                }
+            }
+
+            let box = RecordBox()
+            let operation = CKFetchRecordsOperation(recordIDs: recordIDs)
+            operation.desiredKeys = [
+                Field.modificationTime,
+                Field.isDeleted,
+                Field.deletedRecordType,
+                Field.deletedRecordName,
+                Field.deletionTime
+            ]
+            operation.perRecordResultBlock = { recordID, result in
+                box.store(recordID: recordID, result: result, recordNotFoundIsSuccess: self.isRecordNotFound)
+            }
+            operation.fetchRecordsResultBlock = { result in
+                switch result {
+                case .success:
+                    do {
+                        continuation.resume(returning: try box.result())
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
+                case .failure(let error):
+                    if self.isPartialFailure(error) {
+                        do {
+                            continuation.resume(returning: try box.result())
+                        } catch {
+                            continuation.resume(throwing: error)
+                        }
+                    } else {
+                        continuation.resume(throwing: error)
+                    }
+                }
+            }
+            addOperation(operation)
+        }
+    }
+
+    func serverStateWins(recordName: String, entryModificationTime: Int64, serverRecordState: ServerRecordState) -> Bool {
+        if let tombstone = serverRecordState.tombstonesByDeletedRecordName[recordName],
+           tombstone.deletionTime >= entryModificationTime {
+            return true
+        }
+        guard let serverRecord = serverRecordState.activeRecordsByRecordName[recordName] else { return false }
+        return modificationTime(of: serverRecord) > entryModificationTime
+    }
+}
+
+private extension CloudKitRecordSyncManager {
+    func makeRecord(
+        for entry: CloudKitOutboxEntry,
+        type: CloudKitRecordType,
+        baseRecord: CKRecord?
+    ) throws -> CKRecord? {
+        switch type {
+        case .post:
+            guard let syncId = CloudKitRecordName.syncId(from: entry.recordName, type: .post) else { return nil }
+            var post: Post?
+            try AppDatabase.shared.dbWriter?.read { db in
+                post = try Post
+                    .filter(Column(Post.CodingKeys.syncId) == syncId)
+                    .fetchOne(db)
+            }
+            guard let post else { return nil }
+            return makeRecord(for: post, baseRecord: baseRecord)
+        case .text:
+            guard let syncId = CloudKitRecordName.syncId(from: entry.recordName, type: .text) else { return nil }
+            var text: PostText?
+            var postSyncId: String?
+            try AppDatabase.shared.dbWriter?.read { db in
+                text = try PostText
+                    .filter(Column(PostText.CodingKeys.syncId) == syncId)
+                    .fetchOne(db)
+                if let text {
+                    guard let post = try Post.fetchOne(db, id: text.postId) else {
+                        throw CloudKitOutboxBuildError(recordName: entry.recordName, reason: "parent post is missing")
+                    }
+                    postSyncId = post.syncId
+                }
+            }
+            guard let text, let postSyncId else { return nil }
+            return makeRecord(for: text, postSyncId: postSyncId, baseRecord: baseRecord)
+        case .image:
+            guard let syncId = CloudKitRecordName.syncId(from: entry.recordName, type: .image) else { return nil }
+            var image: PostImage?
+            var postSyncId: String?
+            try AppDatabase.shared.dbWriter?.read { db in
+                image = try PostImage
+                    .filter(Column(PostImage.CodingKeys.syncId) == syncId)
+                    .fetchOne(db)
+                if let image {
+                    guard let post = try Post.fetchOne(db, id: image.postId) else {
+                        throw CloudKitOutboxBuildError(recordName: entry.recordName, reason: "parent post is missing")
+                    }
+                    postSyncId = post.syncId
+                }
+            }
+            guard let image, let postSyncId else { return nil }
+            return try makeRecord(for: image, postSyncId: postSyncId, baseRecord: baseRecord)
+        case .style:
+            guard let syncId = CloudKitRecordName.syncId(from: entry.recordName, type: .style) else { return nil }
+            var style: PostStyle?
+            try AppDatabase.shared.dbWriter?.read { db in
+                style = try PostStyle
+                    .filter(Column(PostStyle.CodingKeys.syncId) == syncId)
+                    .fetchOne(db)
+            }
+            guard let style else { return nil }
+            return makeRecord(for: style, baseRecord: baseRecord)
+        case .decoration:
+            guard let syncId = CloudKitRecordName.syncId(from: entry.recordName, type: .decoration) else { return nil }
+            var decoration: PostDecoration?
+            var postSyncId: String?
+            var styleSyncId: String?
+            try AppDatabase.shared.dbWriter?.read { db in
+                decoration = try PostDecoration
+                    .filter(Column(PostDecoration.CodingKeys.syncId) == syncId)
+                    .fetchOne(db)
+                if let decoration {
+                    guard let post = try Post.fetchOne(db, id: decoration.postId) else {
+                        throw CloudKitOutboxBuildError(recordName: entry.recordName, reason: "parent post is missing")
+                    }
+                    guard let style = try PostStyle.fetchOne(db, id: decoration.styleId) else {
+                        throw CloudKitOutboxBuildError(recordName: entry.recordName, reason: "style is missing")
+                    }
+                    postSyncId = post.syncId
+                    styleSyncId = style.syncId
+                }
+            }
+            guard let decoration, let postSyncId, let styleSyncId else { return nil }
+            return makeRecord(for: decoration, postSyncId: postSyncId, styleSyncId: styleSyncId, baseRecord: baseRecord)
+        case .setting:
+            var record: CKRecord?
+            try AppDatabase.shared.dbWriter?.read { db in
+                record = try makeSettingsRecord(baseRecord: baseRecord, in: db)
+            }
+            return record
+        }
+    }
+
+    func cloudKitRecord(type: CloudKitRecordType, recordName: String, baseRecord: CKRecord?) -> CKRecord {
+        let record: CKRecord
+        if let baseRecord {
+            record = baseRecord
+        } else {
+            record = CKRecord(recordType: type.rawValue, recordID: CloudKitRecordName.recordID(recordName))
+        }
+        clearDeletionState(on: record)
+        return record
+    }
+
+    func makeRecord(for post: Post, baseRecord: CKRecord?) -> CKRecord {
+        let record = cloudKitRecord(type: .post, recordName: post.cloudKitRecordName, baseRecord: baseRecord)
+        set(post.syncId, for: Field.syncId, on: record)
+        set(post.creationTime, for: Field.creationTime, on: record)
+        set(post.modificationTime, for: Field.modificationTime, on: record)
+        set(post.expirationTime, for: Field.expirationTime, on: record)
+        set(post.actionLink, for: Field.actionLink, on: record)
+        set(post.isPinned, for: Field.isPinned, on: record)
+        set(post.order, for: Field.order, on: record)
+        return record
+    }
+
+    func makeRecord(for text: PostText, postSyncId: String, baseRecord: CKRecord?) -> CKRecord {
+        let record = cloudKitRecord(type: .text, recordName: text.cloudKitRecordName, baseRecord: baseRecord)
+        set(text.syncId, for: Field.syncId, on: record)
+        set(text.creationTime, for: Field.creationTime, on: record)
+        set(text.modificationTime, for: Field.modificationTime, on: record)
+        set(postSyncId, for: Field.postSyncId, on: record)
+        set(text.content, for: Field.content, on: record)
+        set(text.order, for: Field.order, on: record)
+        return record
+    }
+
+    func makeRecord(for image: PostImage, postSyncId: String, baseRecord: CKRecord?) throws -> CKRecord {
+        let originalURL = ImageCacheManager.shared.getURL(name: image.original, type: .original)
+        let processedURL = ImageCacheManager.shared.getURL(name: image.processed, type: .processed)
+        guard let originalURL, let processedURL else {
+            throw CloudKitOutboxBuildError(recordName: image.cloudKitRecordName, reason: "cached image files are missing")
+        }
+        let uploadAssetFiles = try temporaryUploadAssetFiles(for: image, originalURL: originalURL, processedURL: processedURL)
+
+        let record = cloudKitRecord(type: .image, recordName: image.cloudKitRecordName, baseRecord: baseRecord)
+        set(image.syncId, for: Field.syncId, on: record)
+        set(image.creationTime, for: Field.creationTime, on: record)
+        set(image.modificationTime, for: Field.modificationTime, on: record)
+        set(postSyncId, for: Field.postSyncId, on: record)
+        set(image.original, for: Field.originalFileName, on: record)
+        set(image.processed, for: Field.processedFileName, on: record)
+        set(image.orientation, for: Field.orientation, on: record)
+        set(image.minX, for: Field.minX, on: record)
+        set(image.minY, for: Field.minY, on: record)
+        set(image.maxX, for: Field.maxX, on: record)
+        set(image.maxY, for: Field.maxY, on: record)
+        set(image.order, for: Field.order, on: record)
+        record[Field.originalAsset] = CKAsset(fileURL: uploadAssetFiles.original)
+        record[Field.processedAsset] = CKAsset(fileURL: uploadAssetFiles.processed)
+        registerUploadAssetFiles(recordName: image.cloudKitRecordName, urls: [uploadAssetFiles.original, uploadAssetFiles.processed])
+        return record
+    }
+
+    func temporaryUploadAssetFiles(for image: PostImage, originalURL: URL, processedURL: URL) throws -> (original: URL, processed: URL) {
+        var copiedURLs: [URL] = []
+        do {
+            let originalAssetURL = try temporaryUploadAssetFile(from: originalURL, preferredFileName: "\(image.syncId)-original")
+            copiedURLs.append(originalAssetURL)
+            let processedAssetURL = try temporaryUploadAssetFile(from: processedURL, preferredFileName: "\(image.syncId)-processed")
+            copiedURLs.append(processedAssetURL)
+            return (originalAssetURL, processedAssetURL)
+        } catch {
+            for url in copiedURLs {
+                try? FileManager.default.removeItem(at: url)
+            }
+            throw error
+        }
+    }
+
+    func temporaryUploadAssetFile(from sourceURL: URL, preferredFileName: String) throws -> URL {
+        let directory = temporaryUploadAssetDirectory()
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let pathExtension = sourceURL.pathExtension
+        let baseName = URL(fileURLWithPath: preferredFileName).lastPathComponent
+        let fileName = pathExtension.isEmpty ? "\(baseName)-\(UUID().uuidString)" : "\(baseName)-\(UUID().uuidString).\(pathExtension)"
+        let destinationURL = directory.appendingPathComponent(fileName)
+        try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+        return destinationURL
+    }
+
+    func temporaryUploadAssetDirectory() -> URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("PinItCloudKitUploadAssets", isDirectory: true)
+    }
+
+    func cleanupTemporaryUploadAssetDirectory() {
+        try? FileManager.default.removeItem(at: temporaryUploadAssetDirectory())
+    }
+
+    func registerUploadAssetFiles(recordName: String, urls: [URL]) {
+        stateLock.lock()
+        uploadAssetFilesByRecordName[recordName, default: []].append(contentsOf: urls)
+        stateLock.unlock()
+    }
+
+    func cleanupUploadAssetFiles(for recordNames: [String]) {
+        guard !recordNames.isEmpty else { return }
+        stateLock.lock()
+        let urls = recordNames.flatMap { recordName in
+            uploadAssetFilesByRecordName.removeValue(forKey: recordName) ?? []
+        }
+        stateLock.unlock()
+        for url in urls {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    func cleanupAllUploadAssetFiles() {
+        stateLock.lock()
+        let urls = uploadAssetFilesByRecordName.values.flatMap { $0 }
+        uploadAssetFilesByRecordName.removeAll()
+        stateLock.unlock()
+        for url in urls {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    func makeRecord(for style: PostStyle, baseRecord: CKRecord?) -> CKRecord {
+        let record = cloudKitRecord(type: .style, recordName: style.cloudKitRecordName, baseRecord: baseRecord)
+        set(style.syncId, for: Field.syncId, on: record)
+        set(style.creationTime, for: Field.creationTime, on: record)
+        set(style.modificationTime, for: Field.modificationTime, on: record)
+        set(style.name, for: Field.name, on: record)
+        set(style.lockBackgroundColor, for: Field.lockBackgroundColor, on: record)
+        set(style.lockTextColor, for: Field.lockTextColor, on: record)
+        set(Int64(style.lockTextSize.rawValue), for: Field.lockTextSize, on: record)
+        set(Int64(style.lockTextAlignment.rawValue), for: Field.lockTextAlignment, on: record)
+        set(style.islandTextColor, for: Field.islandTextColor, on: record)
+        set(Int64(style.islandTextSize.rawValue), for: Field.islandTextSize, on: record)
+        set(Int64(style.islandTextAlignment.rawValue), for: Field.islandTextAlignment, on: record)
+        set(style.symbol, for: Field.symbol, on: record)
+        set(style.symbolColor, for: Field.symbolColor, on: record)
+        set(Int64(style.symbolAngle), for: Field.symbolAngle, on: record)
+        set(Int64(style.imageDisplayMode.rawValue), for: Field.imageDisplayMode, on: record)
+        set(Int64(style.controlAlpha), for: Field.controlAlpha, on: record)
+        return record
+    }
+
+    func makeRecord(for decoration: PostDecoration, postSyncId: String, styleSyncId: String, baseRecord: CKRecord?) -> CKRecord {
+        let record = cloudKitRecord(type: .decoration, recordName: decoration.cloudKitRecordName, baseRecord: baseRecord)
+        set(decoration.syncId, for: Field.syncId, on: record)
+        set(decoration.creationTime, for: Field.creationTime, on: record)
+        set(decoration.modificationTime, for: Field.modificationTime, on: record)
+        set(postSyncId, for: Field.postSyncId, on: record)
+        set(styleSyncId, for: Field.styleSyncId, on: record)
+        return record
+    }
+
+    func makeSettingsRecord(baseRecord: CKRecord?, in db: Database) throws -> CKRecord? {
+        let setting = try CloudKitSettingRecord.current(in: db)
+        if let defaultStyleSyncId = setting.defaultStyleSyncId {
+            guard try !OnboardingLocalRecord.isMarked(recordType: .style, syncId: defaultStyleSyncId, in: db) else {
+                return nil
+            }
+            let styleExists = try PostStyle
+                .filter(Column(PostStyle.CodingKeys.syncId) == defaultStyleSyncId)
+                .fetchCount(db) > 0
+            guard styleExists else { return nil }
+        }
+
+        let record = cloudKitRecord(type: .setting, recordName: CloudKitRecordName.settingsName, baseRecord: baseRecord)
+        set(setting.defaultStyleSyncId, for: Field.defaultStyleSyncId, on: record)
+        set(setting.defaultStyleModificationTime, for: Field.modificationTime, on: record)
+        return record
+    }
+
+    func makeDeletedRecord(for entry: CloudKitOutboxEntry, deletedRecordType: CloudKitRecordType, baseRecord: CKRecord?) -> CKRecord {
+        let record = cloudKitRecord(type: deletedRecordType, recordName: entry.recordName, baseRecord: baseRecord)
+        set(true, for: Field.isDeleted, on: record)
+        set(CloudKitRecordName.syncId(from: entry.recordName, type: deletedRecordType), for: Field.syncId, on: record)
+        set(deletedRecordType.rawValue, for: Field.deletedRecordType, on: record)
+        set(entry.recordName, for: Field.deletedRecordName, on: record)
+        set(entry.modificationTime, for: Field.deletionTime, on: record)
+        set(entry.modificationTime, for: Field.modificationTime, on: record)
+        clearPayloadFields(for: deletedRecordType, on: record)
+        return record
+    }
+
+    func clearDeletionState(on record: CKRecord) {
+        set(false, for: Field.isDeleted, on: record)
+        record[Field.deletedRecordType] = nil
+        record[Field.deletedRecordName] = nil
+        record[Field.deletionTime] = nil
+    }
+
+    func clearPayloadFields(for type: CloudKitRecordType, on record: CKRecord) {
+        switch type {
+        case .post:
+            record[Field.expirationTime] = nil
+            record[Field.actionLink] = nil
+            record[Field.isPinned] = nil
+            record[Field.order] = nil
+        case .text:
+            record[Field.postSyncId] = nil
+            record[Field.content] = nil
+            record[Field.order] = nil
+        case .image:
+            record[Field.postSyncId] = nil
+            record[Field.originalFileName] = nil
+            record[Field.processedFileName] = nil
+            record[Field.originalAsset] = nil
+            record[Field.processedAsset] = nil
+            record[Field.orientation] = nil
+            record[Field.minX] = nil
+            record[Field.minY] = nil
+            record[Field.maxX] = nil
+            record[Field.maxY] = nil
+            record[Field.order] = nil
+        case .style:
+            record[Field.name] = nil
+            record[Field.lockBackgroundColor] = nil
+            record[Field.lockTextColor] = nil
+            record[Field.lockTextSize] = nil
+            record[Field.lockTextAlignment] = nil
+            record[Field.islandTextColor] = nil
+            record[Field.islandTextSize] = nil
+            record[Field.islandTextAlignment] = nil
+            record[Field.symbol] = nil
+            record[Field.symbolColor] = nil
+            record[Field.symbolAngle] = nil
+            record[Field.imageDisplayMode] = nil
+            record[Field.controlAlpha] = nil
+        case .decoration:
+            record[Field.postSyncId] = nil
+            record[Field.styleSyncId] = nil
+        case .setting:
+            record[Field.defaultStyleSyncId] = nil
+        }
+    }
+}
+
+private extension CloudKitRecordSyncManager {
+    func applyRemoteChanges(_ changes: RemoteChangeSet, missingDependenciesAreOrphans: Bool, prunesMissingLocalRecords: Bool) throws {
+        let imageRecordNamesToStage = try imageRecordNamesToStage(changes)
+        var stagedImageAssets = try stageImageAssets(changes, allowedRecordNames: imageRecordNamesToStage)
+        let allStagedImageFiles = stagedImageAssets.values.flatMap(\.copiedFiles)
+        var deletedImageFiles: [(String, CacheImageType)] = []
+        var didChangeDatabase = false
+        var didApplyRemoteUserContent = false
+        var shouldRunOnboardingSetup = false
+        var hasDeferredRemoteRecords = false
+
+        do {
+            try AppDatabase.shared.dbWriter?.write { db in
+                try ensureSyncEnabled()
+                let pendingDeletes = try pendingDeleteOutboxByRecordName(in: db)
+                let localTombstones = try CloudKitLocalTombstone.allByRecordName(in: db)
+                if prunesMissingLocalRecords {
+                    try enqueueDeletesForLocalTombstonesThatBeatActiveRemoteRecords(
+                        changes,
+                        pendingDeletes: pendingDeletes,
+                        localTombstones: localTombstones,
+                        in: db
+                    )
+                }
+                let postIdBySyncIdBefore = try idMap(table: Post.databaseTableName, in: db)
+                let styleIdBySyncIdBefore = try idMap(table: PostStyle.databaseTableName, in: db)
+                let postModificationTimeBySyncIdBefore = try modificationTimeMap(table: Post.databaseTableName, in: db)
+                let styleModificationTimeBySyncIdBefore = try modificationTimeMap(table: PostStyle.databaseTableName, in: db)
+
+                for record in activeRemoteRecords(type: .style, changes: changes, pendingDeletes: pendingDeletes, localTombstones: localTombstones) {
+                    try ensureSyncEnabled()
+                    let didApply = try applyStyleRecord(record, in: db)
+                    if didApply {
+                        didChangeDatabase = true
+                        didApplyRemoteUserContent = true
+                    }
+                    try clearOutboxIfRemoteWins(record, in: db)
+                    try markServerRecordMetadata(record, type: .style, in: db)
+                    try clearLocalTombstone(recordName: record.recordID.recordName, in: db)
+                }
+                for record in activeRemoteRecords(type: .post, changes: changes, pendingDeletes: pendingDeletes, localTombstones: localTombstones) {
+                    try ensureSyncEnabled()
+                    let didApply = try applyPostRecord(record, in: db)
+                    if didApply {
+                        didChangeDatabase = true
+                        didApplyRemoteUserContent = true
+                    }
+                    try clearOutboxIfRemoteWins(record, in: db)
+                    try markServerRecordMetadata(record, type: .post, in: db)
+                    try clearLocalTombstone(recordName: record.recordID.recordName, in: db)
+                }
+
+                let postIdBySyncId = try idMap(table: Post.databaseTableName, in: db).merging(postIdBySyncIdBefore) { current, _ in current }
+                let styleIdBySyncId = try idMap(table: PostStyle.databaseTableName, in: db).merging(styleIdBySyncIdBefore) { current, _ in current }
+                let postModificationTimeBySyncId = try modificationTimeMap(table: Post.databaseTableName, in: db)
+                    .merging(postModificationTimeBySyncIdBefore) { current, _ in current }
+                let styleModificationTimeBySyncId = try modificationTimeMap(table: PostStyle.databaseTableName, in: db)
+                    .merging(styleModificationTimeBySyncIdBefore) { current, _ in current }
+
+                for record in activeRemoteRecords(type: .text, changes: changes, pendingDeletes: pendingDeletes, localTombstones: localTombstones) {
+                    try ensureSyncEnabled()
+                    let textApply = try applyTextRecord(
+                        record,
+                        postIdBySyncId: postIdBySyncId,
+                        postModificationTimeBySyncId: postModificationTimeBySyncId,
+                        changes: changes,
+                        localTombstones: localTombstones,
+                        missingDependenciesAreOrphans: missingDependenciesAreOrphans,
+                        in: db
+                    )
+                    if textApply.isDeferred {
+                        hasDeferredRemoteRecords = true
+                    }
+                    if textApply.didChangeDatabase {
+                        didChangeDatabase = true
+                        didApplyRemoteUserContent = true
+                    }
+                    if !textApply.isDeferred {
+                        try clearOutboxIfRemoteWins(record, in: db)
+                        try markServerRecordMetadata(record, type: .text, in: db)
+                        try clearLocalTombstone(recordName: record.recordID.recordName, in: db)
+                    }
+                    deletedImageFiles.append(contentsOf: textApply.deletedImageFiles)
+                }
+                for record in activeRemoteRecords(type: .image, changes: changes, pendingDeletes: pendingDeletes, localTombstones: localTombstones) {
+                    try ensureSyncEnabled()
+                    let imageApply = try applyImageRecord(
+                        record,
+                        postIdBySyncId: postIdBySyncId,
+                        postModificationTimeBySyncId: postModificationTimeBySyncId,
+                        changes: changes,
+                        localTombstones: localTombstones,
+                        missingDependenciesAreOrphans: missingDependenciesAreOrphans,
+                        stagedAssets: stagedImageAssets[record.recordID.recordName],
+                        in: db
+                    )
+                    if imageApply.isDeferred {
+                        hasDeferredRemoteRecords = true
+                    }
+                    if imageApply.didChangeDatabase {
+                        didChangeDatabase = true
+                        didApplyRemoteUserContent = true
+                        stagedImageAssets.removeValue(forKey: record.recordID.recordName)
+                    }
+                    if !imageApply.isDeferred {
+                        try clearOutboxIfRemoteWins(record, in: db)
+                        try markServerRecordMetadata(record, type: .image, in: db)
+                        try clearLocalTombstone(recordName: record.recordID.recordName, in: db)
+                    }
+                    deletedImageFiles.append(contentsOf: imageApply.deletedImageFiles)
+                }
+                for record in activeRemoteRecords(type: .decoration, changes: changes, pendingDeletes: pendingDeletes, localTombstones: localTombstones) {
+                    try ensureSyncEnabled()
+                    let decorationApply = try applyDecorationRecord(
+                        record,
+                        postIdBySyncId: postIdBySyncId,
+                        styleIdBySyncId: styleIdBySyncId,
+                        postModificationTimeBySyncId: postModificationTimeBySyncId,
+                        styleModificationTimeBySyncId: styleModificationTimeBySyncId,
+                        changes: changes,
+                        localTombstones: localTombstones,
+                        missingDependenciesAreOrphans: missingDependenciesAreOrphans,
+                        in: db
+                    )
+                    if decorationApply.isDeferred {
+                        hasDeferredRemoteRecords = true
+                    }
+                    if decorationApply.didChangeDatabase {
+                        didChangeDatabase = true
+                        didApplyRemoteUserContent = true
+                    }
+                    if !decorationApply.isDeferred {
+                        try clearOutboxIfRemoteWins(record, in: db)
+                        try markServerRecordMetadata(record, type: .decoration, in: db)
+                        try clearLocalTombstone(recordName: record.recordID.recordName, in: db)
+                    }
+                }
+
+                for tombstone in visibleRemoteTombstones(changes) {
+                    try ensureSyncEnabled()
+                    if tombstone.deletedRecordType == .post || tombstone.deletedRecordType == .style {
+                        shouldRunOnboardingSetup = true
+                    }
+                    try CloudKitLocalTombstone.store(
+                        recordType: tombstone.deletedRecordType,
+                        recordName: tombstone.deletedRecordName,
+                        deletionTime: tombstone.deletionTime,
+                        in: db
+                    )
+                    if let pendingDelete = pendingDeletes[tombstone.deletedRecordName],
+                       pendingDelete.modificationTime > tombstone.deletionTime {
+                        continue
+                    }
+                    let deletion = try applyTombstone(tombstone, in: db)
+                    if deletion.didChangeDatabase {
+                        didChangeDatabase = true
+                        deletedImageFiles.append(contentsOf: deletion.deletedImageFiles)
+                    }
+                    try markServerTombstoneMetadata(tombstone, in: db)
+                    try CloudKitOutboxEntry.clear(recordName: tombstone.deletedRecordName, modifiedBefore: tombstone.deletionTime, in: db)
+                }
+
+                let styleIdBySyncIdAfterDeletes = try idMap(table: PostStyle.databaseTableName, in: db)
+                let localTombstonesAfterDeletes = try CloudKitLocalTombstone.allByRecordName(in: db)
+                for record in activeRemoteRecords(type: .setting, changes: changes, pendingDeletes: pendingDeletes, localTombstones: localTombstonesAfterDeletes) {
+                    try ensureSyncEnabled()
+                    let didApply = try applySettingsRecord(
+                        record,
+                        styleIdBySyncId: styleIdBySyncIdAfterDeletes,
+                        styleModificationTimeBySyncId: try modificationTimeMap(table: PostStyle.databaseTableName, in: db),
+                        changes: changes,
+                        localTombstones: localTombstonesAfterDeletes,
+                        in: db
+                    )
+                    if didApply {
+                        didChangeDatabase = true
+                    }
+                    try clearOutboxIfRemoteWins(record, in: db)
+                    try markServerRecordMetadata(record, type: .setting, in: db)
+                    try clearLocalTombstone(recordName: record.recordID.recordName, in: db)
+                }
+                if try DefaultStyle.applyPendingCloudKitDefaultStyleIfPossible(styleIdBySyncId: styleIdBySyncIdAfterDeletes, in: db) {
+                    didChangeDatabase = true
+                }
+
+                if prunesMissingLocalRecords {
+                    let pruning = try pruneLocalRecordsMissingFromFullFetch(changes, in: db)
+                    if pruning.didChangeDatabase {
+                        didChangeDatabase = true
+                        deletedImageFiles.append(contentsOf: pruning.deletedImageFiles)
+                    }
+                    if try Post.fetchCount(db) == 0 || PostStyle.fetchCount(db) == 0 {
+                        shouldRunOnboardingSetup = true
+                    }
+                }
+
+                if didApplyRemoteUserContent {
+                    try ensureSyncEnabled()
+                    didChangeDatabase = try OnboardingManager.shared.removeLocalOnlyOnboardingData(in: db) || didChangeDatabase
+                    if try Post.fetchCount(db) == 0 || PostStyle.fetchCount(db) == 0 {
+                        shouldRunOnboardingSetup = true
+                    }
+                }
+
+                try ensureSyncEnabled()
+                if hasDeferredRemoteRecords {
+                    print("CloudKit sync deferred remote records until their dependencies arrive")
+                    requestFullFetchAfterCurrentSync()
+                }
+            }
+        } catch {
+            cleanupCopiedImageFiles(allStagedImageFiles)
+            throw error
+        }
+
+        cleanupCopiedImageFiles(stagedImageAssets.values.flatMap(\.copiedFiles))
+        for (fileName, type) in deletedImageFiles {
+            _ = ImageCacheManager.shared.deleteImage(fileName: fileName, type: type)
+        }
+
+        if shouldRunOnboardingSetup {
+            OnboardingManager.shared.requestOnboardingSeed()
+        }
+        if didChangeDatabase || shouldRunOnboardingSetup {
+            OnboardingManager.shared.setupOnboardingDataIfNeeded()
+            postCloudKitOriginatedUpdate(.DatabaseUpdated)
+        }
+    }
+
+    func pendingDeleteOutboxByRecordName(in db: Database) throws -> [String: CloudKitOutboxEntry] {
+        let entries = try CloudKitOutboxEntry
+            .filter(CloudKitOutboxEntry.Columns.operation == CloudKitOutboxEntry.Operation.delete.rawValue)
+            .fetchAll(db)
+        return Dictionary(uniqueKeysWithValues: entries.map { ($0.recordName, $0) })
+    }
+
+    func pendingSaveOutboxRecordNames(in db: Database) throws -> Set<String> {
+        let entries = try CloudKitOutboxEntry
+            .filter(CloudKitOutboxEntry.Columns.operation == CloudKitOutboxEntry.Operation.save.rawValue)
+            .fetchAll(db)
+        return Set(entries.map(\.recordName))
+    }
+
+    func remoteSnapshotRecordNames(_ changes: RemoteChangeSet) -> Set<String> {
+        var names = Set(visibleRemoteTombstones(changes).map(\.deletedRecordName))
+        for records in changes.activeRecordsByType.values {
+            names.formUnion(records.map(\.recordID.recordName))
+        }
+        return names
+    }
+
+    func activeSnapshotRecordNames(_ changes: RemoteChangeSet) -> Set<String> {
+        var names = Set<String>()
+        for records in changes.activeRecordsByType.values {
+            names.formUnion(records.map(\.recordID.recordName))
+        }
+        return names
+    }
+
+    func enqueueDeletesForLocalTombstonesThatBeatActiveRemoteRecords(
+        _ changes: RemoteChangeSet,
+        pendingDeletes: [String: CloudKitOutboxEntry],
+        localTombstones: [String: CloudKitLocalTombstone],
+        in db: Database
+    ) throws {
+        for (recordType, records) in changes.activeRecordsByType {
+            for record in records {
+                let recordName = record.recordID.recordName
+                guard let tombstone = localTombstones[recordName],
+                      tombstone.deletionTime >= modificationTime(of: record),
+                      (pendingDeletes[recordName]?.modificationTime ?? 0) < tombstone.deletionTime else {
+                    continue
+                }
+                try CloudKitOutboxEntry.enqueueDelete(
+                    recordType: recordType,
+                    recordName: recordName,
+                    deletionTime: tombstone.deletionTime,
+                    in: db
+                )
+            }
+        }
+    }
+
+    func visibleRemoteTombstones(_ changes: RemoteChangeSet) -> [RemoteTombstone] {
+        Array(changes.tombstonesByDeletedRecordName.values)
+    }
+
+    func pruneLocalRecordsMissingFromFullFetch(_ changes: RemoteChangeSet, in db: Database) throws -> (didChangeDatabase: Bool, deletedImageFiles: [(String, CacheImageType)]) {
+        let remoteRecordNames = remoteSnapshotRecordNames(changes)
+        let pendingSaveRecordNames = try pendingSaveOutboxRecordNames(in: db)
+        let defaultStyleSyncId = try CloudKitSettingRecord.current(in: db).defaultStyleSyncId
+        var didChangeDatabase = false
+        var deletedImageFiles: [(String, CacheImageType)] = []
+
+        func shouldPrune(_ recordName: String) -> Bool {
+            !remoteRecordNames.contains(recordName) && !pendingSaveRecordNames.contains(recordName)
+        }
+
+        for post in try Post.fetchAll(db) {
+            guard let postId = post.id else { continue }
+            let images = try PostImage
+                .filter(Column(PostImage.CodingKeys.postId) == postId)
+                .fetchAll(db)
+            let texts = try PostText
+                .filter(Column(PostText.CodingKeys.postId) == postId)
+                .fetchAll(db)
+            let decorations = try PostDecoration
+                .filter(Column(PostDecoration.CodingKeys.postId) == postId)
+                .fetchAll(db)
+            let graphRecordNames = [post.cloudKitRecordName]
+                + images.map(\.cloudKitRecordName)
+                + texts.map(\.cloudKitRecordName)
+                + decorations.map(\.cloudKitRecordName)
+            if graphRecordNames.contains(where: { pendingSaveRecordNames.contains($0) }) {
+                var graphModificationTime = post.modificationTime ?? 0
+                for image in images {
+                    graphModificationTime = max(graphModificationTime, image.modificationTime ?? 0)
+                }
+                for text in texts {
+                    graphModificationTime = max(graphModificationTime, text.modificationTime ?? 0)
+                }
+                for decoration in decorations {
+                    graphModificationTime = max(graphModificationTime, decoration.modificationTime ?? 0)
+                }
+                if graphModificationTime > (post.modificationTime ?? 0) {
+                    try Post
+                        .filter(Column(Post.CodingKeys.id) == postId)
+                        .updateAll(db, Column(Post.CodingKeys.modificationTime).set(to: graphModificationTime))
+                }
+                try CloudKitOutboxEntry.enqueueSave(recordType: .post, syncId: post.syncId, modificationTime: graphModificationTime, in: db)
+                continue
+            }
+            guard shouldPrune(post.cloudKitRecordName) else { continue }
+            try PostImage.deleteAll(db, ids: images.compactMap(\.id))
+            try PostText.deleteAll(db, ids: texts.compactMap(\.id))
+            try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
+            try Post.deleteAll(db, ids: [postId])
+            try OnboardingLocalRecord.unmark(recordType: .post, syncId: post.syncId, in: db)
+            try OnboardingLocalRecord.unmark(recordType: .image, syncIds: images.map(\.syncId), in: db)
+            try OnboardingLocalRecord.unmark(recordType: .text, syncIds: texts.map(\.syncId), in: db)
+            try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
+            deletedImageFiles.append(contentsOf: imageFiles(for: images))
+            didChangeDatabase = true
+        }
+
+        for image in try PostImage.fetchAll(db) where shouldPrune(image.cloudKitRecordName) {
+            guard let imageId = image.id else { continue }
+            try PostImage.deleteAll(db, ids: [imageId])
+            try OnboardingLocalRecord.unmark(recordType: .image, syncId: image.syncId, in: db)
+            deletedImageFiles.append(contentsOf: imageFiles(for: [image]))
+            didChangeDatabase = true
+        }
+
+        for text in try PostText.fetchAll(db) where shouldPrune(text.cloudKitRecordName) {
+            guard let textId = text.id else { continue }
+            try PostText.deleteAll(db, ids: [textId])
+            try OnboardingLocalRecord.unmark(recordType: .text, syncId: text.syncId, in: db)
+            didChangeDatabase = true
+        }
+
+        for decoration in try PostDecoration.fetchAll(db) where shouldPrune(decoration.cloudKitRecordName) {
+            guard let decorationId = decoration.id else { continue }
+            try PostDecoration.deleteAll(db, ids: [decorationId])
+            try OnboardingLocalRecord.unmark(recordType: .decoration, syncId: decoration.syncId, in: db)
+            didChangeDatabase = true
+        }
+
+        for style in try PostStyle.fetchAll(db) {
+            guard let styleId = style.id else { continue }
+            let decorations = try PostDecoration
+                .filter(Column(PostDecoration.CodingKeys.styleId) == styleId)
+                .fetchAll(db)
+            let graphRecordNames = [style.cloudKitRecordName] + decorations.map(\.cloudKitRecordName)
+            if graphRecordNames.contains(where: { pendingSaveRecordNames.contains($0) })
+                || (pendingSaveRecordNames.contains(CloudKitRecordName.settingsName) && defaultStyleSyncId == style.syncId) {
+                var graphModificationTime = style.modificationTime ?? 0
+                for decoration in decorations {
+                    graphModificationTime = max(graphModificationTime, decoration.modificationTime ?? 0)
+                }
+                if graphModificationTime > (style.modificationTime ?? 0) {
+                    try PostStyle
+                        .filter(Column(PostStyle.CodingKeys.id) == styleId)
+                        .updateAll(db, Column(PostStyle.CodingKeys.modificationTime).set(to: graphModificationTime))
+                }
+                try CloudKitOutboxEntry.enqueueSave(recordType: .style, syncId: style.syncId, modificationTime: graphModificationTime, in: db)
+                continue
+            }
+            guard shouldPrune(style.cloudKitRecordName) else { continue }
+            let fallbackStyle = try PostStyle
+                .filter(PostStyle.Columns.id != styleId)
+                .order(PostStyle.Columns.id.asc)
+                .fetchOne(db)
+            try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
+            try PostStyle.deleteAll(db, ids: [styleId])
+            _ = try DefaultStyle.replaceDeletedStyleIfNeeded(
+                deletedStyle: style,
+                fallbackStyle: fallbackStyle,
+                modificationTime: try db.transactionDate.nanoSecondSince1970,
+                in: db
+            )
+            try OnboardingLocalRecord.unmark(recordType: .style, syncId: style.syncId, in: db)
+            try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
+            didChangeDatabase = true
+        }
+
+        if !remoteRecordNames.contains(CloudKitRecordName.settingsName),
+           !pendingSaveRecordNames.contains(CloudKitRecordName.settingsName),
+           try DefaultStyle.clearCloudKitStateForMissingRemoteSetting(in: db) {
+            didChangeDatabase = true
+        }
+
+        return (didChangeDatabase, deletedImageFiles)
+    }
+
+    func activeRemoteRecords(
+        type: CloudKitRecordType,
+        changes: RemoteChangeSet,
+        pendingDeletes: [String: CloudKitOutboxEntry],
+        localTombstones: [String: CloudKitLocalTombstone]
+    ) -> [CKRecord] {
+        (changes.activeRecordsByType[type] ?? [])
+            .filter { record in
+            let recordName = record.recordID.recordName
+            let remoteModificationTime = modificationTime(of: record)
+            if let pendingDelete = pendingDeletes[recordName],
+               pendingDelete.modificationTime >= remoteModificationTime {
+                return false
+            }
+            guard let deletionTime = knownDeletionTime(
+                recordName: recordName,
+                changes: changes,
+                localTombstones: localTombstones
+            ) else {
+                return true
+            }
+            return remoteModificationTime > deletionTime
+        }
+    }
+
+    func knownDeletionTime(
+        recordName: String,
+        changes: RemoteChangeSet,
+        localTombstones: [String: CloudKitLocalTombstone]
+    ) -> Int64? {
+        let remoteDeletionTime = changes.tombstonesByDeletedRecordName[recordName]?.deletionTime
+        let localDeletionTime = localTombstones[recordName]?.deletionTime
+        switch (remoteDeletionTime, localDeletionTime) {
+        case (.some(let remote), .some(let local)):
+            return max(remote, local)
+        case (.some(let remote), .none):
+            return remote
+        case (.none, .some(let local)):
+            return local
+        case (.none, .none):
+            return nil
+        }
+    }
+
+    func dependencyState(
+        recordType: CloudKitRecordType,
+        syncId: String,
+        idBySyncId: [String: Int64],
+        modificationTimeBySyncId: [String: Int64],
+        remoteModificationTime: Int64,
+        changes: RemoteChangeSet,
+        localTombstones: [String: CloudKitLocalTombstone],
+        missingDependenciesAreOrphans: Bool
+    ) -> DependencyState {
+        let recordName = CloudKitRecordName.make(recordType, syncId: syncId)
+        let localId = idBySyncId[syncId]
+        if let deletionTime = knownDeletionTime(
+            recordName: recordName,
+            changes: changes,
+            localTombstones: localTombstones
+        ), localId == nil || deletionTime >= (modificationTimeBySyncId[syncId] ?? 0) {
+            return .deleted(max(deletionTime, remoteModificationTime))
+        }
+        guard let localId else {
+            return missingDependenciesAreOrphans ? .deleted(remoteModificationTime) : .missing
+        }
+        return .available(localId)
+    }
+
+    func idMap(table: String, in db: Database) throws -> [String: Int64] {
+        let rows = try Table(table)
+            .select(Column("id"), Column("sync_id"))
+            .filter(Column("sync_id") != nil)
+            .fetchAll(db)
+        var result: [String: Int64] = [:]
+        for row in rows {
+            let id: Int64 = row["id"]
+            let syncId: String = row["sync_id"]
+            result[syncId] = id
+        }
+        return result
+    }
+
+    func modificationTimeMap(table: String, in db: Database) throws -> [String: Int64] {
+        let rows = try Table(table)
+            .select(Column("sync_id"), Column("modification_time"))
+            .filter(Column("sync_id") != nil)
+            .fetchAll(db)
+        var result: [String: Int64] = [:]
+        for row in rows {
+            let syncId: String = row["sync_id"]
+            result[syncId] = row["modification_time"] ?? 0
+        }
+        return result
+    }
+
+    func clearOutboxIfRemoteWins(_ record: CKRecord, in db: Database) throws {
+        _ = try CloudKitOutboxEntry
+            .filter(
+                CloudKitOutboxEntry.Columns.recordName == record.recordID.recordName
+                && CloudKitOutboxEntry.Columns.modificationTime < modificationTime(of: record)
+            )
+            .deleteAll(db)
+    }
+
+    func clearLocalTombstone(recordName: String, in db: Database) throws {
+        _ = try CloudKitLocalTombstone
+            .filter(CloudKitLocalTombstone.Columns.recordName == recordName)
+            .deleteAll(db)
+    }
+
+    func markServerRecordMetadata(_ record: CKRecord, type: CloudKitRecordType, in db: Database) throws {
+        try CloudKitRecordMetadata.markServerRecord(
+            recordName: record.recordID.recordName,
+            recordType: type,
+            aggregateType: type == .setting ? .setting : .record,
+            aggregateName: record.recordID.recordName,
+            serverChangeTag: record.recordChangeTag,
+            version: modificationTime(of: record),
+            isDeleted: false,
+            in: db
+        )
+    }
+
+    func markServerTombstoneMetadata(_ tombstone: RemoteTombstone, in db: Database) throws {
+        try CloudKitRecordMetadata.markServerRecord(
+            recordName: tombstone.deletedRecordName,
+            recordType: tombstone.deletedRecordType,
+            aggregateType: .record,
+            aggregateName: tombstone.deletedRecordName,
+            serverChangeTag: nil,
+            version: tombstone.deletionTime,
+            isDeleted: true,
+            in: db
+        )
+    }
+}
+
+private extension CloudKitRecordSyncManager {
+    func applyStyleRecord(_ record: CKRecord, in db: Database) throws -> Bool {
+        guard let syncId = stringValue(Field.syncId, in: record),
+              let name = stringValue(Field.name, in: record),
+              let lockTextSizeRaw = intValue(Field.lockTextSize, in: record),
+              let lockTextAlignmentRaw = intValue(Field.lockTextAlignment, in: record),
+              let islandTextSizeRaw = intValue(Field.islandTextSize, in: record),
+              let islandTextAlignmentRaw = intValue(Field.islandTextAlignment, in: record),
+              let symbol = stringValue(Field.symbol, in: record),
+              let symbolAngle = intValue(Field.symbolAngle, in: record),
+              let imageDisplayModeRaw = intValue(Field.imageDisplayMode, in: record),
+              let controlAlpha = intValue(Field.controlAlpha, in: record) else {
+            print("CloudKit style import skipped because required fields are missing: \(record.recordID.recordName)")
+            return false
+        }
+        let existing = try PostStyle
+            .filter(Column(PostStyle.CodingKeys.syncId) == syncId)
+            .fetchOne(db)
+        let remoteModificationTime = modificationTime(of: record)
+        guard existing == nil || remoteModificationTime > (existing?.modificationTime ?? 0) else { return false }
+
+        var style = PostStyle(
+            name: name,
+            lockBackgroundColor: stringValue(Field.lockBackgroundColor, in: record),
+            lockTextColor: stringValue(Field.lockTextColor, in: record),
+            lockTextSize: PostTextSize(rawValue: lockTextSizeRaw) ?? .automatic,
+            lockTextAlignment: PostTextAlignment(rawValue: lockTextAlignmentRaw) ?? .center,
+            islandTextColor: stringValue(Field.islandTextColor, in: record),
+            islandTextSize: PostTextSize(rawValue: islandTextSizeRaw) ?? .automatic,
+            islandTextAlignment: PostTextAlignment(rawValue: islandTextAlignmentRaw) ?? .center,
+            symbol: symbol,
+            symbolColor: stringValue(Field.symbolColor, in: record),
+            symbolAngle: symbolAngle,
+            imageDisplayMode: PostImageDisplayMode(rawValue: imageDisplayModeRaw) ?? .aspectFit,
+            controlAlpha: controlAlpha
+        )
+        style.id = existing?.id
+        style.syncId = syncId
+        style.creationTime = int64Value(Field.creationTime, in: record) ?? existing?.creationTime
+        style.modificationTime = remoteModificationTime
+        try style.save(db)
+        return true
+    }
+
+    func applyPostRecord(_ record: CKRecord, in db: Database) throws -> Bool {
+        guard let syncId = stringValue(Field.syncId, in: record),
+              let isPinned = boolValue(Field.isPinned, in: record),
+              let order = int64Value(Field.order, in: record) else {
+            print("CloudKit post import skipped because required fields are missing: \(record.recordID.recordName)")
+            return false
+        }
+        let existing = try Post
+            .filter(Column(Post.CodingKeys.syncId) == syncId)
+            .fetchOne(db)
+        let remoteModificationTime = modificationTime(of: record)
+        guard existing == nil || remoteModificationTime > (existing?.modificationTime ?? 0) else { return false }
+
+        var post = Post(
+            expirationTime: int64Value(Field.expirationTime, in: record),
+            actionLink: stringValue(Field.actionLink, in: record) ?? "",
+            isPinned: isPinned,
+            order: order
+        )
+        post.id = existing?.id
+        post.syncId = syncId
+        post.creationTime = int64Value(Field.creationTime, in: record) ?? existing?.creationTime
+        post.modificationTime = remoteModificationTime
+        try post.save(db)
+        if post.isPinned, MaxPinnedPosts.current == .one {
+            try unpinOtherPinnedPostsForRemoteAppliedPost(syncId: syncId, modificationTime: remoteModificationTime, in: db)
+        }
+        return true
+    }
+
+    func applyTextRecord(
+        _ record: CKRecord,
+        postIdBySyncId: [String: Int64],
+        postModificationTimeBySyncId: [String: Int64],
+        changes: RemoteChangeSet,
+        localTombstones: [String: CloudKitLocalTombstone],
+        missingDependenciesAreOrphans: Bool,
+        in db: Database
+    ) throws -> (didChangeDatabase: Bool, isDeferred: Bool, deletedImageFiles: [(String, CacheImageType)]) {
+        guard let syncId = stringValue(Field.syncId, in: record),
+              let postSyncId = stringValue(Field.postSyncId, in: record),
+              let content = stringValue(Field.content, in: record),
+              let order = int64Value(Field.order, in: record) else {
+            print("CloudKit text import skipped because required fields are missing: \(record.recordID.recordName)")
+            return (false, false, [])
+        }
+        let remoteModificationTime = modificationTime(of: record)
+        let postId: Int64
+        switch dependencyState(
+            recordType: .post,
+            syncId: postSyncId,
+            idBySyncId: postIdBySyncId,
+            modificationTimeBySyncId: postModificationTimeBySyncId,
+            remoteModificationTime: remoteModificationTime,
+            changes: changes,
+            localTombstones: localTombstones,
+            missingDependenciesAreOrphans: missingDependenciesAreOrphans
+        ) {
+        case .available(let id):
+            postId = id
+        case .deleted(let deletionTime):
+            try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: syncId, deletionTime: deletionTime, in: db)
+            return (false, false, [])
+        case .missing:
+            return (false, true, [])
+        }
+        let existing = try PostText
+            .filter(Column(PostText.CodingKeys.syncId) == syncId)
+            .fetchOne(db)
+        guard existing == nil || remoteModificationTime > (existing?.modificationTime ?? 0) else { return (false, false, []) }
+
+        let images = try PostImage
+            .filter(Column(PostImage.CodingKeys.postId) == postId)
+            .fetchAll(db)
+        if let latestImageModificationTime = images.map({ $0.modificationTime ?? 0 }).max(),
+           latestImageModificationTime > remoteModificationTime {
+            try enqueueCloudKitDeleteIfNeeded(
+                recordType: .text,
+                syncId: syncId,
+                deletionTime: latestImageModificationTime,
+                in: db
+            )
+            return (false, false, [])
+        }
+        for image in images {
+            try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, deletionTime: remoteModificationTime, in: db)
+        }
+        try PostImage.deleteAll(db, ids: images.compactMap(\.id))
+        try OnboardingLocalRecord.unmark(recordType: .image, syncIds: images.map(\.syncId), in: db)
+
+        var text = PostText(
+            postId: postId,
+            content: content,
+            order: order
+        )
+        text.id = existing?.id
+        text.syncId = syncId
+        text.creationTime = int64Value(Field.creationTime, in: record) ?? existing?.creationTime
+        text.modificationTime = remoteModificationTime
+        try text.save(db)
+        return (true, false, imageFiles(for: images))
+    }
+
+    func applyImageRecord(
+        _ record: CKRecord,
+        postIdBySyncId: [String: Int64],
+        postModificationTimeBySyncId: [String: Int64],
+        changes: RemoteChangeSet,
+        localTombstones: [String: CloudKitLocalTombstone],
+        missingDependenciesAreOrphans: Bool,
+        stagedAssets: StagedImageAssets?,
+        in db: Database
+    ) throws -> (didChangeDatabase: Bool, isDeferred: Bool, deletedImageFiles: [(String, CacheImageType)]) {
+        guard let syncId = stringValue(Field.syncId, in: record),
+              let postSyncId = stringValue(Field.postSyncId, in: record),
+              let orientation = int64Value(Field.orientation, in: record),
+              let minX = int64Value(Field.minX, in: record),
+              let minY = int64Value(Field.minY, in: record),
+              let maxX = int64Value(Field.maxX, in: record),
+              let maxY = int64Value(Field.maxY, in: record),
+              let order = int64Value(Field.order, in: record) else {
+            print("CloudKit image import skipped because required fields are missing: \(record.recordID.recordName)")
+            return (false, false, [])
+        }
+        let remoteModificationTime = modificationTime(of: record)
+        let postId: Int64
+        switch dependencyState(
+            recordType: .post,
+            syncId: postSyncId,
+            idBySyncId: postIdBySyncId,
+            modificationTimeBySyncId: postModificationTimeBySyncId,
+            remoteModificationTime: remoteModificationTime,
+            changes: changes,
+            localTombstones: localTombstones,
+            missingDependenciesAreOrphans: missingDependenciesAreOrphans
+        ) {
+        case .available(let id):
+            postId = id
+        case .deleted(let deletionTime):
+            try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: syncId, deletionTime: deletionTime, in: db)
+            return (false, false, [])
+        case .missing:
+            return (false, true, [])
+        }
+        let existing = try PostImage
+            .filter(Column(PostImage.CodingKeys.syncId) == syncId)
+            .fetchOne(db)
+        guard existing == nil || remoteModificationTime > (existing?.modificationTime ?? 0) else { return (false, false, []) }
+
+        let texts = try PostText
+            .filter(Column(PostText.CodingKeys.postId) == postId)
+            .fetchAll(db)
+        if let latestTextModificationTime = texts.map({ $0.modificationTime ?? 0 }).max(),
+           latestTextModificationTime > remoteModificationTime {
+            try enqueueCloudKitDeleteIfNeeded(
+                recordType: .image,
+                syncId: syncId,
+                deletionTime: latestTextModificationTime,
+                in: db
+            )
+            return (false, false, [])
+        }
+        for text in texts {
+            try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, deletionTime: remoteModificationTime, in: db)
+        }
+        try PostText.deleteAll(db, ids: texts.compactMap(\.id))
+        try OnboardingLocalRecord.unmark(recordType: .text, syncIds: texts.map(\.syncId), in: db)
+
+        let remoteOriginalFileName = stringValue(Field.originalFileName, in: record)
+        let remoteProcessedFileName = stringValue(Field.processedFileName, in: record)
+        let hasExistingOriginalFile = existing.map { ImageCacheManager.shared.getURL(name: $0.original, type: .original) != nil } ?? false
+        let hasExistingProcessedFile = existing.map { ImageCacheManager.shared.getURL(name: $0.processed, type: .processed) != nil } ?? false
+        let needsOriginalAsset = existing == nil
+        || (remoteOriginalFileName != nil && remoteOriginalFileName != existing?.original)
+        || !hasExistingOriginalFile
+        let needsProcessedAsset = existing == nil
+        || (remoteProcessedFileName != nil && remoteProcessedFileName != existing?.processed)
+        || !hasExistingProcessedFile
+
+        if (needsOriginalAsset && stagedAssets?.originalName == nil)
+            || (needsProcessedAsset && stagedAssets?.processedName == nil) {
+            print("CloudKit image import skipped because assets are incomplete: \(record.recordID.recordName)")
+            CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.imageAssetMissing"))
+            return (false, false, [])
+        }
+
+        guard let originalName = stagedAssets?.originalName ?? remoteOriginalFileName ?? existing?.original,
+              let processedName = stagedAssets?.processedName ?? remoteProcessedFileName ?? existing?.processed else {
+            return (false, false, [])
+        }
+
+        var image = PostImage(
+            postId: postId,
+            original: originalName,
+            processed: processedName,
+            orientation: orientation,
+            minX: minX,
+            minY: minY,
+            maxX: maxX,
+            maxY: maxY,
+            order: order
+        )
+        image.id = existing?.id
+        image.syncId = syncId
+        image.creationTime = int64Value(Field.creationTime, in: record) ?? existing?.creationTime
+        image.modificationTime = remoteModificationTime
+        try image.save(db)
+
+        var deletedImageFiles: [(String, CacheImageType)] = []
+        if let existing, existing.original != originalName {
+            deletedImageFiles.append((existing.original, .original))
+        }
+        if let existing, existing.processed != processedName {
+            deletedImageFiles.append((existing.processed, .processed))
+        }
+        return (true, false, deletedImageFiles)
+    }
+
+    func applyDecorationRecord(
+        _ record: CKRecord,
+        postIdBySyncId: [String: Int64],
+        styleIdBySyncId: [String: Int64],
+        postModificationTimeBySyncId: [String: Int64],
+        styleModificationTimeBySyncId: [String: Int64],
+        changes: RemoteChangeSet,
+        localTombstones: [String: CloudKitLocalTombstone],
+        missingDependenciesAreOrphans: Bool,
+        in db: Database
+    ) throws -> (didChangeDatabase: Bool, isDeferred: Bool) {
+        guard let syncId = stringValue(Field.syncId, in: record),
+              let postSyncId = stringValue(Field.postSyncId, in: record),
+              let styleSyncId = stringValue(Field.styleSyncId, in: record) else {
+            return (false, false)
+        }
+        let remoteModificationTime = modificationTime(of: record)
+        let postState = dependencyState(
+            recordType: .post,
+            syncId: postSyncId,
+            idBySyncId: postIdBySyncId,
+            modificationTimeBySyncId: postModificationTimeBySyncId,
+            remoteModificationTime: remoteModificationTime,
+            changes: changes,
+            localTombstones: localTombstones,
+            missingDependenciesAreOrphans: missingDependenciesAreOrphans
+        )
+        let styleState = dependencyState(
+            recordType: .style,
+            syncId: styleSyncId,
+            idBySyncId: styleIdBySyncId,
+            modificationTimeBySyncId: styleModificationTimeBySyncId,
+            remoteModificationTime: remoteModificationTime,
+            changes: changes,
+            localTombstones: localTombstones,
+            missingDependenciesAreOrphans: missingDependenciesAreOrphans
+        )
+
+        let postId: Int64
+        let styleId: Int64
+        switch (postState, styleState) {
+        case (.available(let resolvedPostId), .available(let resolvedStyleId)):
+            postId = resolvedPostId
+            styleId = resolvedStyleId
+        case (.deleted(let deletionTime), _), (_, .deleted(let deletionTime)):
+            try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: syncId, deletionTime: deletionTime, in: db)
+            return (false, false)
+        case (.missing, _), (_, .missing):
+            return (false, true)
+        }
+        let existing = try PostDecoration
+            .filter(Column(PostDecoration.CodingKeys.syncId) == syncId)
+            .fetchOne(db)
+        guard existing == nil || remoteModificationTime > (existing?.modificationTime ?? 0) else { return (false, false) }
+
+        let conflictingDecorations = try PostDecoration
+            .filter(Column(PostDecoration.CodingKeys.postId) == postId && Column(PostDecoration.CodingKeys.syncId) != syncId)
+            .fetchAll(db)
+        if let latestDecorationModificationTime = conflictingDecorations.map({ $0.modificationTime ?? 0 }).max(),
+           latestDecorationModificationTime > remoteModificationTime {
+            try enqueueCloudKitDeleteIfNeeded(
+                recordType: .decoration,
+                syncId: syncId,
+                deletionTime: latestDecorationModificationTime,
+                in: db
+            )
+            return (false, false)
+        }
+        for decoration in conflictingDecorations {
+            try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: remoteModificationTime, in: db)
+        }
+        try PostDecoration.deleteAll(db, ids: conflictingDecorations.compactMap(\.id))
+        try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: conflictingDecorations.map(\.syncId), in: db)
+
+        var decoration = PostDecoration(styleId: styleId, postId: postId)
+        decoration.id = existing?.id
+        decoration.syncId = syncId
+        decoration.creationTime = int64Value(Field.creationTime, in: record) ?? existing?.creationTime
+        decoration.modificationTime = remoteModificationTime
+        try decoration.save(db)
+        return (true, false)
+    }
+
+    func applySettingsRecord(
+        _ record: CKRecord,
+        styleIdBySyncId: [String: Int64],
+        styleModificationTimeBySyncId: [String: Int64],
+        changes: RemoteChangeSet,
+        localTombstones: [String: CloudKitLocalTombstone],
+        in db: Database
+    ) throws -> Bool {
+        guard record.recordID.recordName == CloudKitRecordName.settingsName else {
+            return false
+        }
+        let remoteModificationTime = modificationTime(of: record)
+        guard let defaultStyleSyncId = stringValue(Field.defaultStyleSyncId, in: record) else {
+            return try DefaultStyle.clearCloudKitDefaultStyle(
+                modificationTime: remoteModificationTime,
+                in: db
+            )
+        }
+        switch dependencyState(
+            recordType: .style,
+            syncId: defaultStyleSyncId,
+            idBySyncId: styleIdBySyncId,
+            modificationTimeBySyncId: styleModificationTimeBySyncId,
+            remoteModificationTime: remoteModificationTime,
+            changes: changes,
+            localTombstones: localTombstones,
+            missingDependenciesAreOrphans: false
+        ) {
+        case .available(let styleId):
+            return try DefaultStyle.applyCloudKitDefaultStyle(
+                syncId: defaultStyleSyncId,
+                localId: styleId,
+                modificationTime: remoteModificationTime,
+                in: db
+            )
+        case .deleted(_):
+            return try DefaultStyle.clearPendingCloudKitDefaultStyleIfNeeded(syncId: defaultStyleSyncId, in: db)
+        case .missing:
+            return try DefaultStyle.storePendingCloudKitDefaultStyle(
+                syncId: defaultStyleSyncId,
+                modificationTime: remoteModificationTime,
+                in: db
+            )
+        }
+    }
+
+    func enqueueCloudKitDeleteIfNeeded(recordType: CloudKitRecordType, syncId: String, deletionTime: Int64, in db: Database) throws {
+        guard try !OnboardingLocalRecord.isMarked(recordType: recordType, syncId: syncId, in: db) else { return }
+        try CloudKitOutboxEntry.enqueueDelete(recordType: recordType, syncId: syncId, deletionTime: deletionTime, in: db)
+    }
+
+    func enqueueCloudKitSaveIfNeeded(recordType: CloudKitRecordType, syncId: String, modificationTime: Int64?, in db: Database) throws {
+        guard try !OnboardingLocalRecord.isMarked(recordType: recordType, syncId: syncId, in: db) else { return }
+        try CloudKitOutboxEntry.enqueueSave(recordType: recordType, syncId: syncId, modificationTime: modificationTime, in: db)
+    }
+
+    func enqueuePostGraphSaveIfNeeded(postId: Int64, modificationTime: Int64?, in db: Database) throws {
+        guard let post = try Post.fetchOne(db, id: postId),
+              try !OnboardingLocalRecord.isMarked(recordType: .post, syncId: post.syncId, in: db) else { return }
+        try CloudKitOutboxEntry.enqueuePostGraphSave(postId: postId, modificationTime: modificationTime, in: db)
+    }
+
+    func enqueueStyleGraphSaveIfNeeded(styleId: Int64, modificationTime: Int64?, in db: Database) throws {
+        guard let style = try PostStyle.fetchOne(db, id: styleId),
+              try !OnboardingLocalRecord.isMarked(recordType: .style, syncId: style.syncId, in: db) else { return }
+        try CloudKitOutboxEntry.enqueueStyleGraphSave(styleId: styleId, modificationTime: modificationTime, in: db)
+    }
+
+    func unpinOtherPinnedPostsForRemoteAppliedPost(syncId: String, modificationTime: Int64, in db: Database) throws {
+        let pinnedPosts = try Post
+            .filter(Post.Columns.isPinned == true && Post.Columns.syncId != syncId)
+            .order(Post.Columns.order.asc)
+            .fetchAll(db)
+        guard !pinnedPosts.isEmpty else { return }
+
+        let firstOrder = try Int64.fetchOne(
+            db,
+            sql: #"SELECT COALESCE(MAX("order"), -1) + 1 FROM post WHERE is_pinned = 0"#
+        ) ?? 0
+        for (index, pinnedPost) in pinnedPosts.enumerated() {
+            guard let postId = pinnedPost.id else { continue }
+            let derivedModificationTime = max(
+                try db.transactionDate.nanoSecondSince1970,
+                modificationTime + Int64(index) + 1
+            )
+            try Post
+                .filter(Column(Post.CodingKeys.id) == postId)
+                .updateAll(
+                    db,
+                    Column(Post.CodingKeys.isPinned).set(to: false),
+                    Column(Post.CodingKeys.order).set(to: firstOrder + Int64(index)),
+                    Column(Post.CodingKeys.modificationTime).set(to: derivedModificationTime)
+                )
+            try enqueueCloudKitSaveIfNeeded(
+                recordType: .post,
+                syncId: pinnedPost.syncId,
+                modificationTime: derivedModificationTime,
+                in: db
+            )
+        }
+    }
+}
+
+private extension CloudKitRecordSyncManager {
+    func applyTombstone(_ tombstone: RemoteTombstone, in db: Database) throws -> (didChangeDatabase: Bool, deletedImageFiles: [(String, CacheImageType)]) {
+        switch tombstone.deletedRecordType {
+        case .post:
+            guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .post),
+                  let post = try Post.filter(Column(Post.CodingKeys.syncId) == syncId).fetchOne(db),
+                  let postId = post.id else {
+                return (false, [])
+            }
+            let images = try PostImage
+                .filter(Column(PostImage.CodingKeys.postId) == postId)
+                .fetchAll(db)
+            let texts = try PostText
+                .filter(Column(PostText.CodingKeys.postId) == postId)
+                .fetchAll(db)
+            let decorations = try PostDecoration
+                .filter(Column(PostDecoration.CodingKeys.postId) == postId)
+                .fetchAll(db)
+            var graphModificationTime = post.modificationTime ?? 0
+            for image in images {
+                graphModificationTime = max(graphModificationTime, image.modificationTime ?? 0)
+            }
+            for text in texts {
+                graphModificationTime = max(graphModificationTime, text.modificationTime ?? 0)
+            }
+            for decoration in decorations {
+                graphModificationTime = max(graphModificationTime, decoration.modificationTime ?? 0)
+            }
+            guard tombstone.deletionTime >= graphModificationTime else {
+                if graphModificationTime > (post.modificationTime ?? 0) {
+                    try Post
+                        .filter(Column(Post.CodingKeys.id) == postId)
+                        .updateAll(db, Column(Post.CodingKeys.modificationTime).set(to: graphModificationTime))
+                }
+                try CloudKitOutboxEntry.enqueueSave(recordType: .post, syncId: post.syncId, modificationTime: graphModificationTime, in: db)
+                return (false, [])
+            }
+            for image in images {
+                try CloudKitLocalTombstone.store(recordType: .image, recordName: image.cloudKitRecordName, deletionTime: tombstone.deletionTime, in: db)
+                try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, deletionTime: tombstone.deletionTime, in: db)
+            }
+            for text in texts {
+                try CloudKitLocalTombstone.store(recordType: .text, recordName: text.cloudKitRecordName, deletionTime: tombstone.deletionTime, in: db)
+                try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, deletionTime: tombstone.deletionTime, in: db)
+            }
+            for decoration in decorations {
+                try CloudKitLocalTombstone.store(recordType: .decoration, recordName: decoration.cloudKitRecordName, deletionTime: tombstone.deletionTime, in: db)
+                try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: tombstone.deletionTime, in: db)
+            }
+            try PostImage.deleteAll(db, ids: images.compactMap(\.id))
+            try PostText.deleteAll(db, ids: texts.compactMap(\.id))
+            try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
+            try Post.deleteAll(db, ids: [postId])
+            try OnboardingLocalRecord.unmark(recordType: .post, syncId: post.syncId, in: db)
+            try OnboardingLocalRecord.unmark(recordType: .image, syncIds: images.map(\.syncId), in: db)
+            try OnboardingLocalRecord.unmark(recordType: .text, syncIds: texts.map(\.syncId), in: db)
+            try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
+            return (true, imageFiles(for: images))
+        case .text:
+            guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .text),
+                  let text = try PostText.filter(Column(PostText.CodingKeys.syncId) == syncId).fetchOne(db),
+                  let textId = text.id else {
+                return (false, [])
+            }
+            guard tombstone.deletionTime >= (text.modificationTime ?? 0) else {
+                try enqueueCloudKitSaveIfNeeded(recordType: .text, syncId: text.syncId, modificationTime: text.modificationTime, in: db)
+                try enqueuePostGraphSaveIfNeeded(postId: text.postId, modificationTime: text.modificationTime, in: db)
+                return (false, [])
+            }
+            try bumpPostGraphForAppliedChildDelete(postId: text.postId, modificationTime: tombstone.deletionTime, in: db)
+            try PostText.deleteAll(db, ids: [textId])
+            try OnboardingLocalRecord.unmark(recordType: .text, syncId: text.syncId, in: db)
+            return (true, [])
+        case .image:
+            guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .image),
+                  let image = try PostImage.filter(Column(PostImage.CodingKeys.syncId) == syncId).fetchOne(db),
+                  let imageId = image.id else {
+                return (false, [])
+            }
+            guard tombstone.deletionTime >= (image.modificationTime ?? 0) else {
+                try enqueueCloudKitSaveIfNeeded(recordType: .image, syncId: image.syncId, modificationTime: image.modificationTime, in: db)
+                try enqueuePostGraphSaveIfNeeded(postId: image.postId, modificationTime: image.modificationTime, in: db)
+                return (false, [])
+            }
+            try bumpPostGraphForAppliedChildDelete(postId: image.postId, modificationTime: tombstone.deletionTime, in: db)
+            try PostImage.deleteAll(db, ids: [imageId])
+            try OnboardingLocalRecord.unmark(recordType: .image, syncId: image.syncId, in: db)
+            return (true, imageFiles(for: [image]))
+        case .style:
+            guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .style) else {
+                return (false, [])
+            }
+            let didClearPendingDefaultStyle = try DefaultStyle.clearPendingCloudKitDefaultStyleIfNeeded(syncId: syncId, in: db)
+            guard let style = try PostStyle.filter(Column(PostStyle.CodingKeys.syncId) == syncId).fetchOne(db),
+                  let styleId = style.id else {
+                return (didClearPendingDefaultStyle, [])
+            }
+            let decorations = try PostDecoration
+                .filter(Column(PostDecoration.CodingKeys.styleId) == styleId)
+                .fetchAll(db)
+            var graphModificationTime = style.modificationTime ?? 0
+            for decoration in decorations {
+                graphModificationTime = max(graphModificationTime, decoration.modificationTime ?? 0)
+            }
+            guard tombstone.deletionTime >= graphModificationTime else {
+                if graphModificationTime > (style.modificationTime ?? 0) {
+                    try PostStyle
+                        .filter(Column(PostStyle.CodingKeys.id) == styleId)
+                        .updateAll(db, Column(PostStyle.CodingKeys.modificationTime).set(to: graphModificationTime))
+                }
+                try CloudKitOutboxEntry.enqueueSave(recordType: .style, syncId: style.syncId, modificationTime: graphModificationTime, in: db)
+                return (didClearPendingDefaultStyle, [])
+            }
+            let fallbackStyle = try PostStyle
+                .filter(PostStyle.Columns.id != styleId)
+                .order(PostStyle.Columns.id.asc)
+                .fetchOne(db)
+            for decoration in decorations {
+                try CloudKitLocalTombstone.store(recordType: .decoration, recordName: decoration.cloudKitRecordName, deletionTime: tombstone.deletionTime, in: db)
+                try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: tombstone.deletionTime, in: db)
+            }
+            try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
+            try PostStyle.deleteAll(db, ids: [styleId])
+            if try DefaultStyle.replaceDeletedStyleIfNeeded(
+                deletedStyle: style,
+                fallbackStyle: fallbackStyle,
+                modificationTime: tombstone.deletionTime,
+                in: db
+            ) {
+                try CloudKitOutboxEntry.enqueueSetting(modificationTime: tombstone.deletionTime, in: db)
+            }
+            try OnboardingLocalRecord.unmark(recordType: .style, syncId: style.syncId, in: db)
+            try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
+            return (true, [])
+        case .decoration:
+            guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .decoration),
+                  let decoration = try PostDecoration.filter(Column(PostDecoration.CodingKeys.syncId) == syncId).fetchOne(db),
+                  let decorationId = decoration.id else {
+                return (false, [])
+            }
+            guard tombstone.deletionTime >= (decoration.modificationTime ?? 0) else {
+                try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
+                try enqueuePostGraphSaveIfNeeded(postId: decoration.postId, modificationTime: decoration.modificationTime, in: db)
+                try enqueueStyleGraphSaveIfNeeded(styleId: decoration.styleId, modificationTime: decoration.modificationTime, in: db)
+                return (false, [])
+            }
+            try bumpPostGraphForAppliedChildDelete(postId: decoration.postId, modificationTime: tombstone.deletionTime, in: db)
+            try bumpStyleGraphForAppliedChildDelete(styleId: decoration.styleId, modificationTime: tombstone.deletionTime, in: db)
+            try PostDecoration.deleteAll(db, ids: [decorationId])
+            try OnboardingLocalRecord.unmark(recordType: .decoration, syncId: decoration.syncId, in: db)
+            return (true, [])
+        case .setting:
+            let setting = try CloudKitSettingRecord.current(in: db)
+            guard tombstone.deletedRecordName == CloudKitRecordName.settingsName,
+                  tombstone.deletionTime >= setting.defaultStyleModificationTime else {
+                return (false, [])
+            }
+            return (try DefaultStyle.clearCloudKitStateForMissingRemoteSetting(in: db), [])
+        }
+    }
+
+    func bumpPostGraphForAppliedChildDelete(postId: Int64, modificationTime: Int64, in db: Database) throws {
+        guard let post = try Post.fetchOne(db, id: postId) else { return }
+        if (post.modificationTime ?? 0) < modificationTime {
+            try Post
+                .filter(Column(Post.CodingKeys.id) == postId)
+                .updateAll(db, Column(Post.CodingKeys.modificationTime).set(to: modificationTime))
+        }
+        guard try !OnboardingLocalRecord.isMarked(recordType: .post, syncId: post.syncId, in: db) else { return }
+        try CloudKitOutboxEntry.enqueueSave(recordType: .post, syncId: post.syncId, modificationTime: modificationTime, in: db)
+    }
+
+    func bumpStyleGraphForAppliedChildDelete(styleId: Int64, modificationTime: Int64, in db: Database) throws {
+        guard let style = try PostStyle.fetchOne(db, id: styleId) else { return }
+        if (style.modificationTime ?? 0) < modificationTime {
+            try PostStyle
+                .filter(Column(PostStyle.CodingKeys.id) == styleId)
+                .updateAll(db, Column(PostStyle.CodingKeys.modificationTime).set(to: modificationTime))
+        }
+        guard try !OnboardingLocalRecord.isMarked(recordType: .style, syncId: style.syncId, in: db) else { return }
+        try CloudKitOutboxEntry.enqueueSave(recordType: .style, syncId: style.syncId, modificationTime: modificationTime, in: db)
+    }
+
+    func imageFiles(for images: [PostImage]) -> [(String, CacheImageType)] {
+        images.flatMap { image in
+            [(image.original, .original), (image.processed, .processed)]
+        }
+    }
+
+    func cleanupCopiedImageFiles(_ copiedImageFiles: [(String, CacheImageType)]) {
+        for (fileName, type) in copiedImageFiles {
+            _ = ImageCacheManager.shared.deleteImage(fileName: fileName, type: type)
+        }
+    }
+
+}
+
+private extension CloudKitRecordSyncManager {
+    func imageRecordNamesToStage(_ changes: RemoteChangeSet) throws -> Set<String> {
+        var recordNames = Set<String>()
+        try AppDatabase.shared.dbWriter?.read { db in
+            let pendingDeletes = try pendingDeleteOutboxByRecordName(in: db)
+            let localTombstones = try CloudKitLocalTombstone.allByRecordName(in: db)
+            for record in activeRemoteRecords(
+                type: .image,
+                changes: changes,
+                pendingDeletes: pendingDeletes,
+                localTombstones: localTombstones
+            ) {
+                guard let syncId = stringValue(Field.syncId, in: record) else {
+                    recordNames.insert(record.recordID.recordName)
+                    continue
+                }
+                let existing = try PostImage
+                    .filter(Column(PostImage.CodingKeys.syncId) == syncId)
+                    .fetchOne(db)
+                guard let existing else {
+                    recordNames.insert(record.recordID.recordName)
+                    continue
+                }
+                let remoteOriginalFileName = stringValue(Field.originalFileName, in: record)
+                let remoteProcessedFileName = stringValue(Field.processedFileName, in: record)
+                let remoteModificationTime = modificationTime(of: record)
+                let needsOriginalAsset = (remoteOriginalFileName != nil && remoteOriginalFileName != existing.original)
+                || ImageCacheManager.shared.getURL(name: existing.original, type: .original) == nil
+                let needsProcessedAsset = (remoteProcessedFileName != nil && remoteProcessedFileName != existing.processed)
+                || ImageCacheManager.shared.getURL(name: existing.processed, type: .processed) == nil
+                if remoteModificationTime > (existing.modificationTime ?? 0) || needsOriginalAsset || needsProcessedAsset {
+                    recordNames.insert(record.recordID.recordName)
+                }
+            }
+        }
+        return recordNames
+    }
+
+    func isDeletedRecord(_ record: CKRecord) -> Bool {
+        boolValue(Field.isDeleted, in: record) == true
+    }
+
+    func makeRemoteTombstone(from record: CKRecord, type: CloudKitRecordType) -> RemoteTombstone? {
+        let deletedRecordName = stringValue(Field.deletedRecordName, in: record) ?? record.recordID.recordName
+        let deletedRecordType = stringValue(Field.deletedRecordType, in: record)
+            .flatMap(CloudKitRecordType.init(rawValue:))
+            ?? type
+        return RemoteTombstone(
+            deletedRecordType: deletedRecordType,
+            deletedRecordName: deletedRecordName,
+            deletionTime: int64Value(Field.deletionTime, in: record) ?? modificationTime(of: record)
+        )
+    }
+
+    func modificationTime(of record: CKRecord) -> Int64 {
+        int64Value(Field.modificationTime, in: record)
+        ?? record.modificationDate?.nanoSecondSince1970
+        ?? 0
+    }
+
+    func stageImageAssets(_ changes: RemoteChangeSet, allowedRecordNames: Set<String>) throws -> [String: StagedImageAssets] {
+        var stagedAssetsByRecordName: [String: StagedImageAssets] = [:]
+        var copiedFiles: [(String, CacheImageType)] = []
+        do {
+            for record in changes.activeRecordsByType[.image] ?? [] {
+                guard allowedRecordNames.contains(record.recordID.recordName) else { continue }
+                let syncId = stringValue(Field.syncId, in: record) ?? record.recordID.recordName
+                let originalName = try copyAsset(
+                    field: Field.originalAsset,
+                    from: record,
+                    preferredFileName: stringValue(Field.originalFileName, in: record) ?? "\(syncId)-original",
+                    type: .original
+                )
+                if let originalName {
+                    copiedFiles.append((originalName, .original))
+                }
+                let processedName = try copyAsset(
+                    field: Field.processedAsset,
+                    from: record,
+                    preferredFileName: stringValue(Field.processedFileName, in: record) ?? "\(syncId)-processed",
+                    type: .processed
+                )
+                if let processedName {
+                    copiedFiles.append((processedName, .processed))
+                }
+                if originalName != nil || processedName != nil {
+                    stagedAssetsByRecordName[record.recordID.recordName] = StagedImageAssets(
+                        originalName: originalName,
+                        processedName: processedName
+                    )
+                }
+            }
+        } catch {
+            cleanupCopiedImageFiles(copiedFiles)
+            throw error
+        }
+        return stagedAssetsByRecordName
+    }
+
+    func copyAsset(
+        field: String,
+        from record: CKRecord,
+        preferredFileName: String,
+        type: CacheImageType
+    ) throws -> String? {
+        guard let asset = record[field] as? CKAsset,
+              let fileURL = asset.fileURL else {
+            return nil
+        }
+        return try ImageCacheManager.shared.copyImage(from: fileURL, preferredFileName: preferredFileName, type: type, overwrite: false)
+    }
+
+    func stringValue(_ field: String, in record: CKRecord) -> String? {
+        record[field] as? String
+    }
+
+    func intValue(_ field: String, in record: CKRecord) -> Int? {
+        (record[field] as? NSNumber)?.intValue
+    }
+
+    func int64Value(_ field: String, in record: CKRecord) -> Int64? {
+        (record[field] as? NSNumber)?.int64Value
+    }
+
+    func boolValue(_ field: String, in record: CKRecord) -> Bool? {
+        (record[field] as? NSNumber)?.boolValue
+    }
+
+    func set(_ value: String?, for field: String, on record: CKRecord) {
+        record[field] = value as CKRecordValue?
+    }
+
+    func set(_ value: Int64?, for field: String, on record: CKRecord) {
+        if let value {
+            record[field] = NSNumber(value: value)
+        } else {
+            record[field] = nil
+        }
+    }
+
+    func set(_ value: Bool, for field: String, on record: CKRecord) {
+        record[field] = NSNumber(value: value)
+    }
+}

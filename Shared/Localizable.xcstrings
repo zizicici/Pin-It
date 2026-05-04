@@ -14907,6 +14907,1322 @@
         }
       }
     },
+    "settings.cloudKitSync.footer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步默认关闭。开启后，Pin It 会通过你的私人 CloudKit 数据库同步便签和样式；关闭时，改动只保存在这台设备。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步預設關閉。開啓後，Pin It 會透過你的私人 CloudKit 資料庫同步便籤和樣式；關閉時，改動只保存在這台裝置。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步預設關閉。開啓後，Pin It 會透過你的私人 CloudKit 資料庫同步便籤和樣式；關閉時，改動只保存在這部裝置。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.clear" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear CloudKit Data"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空 CloudKit 数据"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空 CloudKit 資料"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空 CloudKit 資料"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.clear.alert.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这会删除 CloudKit 中的 Pin It 记录，但不会改变这台设备上的本地记录。该删除会同步到其他使用 CloudKit 同步的设备。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這會刪除 CloudKit 中的 Pin It 記錄，但不會改變這台裝置上的本機記錄。該刪除會同步到其他使用 CloudKit 同步的裝置。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這會刪除 CloudKit 中的 Pin It 記錄，但不會改變這部裝置上的本機記錄。該刪除會同步到其他使用 CloudKit 同步的裝置。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.clear.alert.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear CloudKit data?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空 CloudKit 数据？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空 CloudKit 資料？"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空 CloudKit 資料？"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.clear.failure.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not clear CloudKit data"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法清空 CloudKit 数据"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法清空 CloudKit 資料"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法清空 CloudKit 資料"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.clear.success.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin It records were deleted from CloudKit."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已从 CloudKit 删除 Pin It 记录。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已從 CloudKit 刪除 Pin It 記錄。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已從 CloudKit 刪除 Pin It 記錄。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.clear.success.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit data cleared"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 数据已清空"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 資料已清空"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 資料已清空"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.checking" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking..."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在检查..."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在檢查..."
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在檢查..."
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.clearing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clearing..."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在清空..."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在清空..."
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在清空..."
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.disable.alert.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步将停止。关闭期间的改动只保存在这台设备，不会加入 CloudKit 同步队列。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步將停止。關閉期間的改動只保存在這台裝置，不會加入 CloudKit 同步佇列。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步將停止。關閉期間的改動只保存在這部裝置，不會加入 CloudKit 同步佇列。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.disable.alert.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn off CloudKit Sync?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭 CloudKit 同步？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "關閉 CloudKit 同步？"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "關閉 CloudKit 同步？"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.enable.alert.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin It 会先检查你的 iCloud 账号，然后通过你的私人 CloudKit 数据库同步便签和样式。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin It 會先檢查你的 iCloud 帳號，然後透過你的私人 CloudKit 資料庫同步便籤和樣式。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin It 會先檢查你的 iCloud 帳戶，然後透過你的私人 CloudKit 資料庫同步便籤和樣式。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.enable.alert.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on CloudKit Sync?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开启 CloudKit 同步？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啓 CloudKit 同步？"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啓 CloudKit 同步？"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.enable.failure.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not turn on CloudKit Sync"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法开启 CloudKit 同步"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法開啓 CloudKit 同步"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法開啓 CloudKit 同步"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.error.accountChanged" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The iCloud account changed. CloudKit Sync was turned off; review this device before turning it on again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud 账号已变化。CloudKit 同步已关闭；再次开启前请先确认这台设备上的数据。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud 帳號已變化。CloudKit 同步已關閉；再次開啓前請先確認這台裝置上的資料。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud 帳戶已變化。CloudKit 同步已關閉；再次開啓前請先確認這部裝置上的資料。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.error.couldNotDetermine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法检查 iCloud 账号状态。Pin It 会自动重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法檢查 iCloud 帳號狀態。Pin It 會自動重試。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法檢查 iCloud 帳戶狀態。Pin It 會自動重試。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.error.disabled" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit sync is turned off."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已关闭。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已關閉。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已關閉。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.error.fullRefresh" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 变更需要完整刷新。Pin It 会自动重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 變更需要完整重新整理。Pin It 會自動重試。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 變更需要完整重新整理。Pin It 會自動重試。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.error.imageAssetMissing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一条 CloudKit 图片记录缺少图片资源。Pin It 已跳过该记录。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一條 CloudKit 圖片記錄缺少圖片資源。Pin It 已跳過該記錄。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一條 CloudKit 圖片記錄缺少圖片資源。Pin It 已跳過該記錄。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.error.noAccount" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to iCloud to use CloudKit sync."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请登录 iCloud 后使用 CloudKit 同步。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請登入 iCloud 後使用 CloudKit 同步。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請登入 iCloud 後使用 CloudKit 同步。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.error.recordBuildFailed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "部分本地记录未能准备上传到 CloudKit。Pin It 会自动重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "部分本機記錄未能準備上傳到 CloudKit。Pin It 會自動重試。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "部分本機記錄未能準備上載到 CloudKit。Pin It 會自動重試。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.error.restricted" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This iCloud account cannot use CloudKit sync because iCloud is restricted."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前 iCloud 账号受限，无法使用 CloudKit 同步。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前 iCloud 帳號受限，無法使用 CloudKit 同步。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前 iCloud 帳戶受限，無法使用 CloudKit 同步。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.error.syncInProgress" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步仍在进行。Pin It 会自动重试此操作。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步仍在進行。Pin It 會自動重試此操作。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步仍在進行。Pin It 會自動重試此操作。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.error.temporarilyUnavailable" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud 暂时不可用。Pin It 会自动重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud 暫時無法使用。Pin It 會自動重試。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud 暫時無法使用。Pin It 會自動重試。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.error.uploadFailed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "部分记录未能上传到 CloudKit。Pin It 会自动重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "部分記錄未能上傳到 CloudKit。Pin It 會自動重試。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "部分記錄未能上載到 CloudKit。Pin It 會自動重試。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.failedRecords" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed records"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "失败记录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "失敗記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "失敗記錄"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.moreFailedRecords" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More failed records"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多失败记录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多失敗記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多失敗記錄"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.localRecordSummary" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This device currently has %d posts and %d styles."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这台设备当前有 %d 条便签和 %d 个样式。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這台裝置目前有 %d 條便籤和 %d 個樣式。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這部裝置目前有 %d 條便籤和 %d 個樣式。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.recordType.decoration" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Style link"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "样式关联"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "樣式關聯"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "樣式關聯"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.recordType.image" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图片"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圖片"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圖片"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.recordType.post" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Post"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "便签"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "便籤"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "便籤"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.recordType.setting" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setting"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.recordType.style" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Style"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "样式"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "樣式"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "樣式"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.recordType.text" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.recordType.unknown" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "记录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "記錄"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "記錄"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.rebuild" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rebuild CloudKit Sync"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重建 CloudKit 同步"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重建 CloudKit 同步"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重建 CloudKit 同步"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.rebuilding" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rebuilding..."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在重建..."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在重建..."
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在重建..."
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.rebuild.alert.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这会删除 Pin It 的 CloudKit 同步数据库，并重新上传这台设备上的当前记录。这台设备会成为同步来源；只存在于其他设备上的记录，可能会在那些设备同步时被移除。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這會刪除 Pin It 的 CloudKit 同步資料庫，並重新上傳這台裝置上的目前記錄。這台裝置會成為同步來源；只存在於其他裝置上的記錄，可能會在那些裝置同步時被移除。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這會刪除 Pin It 的 CloudKit 同步資料庫，並重新上傳這部裝置上的目前記錄。這部裝置會成為同步來源；只存在於其他裝置上的記錄，可能會在那些裝置同步時被移除。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.rebuild.alert.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rebuild CloudKit sync?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重建 CloudKit 同步？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重建 CloudKit 同步？"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重建 CloudKit 同步？"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.rebuild.failure.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not rebuild CloudKit sync"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法重建 CloudKit 同步"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法重建 CloudKit 同步"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法重建 CloudKit 同步"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.rebuild.footer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If sync errors keep returning, rebuild CloudKit sync from this device."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果同步错误持续出现，可以从这台设备重建 CloudKit 同步。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果同步錯誤持續出現，可以從這台裝置重建 CloudKit 同步。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果同步錯誤持續出現，可以從這部裝置重建 CloudKit 同步。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.rebuild.partial.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已重建，但部分记录未能上传。Pin It 会自动重试；详情会显示在设置页的 CloudKit 同步行下方。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已重建，但部分記錄未能上傳。Pin It 會自動重試；詳情會顯示在設定頁的 CloudKit 同步列下方。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已重建，但部分記錄未能上傳。Pin It 會自動重試；詳情會顯示在設定頁的 CloudKit 同步列下方。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.rebuild.partial.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit sync partially rebuilt"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已部分重建"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已部分重建"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已部分重建"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.rebuild.success.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit sync has been rebuilt from this device."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已从这台设备重建。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已從這台裝置重建。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已從這部裝置重建。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.rebuild.success.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit sync rebuilt"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已重建"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已重建"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已重建"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit Sync"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.unknownError" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown error"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未知错误"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未知錯誤"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未知錯誤"
+          }
+        }
+      }
+    },
     "settings.expirationAction.delete" : {
       "localizations" : {
         "ar" : {
@@ -15703,6 +17019,90 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重置數據"
+          }
+        }
+      }
+    },
+    "settings.resetting" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resetting..."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在重置..."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在重置..."
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在重置..."
+          }
+        }
+      }
+    },
+    "settings.reset.alert.cloudKit.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit Sync is enabled. Resetting data clears local records now and clears Pin It records from CloudKit when iCloud is available. That deletion will sync to your other devices."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已开启。重置数据会立即清空本地记录，并在 iCloud 可用时清空 CloudKit 中的 Pin It 记录；该删除会同步到你的其他设备。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已開啓。重置資料會立即清空本機記錄，並在 iCloud 可用時清空 CloudKit 中的 Pin It 記錄；該刪除會同步到你的其他裝置。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步已開啓。重置資料會立即清空本機記錄，並在 iCloud 可用時清空 CloudKit 中的 Pin It 記錄；該刪除會同步到你的其他裝置。"
+          }
+        }
+      }
+    },
+    "settings.reset.alert.cloudKitDisabled.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit Sync is currently off, but this device has used CloudKit before. Resetting data clears local records only; use Clear CloudKit Data to delete Pin It records from CloudKit."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步目前已关闭，但这台设备之前使用过 CloudKit。重置数据只会清空本地记录；如需删除 CloudKit 中的 Pin It 记录，请使用清空 CloudKit 数据。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步目前已關閉，但這台裝置之前使用過 CloudKit。重置資料只會清空本機記錄；如需刪除 CloudKit 中的 Pin It 記錄，請使用清空 CloudKit 資料。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 同步目前已關閉，但這部裝置之前使用過 CloudKit。重置資料只會清空本機記錄；如需刪除 CloudKit 中的 Pin It 記錄，請使用清空 CloudKit 資料。"
           }
         }
       }
