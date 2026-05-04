@@ -383,25 +383,6 @@ class SettingsViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .StoreInfoLoaded, object: nil)
     }
 
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        presentCloudKitAccountChangeAlertIfNeeded()
-    }
-
-    private func presentCloudKitAccountChangeAlertIfNeeded() {
-        guard CloudKitSync.consumeDisabledByAccountChange() else { return }
-        let alert = UIAlertController(
-            title: String(localized: "settings.cloudKitSync.alert.accountChanged.title"),
-            message: String(localized: "settings.cloudKitSync.alert.accountChanged.message"),
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(
-            title: String(localized: "settings.cloudKitSync.alert.accountChanged.dismiss"),
-            style: .default
-        ))
-        present(alert, animated: ConsideringUser.animated)
-    }
-
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
     }

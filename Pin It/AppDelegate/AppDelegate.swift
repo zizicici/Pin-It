@@ -22,6 +22,8 @@ extension UserDefaults {
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
+    private var isPresentingCloudKitAccountChangeAlert = false
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
@@ -69,7 +71,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         NotificationCenter.default.addObserver(self, selector: #selector(clearExpiredPosts), name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(cloudKitSyncSettingDidChange), name: .cloudKitSyncDidChange, object: nil)
-        
+        NotificationCenter.default.addObserver(self, selector: #selector(presentCloudKitAccountChangeAlertIfNeeded), name: UIApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(presentCloudKitAccountChangeAlertIfNeeded), name: .SettingsUpdate, object: nil)
+
         return true
     }
 
@@ -111,6 +115,59 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         } else {
             CloudKitRecordSyncManager.shared.disableSyncAndClearLocalState()
         }
+    }
+
+    @objc
+    func presentCloudKitAccountChangeAlertIfNeeded() {
+        // Listen on .SettingsUpdate (manager fires this when account change is detected)
+        // and didBecomeActive (covers the case where the change happened while the app
+        // was backgrounded). Either edge can fire first, so this method must be
+        // re-entrant: if presentation fails (UIKit rejects, or we're mid-transition),
+        // the flag stays set and the next observer fires retries.
+        DispatchQueue.main.async {
+            guard !self.isPresentingCloudKitAccountChangeAlert,
+                  CloudKitSync.disabledByAccountChange,
+                  let topViewController = Self.topMostViewController(),
+                  !(topViewController is UIAlertController) else {
+                return
+            }
+            self.isPresentingCloudKitAccountChangeAlert = true
+            let alert = UIAlertController(
+                title: String(localized: "settings.cloudKitSync.alert.accountChanged.title"),
+                message: String(localized: "settings.cloudKitSync.alert.accountChanged.message"),
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(
+                title: String(localized: "settings.cloudKitSync.alert.accountChanged.dismiss"),
+                style: .default
+            ) { [weak self] _ in
+                // Only consume the flag once the user has actually acknowledged.
+                _ = CloudKitSync.consumeDisabledByAccountChange()
+                self?.isPresentingCloudKitAccountChangeAlert = false
+            })
+            topViewController.present(alert, animated: ConsideringUser.animated) { [weak self, weak alert] in
+                // If UIKit rejected the presentation (presentingViewController stays
+                // nil), back out the re-entry guard so a future observer can retry.
+                if alert?.presentingViewController == nil {
+                    self?.isPresentingCloudKitAccountChangeAlert = false
+                }
+            }
+        }
+    }
+
+    private static func topMostViewController() -> UIViewController? {
+        guard let windowScene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive })
+            ?? UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first,
+              let rootViewController = windowScene.keyWindow?.rootViewController else {
+            return nil
+        }
+        var top = rootViewController
+        while let presented = top.presentedViewController {
+            top = presented
+        }
+        return top
     }
 }
 

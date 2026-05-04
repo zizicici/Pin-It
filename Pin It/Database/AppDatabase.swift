@@ -148,7 +148,12 @@ final class AppDatabase {
 
             func deterministicSyncId(seed: String) -> String {
                 let digest = SHA256.hash(data: Data(seed.utf8))
-                let bytes = Array(digest.prefix(16))
+                var bytes = Array(digest.prefix(16))
+                // Mark as RFC 4122 v5 (name-based SHA-1 — close enough for parsers
+                // that sniff version/variant; CloudKit itself accepts arbitrary
+                // record names).
+                bytes[6] = (bytes[6] & 0x0F) | 0x50
+                bytes[8] = (bytes[8] & 0x3F) | 0x80
                 let uuid: uuid_t = (
                     bytes[0], bytes[1], bytes[2], bytes[3],
                     bytes[4], bytes[5], bytes[6], bytes[7],
@@ -275,6 +280,13 @@ final class AppDatabase {
             }
 
             func backfillSyncIds(in tableName: String) throws {
+                // Random UUIDs, NOT deterministic. Two devices that each have legacy
+                // pre-CloudKit data have INDEPENDENT records that just happen to share
+                // SQLite ids; deriving the sync_id from (tableName, id) would make
+                // device A's post.1 and device B's post.1 collide on CloudKit and
+                // overwrite each other on first sync. Deterministic IDs are still used
+                // downstream (mixedBodyPostRows split) but only as a function of an
+                // already-unique syncId, so they remain device-distinct.
                 let rows = try Table(tableName)
                     .select(Column("id"))
                     .filter(Column("sync_id") == nil || Column("sync_id") == "")
@@ -283,7 +295,7 @@ final class AppDatabase {
                     let id: Int64 = row["id"]
                     try Table(tableName)
                         .filter(Column("id") == id)
-                        .updateAll(db, Column("sync_id").set(to: deterministicSyncId(seed: "\(tableName):\(id)")))
+                        .updateAll(db, Column("sync_id").set(to: UUID().uuidString))
                 }
             }
 

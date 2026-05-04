@@ -15012,97 +15012,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app — Phase I has no background push."
+            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app — Phase I has no background push."
+            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It pulls iCloud changes when you open the app — Phase I has no background push."
+            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app — Phase I has no background push."
+            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app — Phase I has no background push."
+            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app — Phase I has no background push."
+            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app — Phase I has no background push."
+            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app — Phase I has no background push."
+            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app — Phase I has no background push."
+            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app — Phase I has no background push."
+            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app — Phase I has no background push."
+            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app — Phase I has no background push."
+            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app — Phase I has no background push."
+            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It 仅在你打开应用时从 iCloud 拉取最新内容,Phase I 暂未启用后台推送。"
+            "value" : "Pin It 仅在你打开应用时从 iCloud 拉取最新内容,后台推送暂未启用。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It 僅在你打開應用時從 iCloud 拉取最新內容,Phase I 暫未啓用背景推送。"
+            "value" : "Pin It 僅在你打開應用時從 iCloud 拉取最新內容,背景推送暫未啓用。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It 僅在你打開應用時從 iCloud 拉取最新內容,Phase I 暫未啓用背景推送。"
+            "value" : "Pin It 僅在你打開應用時從 iCloud 拉取最新內容,背景推送暫未啓用。"
           }
         }
       }

@@ -692,26 +692,26 @@ extension CloudKitRecordSyncManager {
     }
 
     func handleAccountChange() throws {
+        // cancelActiveOperations bumps engineGeneration, nils syncEngine/accumulator/
+        // pendingFetchStateSerialization/serverRecordCache, and cleans the upload-asset
+        // tmp directory. Concurrent in-flight CKDatabaseOperations are cancelled.
+        cancelActiveOperations()
+        endBackgroundTaskIfNeeded()
         CloudKitSync.clearRemoteDataMayExist()
         CloudKitSync.setPendingRemoteReset(false)
-
-        stateLock.lock()
-        engineGeneration += 1
-        syncEngine = nil
-        fetchAccumulator = nil
-        pendingFetchStateSerialization = nil
-        serverRecordCacheByRecordName.removeAll()
-        needsFullFetchAfterCurrentSync = false
-        stateLock.unlock()
 
         _ = try AppDatabase.shared.dbWriter?.write { db in
             try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
             try CloudKitSyncState.clearBootstrapSuppression(in: db)
-            try CloudKitSyncState.clearLocalRecordPreservation(in: db)
             try CloudKitOutboxEntry.deleteAll(db)
             try CloudKitRecordMetadata.deleteAll(db)
             try CloudKitLocalTombstone.deleteAll(db)
             try CloudKitSettingRecord.deleteAll(db)
+            // Tell the next fresh-engine fetch to keep local records intact. Without
+            // this flag, freshEngineMode would set prunesMissingLocalRecords=true and
+            // the user's local content would be deleted to match the new (empty)
+            // account's zone on first sync after re-enable.
+            try CloudKitSyncState.preserveLocalRecordsForNextFullFetch(in: db)
         }
 
         CloudKitSync.disableAfterAccountChange()
@@ -1289,6 +1289,20 @@ extension CloudKitRecordSyncManager {
         return accumulator
     }
 
+    /// Take both the accumulator and the pending state token under a single lock.
+    /// Splitting them lets a `.stateUpdate` event sneak in between the two takes,
+    /// flip out of accumulator-mode and persist its newer state to disk while we
+    /// still hold the older value in memory — which would then overwrite it.
+    func takeFetchAccumulatorAndPendingState() -> (FetchAccumulator?, CKSyncEngine.State.Serialization?) {
+        stateLock.lock()
+        let accumulator = fetchAccumulator
+        let serialization = pendingFetchStateSerialization
+        fetchAccumulator = nil
+        pendingFetchStateSerialization = nil
+        stateLock.unlock()
+        return (accumulator, serialization)
+    }
+
     func isAccumulatingFetch() -> Bool {
         stateLock.lock()
         defer { stateLock.unlock() }
@@ -1309,15 +1323,12 @@ extension CloudKitRecordSyncManager {
         return serialization
     }
 
-    func clearPendingFetchStateSerialization() {
-        stateLock.lock()
-        pendingFetchStateSerialization = nil
-        stateLock.unlock()
-    }
-
     func applyAccumulatedFetchIfNeeded() throws {
-        guard let accumulator = takeFetchAccumulator() else {
-            try persistPendingFetchStateSerializationIfNeeded()
+        let (maybeAccumulator, pendingState) = takeFetchAccumulatorAndPendingState()
+        guard let accumulator = maybeAccumulator else {
+            if let pendingState {
+                try persistSyncEngineStateSerialization(pendingState)
+            }
             return
         }
         let remoteChanges = makeRemoteChangeSet(
@@ -1326,25 +1337,33 @@ extension CloudKitRecordSyncManager {
         )
 
         if !accumulator.isFullSnapshot, remoteChanges.hasUnexplainedPhysicalDeletes {
+            if let pendingState {
+                setPendingFetchStateSerialization(pendingState)
+            }
             requestFullFetchAfterCurrentSync()
             return
         }
 
         setApplyingRemoteChanges(true)
         defer { setApplyingRemoteChanges(false) }
-        let pendingState = takePendingFetchStateSerialization()
-        try applyRemoteChanges(
-            remoteChanges,
-            missingDependenciesAreOrphans: accumulator.isFullSnapshot,
-            prunesMissingLocalRecords: accumulator.isFullSnapshot && accumulator.prunesMissingLocalRecords,
-            pendingStateSerialization: pendingState
-        )
+        do {
+            try applyRemoteChanges(
+                remoteChanges,
+                missingDependenciesAreOrphans: accumulator.isFullSnapshot,
+                prunesMissingLocalRecords: accumulator.isFullSnapshot && accumulator.prunesMissingLocalRecords,
+                pendingStateSerialization: pendingState
+            )
+        } catch {
+            // applyRemoteChanges may throw before its dbWriter.write block (e.g. asset
+            // staging) or have its txn rolled back inside it. In either case the state
+            // token never reached disk, so put it back so a later success can persist it.
+            if let pendingState {
+                setPendingFetchStateSerialization(pendingState)
+            }
+            throw error
+        }
     }
 
-    func persistPendingFetchStateSerializationIfNeeded() throws {
-        guard let serialization = takePendingFetchStateSerialization() else { return }
-        try persistSyncEngineStateSerialization(serialization)
-    }
 
     func requestFullFetchAfterCurrentSync() {
         stateLock.lock()
@@ -1488,11 +1507,18 @@ extension CloudKitRecordSyncManager {
 
     func sendChangesAndCleanupUploadAssets(_ engine: CKSyncEngine) async throws {
         // Per-record cleanup happens in handleSentRecordZoneChanges as soon as
-        // CKSyncEngine acks each save. Files for entries that couldn't ship in
-        // this batch (paused, retried, or pending) must stay on disk; CKSyncEngine
-        // may retry them after sendChanges returns. Sweeping all temp files here
-        // would race those retries and surface as missing-asset errors.
-        try await engine.sendChanges()
+        // CKSyncEngine acks each save. After sendChanges returns there should be
+        // nothing left in uploadAssetFilesByRecordName for the records the engine
+        // just processed; whatever remains is orphaned (engine threw, was cancelled,
+        // or never produced an ack for it) and would otherwise pile up in tmp until
+        // the next cancelActiveOperations or app launch.
+        do {
+            try await engine.sendChanges()
+        } catch {
+            cleanupAllUploadAssetFiles()
+            throw error
+        }
+        cleanupAllUploadAssetFiles()
     }
 
     func enqueueBootstrapOutbox() throws {
@@ -1645,20 +1671,45 @@ extension CloudKitRecordSyncManager {
     }
 
     func clearOutbox(ids: [Int64]) throws {
+        let recordNames = try recordNames(forOutboxIDs: ids)
         _ = try AppDatabase.shared.dbWriter?.write { db in
             try CloudKitOutboxEntry.clear(ids: ids, in: db)
         }
+        evictCachedServerRecords(for: recordNames)
     }
 
     func dropOutbox(ids: [Int64]) throws {
+        let recordNames = try recordNames(forOutboxIDs: ids)
         _ = try AppDatabase.shared.dbWriter?.write { db in
             try CloudKitOutboxEntry.drop(ids: ids, in: db)
         }
+        evictCachedServerRecords(for: recordNames)
+    }
+
+    func recordNames(forOutboxIDs ids: [Int64]) throws -> [String] {
+        guard !ids.isEmpty else { return [] }
+        var names: [String] = []
+        try AppDatabase.shared.dbWriter?.read { db in
+            names = try CloudKitOutboxEntry
+                .filter(ids: ids)
+                .fetchAll(db)
+                .map(\.recordName)
+        }
+        return names
+    }
+
+    func evictCachedServerRecords(for recordNames: [String]) {
+        guard !recordNames.isEmpty else { return }
+        stateLock.lock()
+        for name in recordNames {
+            serverRecordCacheByRecordName.removeValue(forKey: name)
+        }
+        stateLock.unlock()
     }
 
     func fetchServerRecordState(for entries: [CloudKitOutboxEntry]) async throws -> ServerRecordState {
         let allRecordNames = Set(entries.map(\.recordName))
-        let cachedRecords = takeCachedServerRecords(for: allRecordNames)
+        let cachedRecords = consumeCachedServerRecords(for: allRecordNames)
         let uncachedRecordNames = allRecordNames.subtracting(cachedRecords.keys)
         let uncachedRecordIDs = uncachedRecordNames.map { CloudKitRecordName.recordID($0) }
         var recordsByName: [String: CKRecord] = cachedRecords
@@ -1696,7 +1747,10 @@ extension CloudKitRecordSyncManager {
         stateLock.unlock()
     }
 
-    func takeCachedServerRecords(for recordNames: Set<String>) -> [String: CKRecord] {
+    /// Read-and-remove the cached server records for the given names. The cache is
+    /// populated by serverRecordChanged failures and consumed once by the next batch
+    /// attempt; if that attempt fails again, the new error repopulates the cache.
+    func consumeCachedServerRecords(for recordNames: Set<String>) -> [String: CKRecord] {
         stateLock.lock()
         defer { stateLock.unlock() }
         var result: [String: CKRecord] = [:]
@@ -1787,17 +1841,25 @@ extension CloudKitRecordSyncManager {
         operation: CloudKitOutboxEntry.Operation,
         serverRecordState: ServerRecordState
     ) -> Bool {
-        // Local delete and purge intents always take priority. CloudKit will merge
-        // tombstones server-side; suppressing them locally would leave the user's
-        // delete stuck behind a stale tombstone-equal-time race.
         switch operation {
         case .delete, .purge:
+            // Local deletes still proceed against an older server state OR a server
+            // tombstone (where merging is a no-op). But a NEWER active server record
+            // means the user updated this record on another device after our local
+            // delete intent was queued — server wins so we don't tombstone newer data.
+            if let serverRecord = serverRecordState.activeRecordsByRecordName[recordName],
+               modificationTime(of: serverRecord) > entryModificationTime {
+                return true
+            }
             return false
         case .save:
             break
         }
+        // For save, server-equal-time wins. The local save would otherwise overwrite
+        // a server tombstone with the same deletionTime — losing a remote delete that
+        // happened simultaneously on another device.
         if let tombstone = serverRecordState.tombstonesByDeletedRecordName[recordName],
-           tombstone.deletionTime > entryModificationTime {
+           tombstone.deletionTime >= entryModificationTime {
             return true
         }
         guard let serverRecord = serverRecordState.activeRecordsByRecordName[recordName] else { return false }
@@ -2438,12 +2500,22 @@ extension CloudKitRecordSyncManager {
     func pruneLocalRecordsMissingFromFullFetch(_ changes: RemoteChangeSet, in db: Database) throws -> (didChangeDatabase: Bool, deletedImageFiles: [(String, CacheImageType)]) {
         let remoteRecordNames = remoteSnapshotRecordNames(changes)
         let pendingSaveRecordNames = try pendingSaveOutboxRecordNames(in: db)
+        let knownRecordNames = Set(try CloudKitRecordMetadata
+            .select(Column(CloudKitRecordMetadata.CodingKeys.recordName), as: String.self)
+            .fetchAll(db))
         let defaultStyleSyncId = try CloudKitSettingRecord.current(in: db).defaultStyleSyncId
         var didChangeDatabase = false
         var deletedImageFiles: [(String, CacheImageType)] = []
 
+        // Only prune records the manager has previously synced (i.e. there's a metadata
+        // row for them). A record without metadata was created locally while sync was
+        // off (or otherwise never reached CloudKit). Pruning those would silently lose
+        // user data on the very first re-enable; let them stay until they get enqueued
+        // through normal write paths.
         func shouldPrune(_ recordName: String) -> Bool {
-            !remoteRecordNames.contains(recordName) && !pendingSaveRecordNames.contains(recordName)
+            knownRecordNames.contains(recordName)
+                && !remoteRecordNames.contains(recordName)
+                && !pendingSaveRecordNames.contains(recordName)
         }
 
         for post in try Post.fetchAll(db) {
@@ -3147,5 +3219,3 @@ extension CloudKitRecordSyncManager {
         }
     }
 }
-
-

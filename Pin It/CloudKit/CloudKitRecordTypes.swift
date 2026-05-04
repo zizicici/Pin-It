@@ -153,9 +153,14 @@ extension CloudKitOutboxEntry {
         if let existing = try CloudKitOutboxEntry
             .filter(Columns.recordName == entry.recordName)
             .fetchOne(db) {
-            // Don't regress timestamps. If a stale write tries to overwrite a newer
-            // pending intent, drop the stale entry instead of replacing.
-            if entry.modificationTime < existing.modificationTime {
+            // Don't regress timestamps within the same operation. A late save with an
+            // older mod time shouldn't overwrite a newer same-op intent. But operation
+            // transitions (save->delete, delete->save, save/delete->purge) always go
+            // through — the new operation reflects the latest user intent regardless
+            // of the timestamp ordering, since the record-level deletionTime/version
+            // semantics don't compare across op types.
+            if existing.operation == entry.operation,
+               entry.modificationTime < existing.modificationTime {
                 return
             }
             entry.id = existing.id
