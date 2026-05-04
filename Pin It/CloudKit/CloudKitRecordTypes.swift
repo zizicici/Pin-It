@@ -153,6 +153,11 @@ extension CloudKitOutboxEntry {
         if let existing = try CloudKitOutboxEntry
             .filter(Columns.recordName == entry.recordName)
             .fetchOne(db) {
+            // Don't regress timestamps. If a stale write tries to overwrite a newer
+            // pending intent, drop the stale entry instead of replacing.
+            if entry.modificationTime < existing.modificationTime {
+                return
+            }
             entry.id = existing.id
             entry.createdAt = existing.createdAt
             if existing.operation == entry.operation && existing.localVersion == entry.localVersion {

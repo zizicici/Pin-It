@@ -5,6 +5,7 @@
 //  Created by Ci Zi on 2025/10/17.
 //
 
+import CryptoKit
 import Foundation
 import GRDB
 
@@ -143,7 +144,19 @@ final class AppDatabase {
         }
         
         migrator.registerMigration("cloudkit____record____sync") { db in
-            let legacyTimestamp = Date().nanoSecondSince1970
+            let legacyTimestamp = try db.transactionDate.nanoSecondSince1970
+
+            func deterministicSyncId(seed: String) -> String {
+                let digest = SHA256.hash(data: Data(seed.utf8))
+                let bytes = Array(digest.prefix(16))
+                let uuid: uuid_t = (
+                    bytes[0], bytes[1], bytes[2], bytes[3],
+                    bytes[4], bytes[5], bytes[6], bytes[7],
+                    bytes[8], bytes[9], bytes[10], bytes[11],
+                    bytes[12], bytes[13], bytes[14], bytes[15]
+                )
+                return UUID(uuid: uuid).uuidString
+            }
 
             func addCloudKitRecordColumns(_ table: TableDefinition) {
                 table.column("sync_id", .text).notNull().defaults(to: "")
@@ -270,13 +283,18 @@ final class AppDatabase {
                     let id: Int64 = row["id"]
                     try Table(tableName)
                         .filter(Column("id") == id)
-                        .updateAll(db, Column("sync_id").set(to: UUID().uuidString))
+                        .updateAll(db, Column("sync_id").set(to: deterministicSyncId(seed: "\(tableName):\(id)")))
                 }
             }
 
             for tableName in ["post", "text", "image", "style", "decoration"] {
                 try backfillSyncIds(in: tableName)
             }
+
+            try db.execute(
+                sql: "UPDATE style SET creation_time = ? + id, modification_time = ? + id",
+                arguments: [legacyTimestamp, legacyTimestamp]
+            )
 
             try db.execute(sql: """
                 UPDATE text
@@ -317,12 +335,20 @@ final class AppDatabase {
             ]
             for row in mixedBodyPostRows {
                 let postId: Int64 = row["id"]
+                let originalSyncId: String = row["sync_id"]
                 let creationTime: Int64 = row["creation_time"]
                 let modificationTime: Int64 = row["modification_time"]
                 let isPinned: Bool = row["is_pinned"]
                 let nextOrder = nextOrderByPinnedState[isPinned] ?? 0
                 let expirationTime: Int64? = row["expiration_time"]
                 let actionLink: String = row["action_link"]
+                let bumpedOriginalModTime = max(modificationTime, legacyTimestamp + postId)
+                try db.execute(
+                    sql: "UPDATE post SET modification_time = ? WHERE id = ?",
+                    arguments: [bumpedOriginalModTime, postId]
+                )
+                let newPostSyncId = deterministicSyncId(seed: "split-text:\(originalSyncId)")
+                let newPostModTime = bumpedOriginalModTime + 1
                 try db.execute(
                     sql: """
                         INSERT INTO post (
@@ -337,12 +363,12 @@ final class AppDatabase {
                     """,
                     arguments: [
                         creationTime,
-                        modificationTime,
+                        newPostModTime,
                         isPinned,
                         nextOrder,
                         expirationTime,
                         actionLink,
-                        UUID().uuidString
+                        newPostSyncId
                     ]
                 )
                 let newPostId = db.lastInsertedRowID
@@ -357,6 +383,7 @@ final class AppDatabase {
                 )
                 for decoration in decorations {
                     let styleId: Int64 = decoration["style_id"]
+                    let decorationOriginalSyncId: String = decoration["sync_id"]
                     let decorationCreationTime: Int64 = decoration["creation_time"]
                     let decorationModificationTime: Int64 = decoration["modification_time"]
                     try db.execute(
@@ -372,7 +399,7 @@ final class AppDatabase {
                         arguments: [
                             newPostId,
                             styleId,
-                            UUID().uuidString,
+                            deterministicSyncId(seed: "split-decoration:\(decorationOriginalSyncId)"),
                             decorationCreationTime,
                             decorationModificationTime
                         ]
@@ -422,7 +449,7 @@ final class AppDatabase {
                 table.column("updated_at", .integer).notNull()
                 table.column("retry_count", .integer).notNull().defaults(to: 0)
                 table.column("last_error", .text)
-                table.uniqueKey(["record_name"], onConflict: .replace)
+                table.uniqueKey(["record_name"])
             }
             try db.create(index: "cloudkit_outbox_order_idx", on: "cloudkit_outbox", columns: ["updated_at", "id"], ifNotExists: true)
 

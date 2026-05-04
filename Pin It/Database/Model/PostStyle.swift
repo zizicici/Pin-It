@@ -64,7 +64,7 @@ struct PostStyle: Identifiable, Hashable, Codable {
 }
 
 extension PostStyle {
-    static var placeholder: Self {
+    static func makePlaceholder() -> Self {
         PostStyle(name: String(localized: "style.placeholder"), lockTextSize: .automatic, lockTextAlignment: .center, islandTextSize: .automatic, islandTextAlignment: .center, symbol: "pin.fill", symbolAngle: -4500, imageDisplayMode: .aspectFit, controlAlpha: 100)
     }
 }

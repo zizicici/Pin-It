@@ -29,6 +29,7 @@ extension UserDefaults {
         case CloudKitSyncLastError = "com.zizicici.pin.settings.CloudKitSyncLastError"
         case CloudKitRemoteDataMayExist = "com.zizicici.pin.settings.CloudKitRemoteDataMayExist"
         case CloudKitPendingRemoteReset = "com.zizicici.pin.settings.CloudKitPendingRemoteReset"
+        case CloudKitSyncDisabledByAccountChange = "com.zizicici.pin.settings.CloudKitSyncDisabledByAccountChange"
     }
 }
 
@@ -71,6 +72,9 @@ extension CloudKitSync: UserDefaultSettable {
 
     static func getFooter() -> String? {
         var parts = [String(localized: "settings.cloudKitSync.footer")]
+        if current == .enable {
+            parts.append(String(localized: "settings.cloudKitSync.foregroundOnly.footer"))
+        }
         if let lastError {
             parts.append(lastError)
         }
@@ -95,10 +99,22 @@ extension CloudKitSync: UserDefaultSettable {
     static func disableAfterAccountChange() {
         setValue(.disable)
         setLastError(String(localized: "settings.cloudKitSync.error.accountChanged"), postsUpdate: false)
+        userDefaults.set(true, forKey: UserDefaults.Settings.CloudKitSyncDisabledByAccountChange.rawValue)
         DispatchQueue.main.async {
             NotificationCenter.default.post(name: .SettingsUpdate, object: nil)
-            NotificationCenter.default.post(name: .cloudKitSyncDidChange, object: nil)
         }
+    }
+
+    static var disabledByAccountChange: Bool {
+        userDefaults.bool(forKey: UserDefaults.Settings.CloudKitSyncDisabledByAccountChange.rawValue)
+    }
+
+    static func consumeDisabledByAccountChange() -> Bool {
+        let value = disabledByAccountChange
+        if value {
+            userDefaults.removeObject(forKey: UserDefaults.Settings.CloudKitSyncDisabledByAccountChange.rawValue)
+        }
+        return value
     }
 
     static var lastError: String? {

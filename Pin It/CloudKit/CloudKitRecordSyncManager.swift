@@ -8,7 +8,10 @@
 import CloudKit
 import Foundation
 import GRDB
+import OSLog
 import UIKit
+
+private let cloudKitSyncLog = Logger(subsystem: "com.zizicici.pin", category: "CloudKitSync")
 
 private struct CloudKitSyncDisabledError: LocalizedError {
     var errorDescription: String? {
@@ -61,6 +64,8 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
     private var activeOperations: [ObjectIdentifier: CKDatabaseOperation] = [:]
     private var syncEngine: CKSyncEngine?
     private var fetchAccumulator: FetchAccumulator?
+    private var pendingFetchStateSerialization: CKSyncEngine.State.Serialization?
+    private var serverRecordCacheByRecordName: [String: CKRecord] = [:]
     private var needsFullFetchAfterCurrentSync = false
     private var uploadAssetFilesByRecordName: [String: [URL]] = [:]
     private var syncRunID: UInt64 = 0
@@ -233,7 +238,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
                     }
                     continue
                 }
-                print("CloudKit sync failed: \(error.localizedDescription)")
+                cloudKitSyncLog.error("sync failed: \(error.localizedDescription, privacy: .public)")
                 CloudKitSync.setLastError(error.localizedDescription)
                 runOnboardingAfterInitialCloudGateIfNeeded()
             }
@@ -253,7 +258,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
         let accountStatus = try await fetchAccountStatus()
         guard accountStatus == .available else {
             let message = cloudKitAccountStatusMessage(accountStatus)
-            print("CloudKit sync skipped: \(message)")
+            cloudKitSyncLog.info("sync skipped: \(message, privacy: .public)")
             CloudKitSync.setLastError(message)
             runOnboardingAfterInitialCloudGateIfNeeded()
             return
@@ -337,7 +342,11 @@ extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
         do {
             switch event {
             case .stateUpdate(let stateUpdate):
-                try persistSyncEngineStateSerialization(stateUpdate.stateSerialization)
+                if isAccumulatingFetch() {
+                    setPendingFetchStateSerialization(stateUpdate.stateSerialization)
+                } else {
+                    try persistSyncEngineStateSerialization(stateUpdate.stateSerialization)
+                }
             case .accountChange:
                 try handleAccountChange()
                 requestFollowUpSync()
@@ -367,7 +376,7 @@ extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
                 break
             }
         } catch {
-            print("CloudKit sync engine event failed: \(error.localizedDescription)")
+            cloudKitSyncLog.error("sync engine event failed: \(error.localizedDescription, privacy: .public)")
             CloudKitSync.setLastError(error.localizedDescription)
             requestFollowUpSync()
         }
@@ -380,7 +389,7 @@ extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
         do {
             return try await makeRecordZoneChangeBatch(context: context, syncEngine: syncEngine)
         } catch {
-            print("CloudKit sync engine batch failed: \(error.localizedDescription)")
+            cloudKitSyncLog.error("sync engine batch failed: \(error.localizedDescription, privacy: .public)")
             CloudKitSync.setLastError(error.localizedDescription)
             requestFollowUpSync()
             return nil
@@ -661,6 +670,8 @@ extension CloudKitRecordSyncManager {
         isSyncing = false
         syncEngine = nil
         fetchAccumulator = nil
+        pendingFetchStateSerialization = nil
+        serverRecordCacheByRecordName.removeAll()
         needsFullFetchAfterCurrentSync = false
         needsFollowUpSync = false
         stateLock.unlock()
@@ -672,112 +683,7 @@ extension CloudKitRecordSyncManager {
     }
 }
 
-private extension CloudKitRecordSyncManager {
-    struct RemoteTombstone {
-        var deletedRecordType: CloudKitRecordType
-        var deletedRecordName: String
-        var deletionTime: Int64
-    }
-
-    struct PhysicalDeletedRecord {
-        var recordName: String
-        var recordType: CloudKitRecordType?
-    }
-
-    struct RemoteChangeSet {
-        var activeRecordsByType: [CloudKitRecordType: [CKRecord]]
-        var tombstonesByDeletedRecordName: [String: RemoteTombstone]
-        var hasUnexplainedPhysicalDeletes: Bool
-    }
-
-    struct FetchAccumulator {
-        var isFullSnapshot: Bool
-        var prunesMissingLocalRecords: Bool
-        var changedRecords: [CKRecord] = []
-        var physicalDeletedRecords: [PhysicalDeletedRecord] = []
-    }
-
-    struct FreshEngineMode {
-        var bootstrapsLocalRecords: Bool
-        var prunesMissingLocalRecords: Bool
-    }
-
-    struct ServerRecordState {
-        var recordsByRecordName: [String: CKRecord]
-        var activeRecordsByRecordName: [String: CKRecord]
-        var tombstonesByDeletedRecordName: [String: RemoteTombstone]
-    }
-
-    struct StagedImageAssets {
-        var originalName: String?
-        var processedName: String?
-
-        var copiedFiles: [(String, CacheImageType)] {
-            var files: [(String, CacheImageType)] = []
-            if let originalName {
-                files.append((originalName, .original))
-            }
-            if let processedName {
-                files.append((processedName, .processed))
-            }
-            return files
-        }
-    }
-
-    enum DependencyState {
-        case available(Int64)
-        case deleted(Int64)
-        case missing
-    }
-
-    enum Field {
-        static let syncId = "syncId"
-        static let creationTime = "creationTime"
-        static let modificationTime = "modificationTime"
-        static let isDeleted = "isDeleted"
-
-        static let expirationTime = "expirationTime"
-        static let actionLink = "actionLink"
-        static let isPinned = "isPinned"
-        static let order = "order"
-
-        static let postSyncId = "postSyncId"
-        static let content = "content"
-
-        static let originalFileName = "originalFileName"
-        static let processedFileName = "processedFileName"
-        static let originalAsset = "originalAsset"
-        static let processedAsset = "processedAsset"
-        static let orientation = "orientation"
-        static let minX = "minX"
-        static let minY = "minY"
-        static let maxX = "maxX"
-        static let maxY = "maxY"
-
-        static let name = "name"
-        static let lockBackgroundColor = "lockBackgroundColor"
-        static let lockTextColor = "lockTextColor"
-        static let lockTextSize = "lockTextSize"
-        static let lockTextAlignment = "lockTextAlignment"
-        static let islandTextColor = "islandTextColor"
-        static let islandTextSize = "islandTextSize"
-        static let islandTextAlignment = "islandTextAlignment"
-        static let symbol = "symbol"
-        static let symbolColor = "symbolColor"
-        static let symbolAngle = "symbolAngle"
-        static let imageDisplayMode = "imageDisplayMode"
-        static let controlAlpha = "controlAlpha"
-
-        static let styleSyncId = "styleSyncId"
-        static let defaultStyleSyncId = "defaultStyleSyncId"
-
-        static let deletedRecordType = "deletedRecordType"
-        static let deletedRecordName = "deletedRecordName"
-        static let deletionTime = "deletionTime"
-    }
-}
-
-private extension CloudKitRecordSyncManager {
+extension CloudKitRecordSyncManager {
     func handleFetchedDatabaseChanges(_ changes: CKSyncEngine.Event.FetchedDatabaseChanges) throws {
         guard changes.deletions.contains(where: { $0.zoneID == CloudKitRecordName.zoneID }) else { return }
         try resetSyncEngineStateForFullFetch(suppressesBootstrap: false, preservesLocalRecords: true)
@@ -788,8 +694,27 @@ private extension CloudKitRecordSyncManager {
     func handleAccountChange() throws {
         CloudKitSync.clearRemoteDataMayExist()
         CloudKitSync.setPendingRemoteReset(false)
+
+        stateLock.lock()
+        engineGeneration += 1
+        syncEngine = nil
+        fetchAccumulator = nil
+        pendingFetchStateSerialization = nil
+        serverRecordCacheByRecordName.removeAll()
+        needsFullFetchAfterCurrentSync = false
+        stateLock.unlock()
+
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
+            try CloudKitSyncState.clearBootstrapSuppression(in: db)
+            try CloudKitSyncState.clearLocalRecordPreservation(in: db)
+            try CloudKitOutboxEntry.deleteAll(db)
+            try CloudKitRecordMetadata.deleteAll(db)
+            try CloudKitLocalTombstone.deleteAll(db)
+            try CloudKitSettingRecord.deleteAll(db)
+        }
+
         CloudKitSync.disableAfterAccountChange()
-        try resetSyncEngineStateForFullFetch(suppressesBootstrap: true, preservesLocalRecords: true)
     }
 
     func handleFetchedRecordZoneChanges(_ changes: CKSyncEngine.Event.FetchedRecordZoneChanges) throws {
@@ -832,11 +757,19 @@ private extension CloudKitRecordSyncManager {
         let savedRecordVersions = Dictionary(
             uniqueKeysWithValues: changes.savedRecords.map { ($0.recordID.recordName, modificationTime(of: $0)) }
         )
+        for recordName in savedRecordVersions.keys {
+            evictCachedServerRecord(recordName: recordName)
+        }
         let failedSaveResults = Dictionary(
             uniqueKeysWithValues: changes.failedRecordSaves.map {
                 ($0.record.recordID.recordName, (version: modificationTime(of: $0.record), error: $0.error as Error))
             }
         )
+        for failure in changes.failedRecordSaves {
+            if let serverRecord = failure.error.serverRecord {
+                cacheServerRecord(serverRecord)
+            }
+        }
         let failedDeleteErrors = changes.failedRecordDeletes
             .filter { !isRecordNotFound($0.value) }
         let deletedRecordNames = Set(deletedRecordIDs.map(\.recordName))
@@ -950,6 +883,7 @@ private extension CloudKitRecordSyncManager {
                 if serverStateWins(
                     recordName: entry.recordName,
                     entryModificationTime: entry.modificationTime,
+                    operation: operation,
                     serverRecordState: serverRecordState
                 ) {
                     requestFullFetchAfterCurrentSync()
@@ -1088,6 +1022,8 @@ private extension CloudKitRecordSyncManager {
         engineGeneration += 1
         syncEngine = nil
         fetchAccumulator = nil
+        pendingFetchStateSerialization = nil
+        serverRecordCacheByRecordName.removeAll()
         needsFullFetchAfterCurrentSync = false
         uploadAssetFilesByRecordName.removeAll()
         stateLock.unlock()
@@ -1186,7 +1122,7 @@ private extension CloudKitRecordSyncManager {
     }
 }
 
-private extension CloudKitRecordSyncManager {
+extension CloudKitRecordSyncManager {
     func syncEngineInstance(expectedGeneration: UInt64? = nil) throws -> CKSyncEngine {
         stateLock.lock()
         if let expectedGeneration, expectedGeneration != engineGeneration {
@@ -1258,9 +1194,13 @@ private extension CloudKitRecordSyncManager {
             suppressesBootstrap = try CloudKitSyncState.consumeBootstrapSuppression(in: db)
             preservesLocalRecords = try CloudKitSyncState.consumeLocalRecordPreservation(in: db)
         }
+        let bootstrapsLocalRecords = preservesLocalRecords || (!suppressesBootstrap && !CloudKitSync.remoteDataMayExist)
+        // Prune local-only records on a fresh full fetch unless we're explicitly
+        // bootstrapping (uploading local) or preserving (rebuild path). When the
+        // remote zone is canonical we want stale local records to disappear.
         return FreshEngineMode(
-            bootstrapsLocalRecords: preservesLocalRecords || (!suppressesBootstrap && !CloudKitSync.remoteDataMayExist),
-            prunesMissingLocalRecords: false
+            bootstrapsLocalRecords: bootstrapsLocalRecords,
+            prunesMissingLocalRecords: !bootstrapsLocalRecords && !preservesLocalRecords
         )
     }
 
@@ -1275,6 +1215,8 @@ private extension CloudKitRecordSyncManager {
         engineGeneration += 1
         syncEngine = nil
         fetchAccumulator = nil
+        pendingFetchStateSerialization = nil
+        serverRecordCacheByRecordName.removeAll()
         needsFullFetchAfterCurrentSync = false
         stateLock.unlock()
 
@@ -1313,6 +1255,7 @@ private extension CloudKitRecordSyncManager {
     func discardFetchAccumulation() {
         stateLock.lock()
         fetchAccumulator = nil
+        pendingFetchStateSerialization = nil
         stateLock.unlock()
     }
 
@@ -1346,8 +1289,37 @@ private extension CloudKitRecordSyncManager {
         return accumulator
     }
 
+    func isAccumulatingFetch() -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return fetchAccumulator != nil
+    }
+
+    func setPendingFetchStateSerialization(_ serialization: CKSyncEngine.State.Serialization) {
+        stateLock.lock()
+        pendingFetchStateSerialization = serialization
+        stateLock.unlock()
+    }
+
+    func takePendingFetchStateSerialization() -> CKSyncEngine.State.Serialization? {
+        stateLock.lock()
+        let serialization = pendingFetchStateSerialization
+        pendingFetchStateSerialization = nil
+        stateLock.unlock()
+        return serialization
+    }
+
+    func clearPendingFetchStateSerialization() {
+        stateLock.lock()
+        pendingFetchStateSerialization = nil
+        stateLock.unlock()
+    }
+
     func applyAccumulatedFetchIfNeeded() throws {
-        guard let accumulator = takeFetchAccumulator() else { return }
+        guard let accumulator = takeFetchAccumulator() else {
+            try persistPendingFetchStateSerializationIfNeeded()
+            return
+        }
         let remoteChanges = makeRemoteChangeSet(
             changedRecords: accumulator.changedRecords,
             physicalDeletedRecords: accumulator.physicalDeletedRecords
@@ -1360,11 +1332,18 @@ private extension CloudKitRecordSyncManager {
 
         setApplyingRemoteChanges(true)
         defer { setApplyingRemoteChanges(false) }
+        let pendingState = takePendingFetchStateSerialization()
         try applyRemoteChanges(
             remoteChanges,
             missingDependenciesAreOrphans: accumulator.isFullSnapshot,
-            prunesMissingLocalRecords: accumulator.isFullSnapshot && accumulator.prunesMissingLocalRecords
+            prunesMissingLocalRecords: accumulator.isFullSnapshot && accumulator.prunesMissingLocalRecords,
+            pendingStateSerialization: pendingState
         )
+    }
+
+    func persistPendingFetchStateSerializationIfNeeded() throws {
+        guard let serialization = takePendingFetchStateSerialization() else { return }
+        try persistSyncEngineStateSerialization(serialization)
     }
 
     func requestFullFetchAfterCurrentSync() {
@@ -1490,6 +1469,8 @@ private extension CloudKitRecordSyncManager {
         engineGeneration += 1
         syncEngine = nil
         fetchAccumulator = nil
+        pendingFetchStateSerialization = nil
+        serverRecordCacheByRecordName.removeAll()
         needsFullFetchAfterCurrentSync = false
         stateLock.unlock()
         _ = try AppDatabase.shared.dbWriter?.write { db in
@@ -1506,9 +1487,11 @@ private extension CloudKitRecordSyncManager {
     }
 
     func sendChangesAndCleanupUploadAssets(_ engine: CKSyncEngine) async throws {
-        defer {
-            cleanupAllUploadAssetFiles()
-        }
+        // Per-record cleanup happens in handleSentRecordZoneChanges as soon as
+        // CKSyncEngine acks each save. Files for entries that couldn't ship in
+        // this batch (paused, retried, or pending) must stay on disk; CKSyncEngine
+        // may retry them after sendChanges returns. Sweeping all temp files here
+        // would race those retries and surface as missing-asset errors.
         try await engine.sendChanges()
     }
 
@@ -1674,8 +1657,15 @@ private extension CloudKitRecordSyncManager {
     }
 
     func fetchServerRecordState(for entries: [CloudKitOutboxEntry]) async throws -> ServerRecordState {
-        let recordIDs = entries.map { CloudKitRecordName.recordID($0.recordName) }
-        let recordsByName = try await fetchRecords(recordIDs: Array(Dictionary(uniqueKeysWithValues: recordIDs.map { ($0.recordName, $0) }).values))
+        let allRecordNames = Set(entries.map(\.recordName))
+        let cachedRecords = takeCachedServerRecords(for: allRecordNames)
+        let uncachedRecordNames = allRecordNames.subtracting(cachedRecords.keys)
+        let uncachedRecordIDs = uncachedRecordNames.map { CloudKitRecordName.recordID($0) }
+        var recordsByName: [String: CKRecord] = cachedRecords
+        if !uncachedRecordIDs.isEmpty {
+            let fetched = try await fetchRecords(recordIDs: uncachedRecordIDs)
+            recordsByName.merge(fetched) { _, new in new }
+        }
         var activeRecordsByRecordName: [String: CKRecord] = [:]
         var tombstonesByDeletedRecordName: [String: RemoteTombstone] = [:]
         for record in recordsByName.values {
@@ -1692,6 +1682,36 @@ private extension CloudKitRecordSyncManager {
             activeRecordsByRecordName: activeRecordsByRecordName,
             tombstonesByDeletedRecordName: tombstonesByDeletedRecordName
         )
+    }
+
+    func cacheServerRecord(_ record: CKRecord) {
+        stateLock.lock()
+        serverRecordCacheByRecordName[record.recordID.recordName] = record
+        stateLock.unlock()
+    }
+
+    func evictCachedServerRecord(recordName: String) {
+        stateLock.lock()
+        serverRecordCacheByRecordName.removeValue(forKey: recordName)
+        stateLock.unlock()
+    }
+
+    func takeCachedServerRecords(for recordNames: Set<String>) -> [String: CKRecord] {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        var result: [String: CKRecord] = [:]
+        for name in recordNames {
+            if let record = serverRecordCacheByRecordName.removeValue(forKey: name) {
+                result[name] = record
+            }
+        }
+        return result
+    }
+
+    func clearServerRecordCache() {
+        stateLock.lock()
+        serverRecordCacheByRecordName.removeAll()
+        stateLock.unlock()
     }
 
     func fetchRecords(recordIDs: [CKRecord.ID]) async throws -> [String: CKRecord] {
@@ -1761,9 +1781,23 @@ private extension CloudKitRecordSyncManager {
         }
     }
 
-    func serverStateWins(recordName: String, entryModificationTime: Int64, serverRecordState: ServerRecordState) -> Bool {
+    func serverStateWins(
+        recordName: String,
+        entryModificationTime: Int64,
+        operation: CloudKitOutboxEntry.Operation,
+        serverRecordState: ServerRecordState
+    ) -> Bool {
+        // Local delete and purge intents always take priority. CloudKit will merge
+        // tombstones server-side; suppressing them locally would leave the user's
+        // delete stuck behind a stale tombstone-equal-time race.
+        switch operation {
+        case .delete, .purge:
+            return false
+        case .save:
+            break
+        }
         if let tombstone = serverRecordState.tombstonesByDeletedRecordName[recordName],
-           tombstone.deletionTime >= entryModificationTime {
+           tombstone.deletionTime > entryModificationTime {
             return true
         }
         guard let serverRecord = serverRecordState.activeRecordsByRecordName[recordName] else { return false }
@@ -1771,7 +1805,7 @@ private extension CloudKitRecordSyncManager {
     }
 }
 
-private extension CloudKitRecordSyncManager {
+extension CloudKitRecordSyncManager {
     func makeRecord(
         for entry: CloudKitOutboxEntry,
         type: CloudKitRecordType,
@@ -1947,7 +1981,11 @@ private extension CloudKitRecordSyncManager {
         let baseName = URL(fileURLWithPath: preferredFileName).lastPathComponent
         let fileName = pathExtension.isEmpty ? "\(baseName)-\(UUID().uuidString)" : "\(baseName)-\(UUID().uuidString).\(pathExtension)"
         let destinationURL = directory.appendingPathComponent(fileName)
-        try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+        do {
+            try FileManager.default.linkItem(at: sourceURL, to: destinationURL)
+        } catch {
+            try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+        }
         return destinationURL
     }
 
@@ -2102,8 +2140,13 @@ private extension CloudKitRecordSyncManager {
     }
 }
 
-private extension CloudKitRecordSyncManager {
-    func applyRemoteChanges(_ changes: RemoteChangeSet, missingDependenciesAreOrphans: Bool, prunesMissingLocalRecords: Bool) throws {
+extension CloudKitRecordSyncManager {
+    func applyRemoteChanges(
+        _ changes: RemoteChangeSet,
+        missingDependenciesAreOrphans: Bool,
+        prunesMissingLocalRecords: Bool,
+        pendingStateSerialization: CKSyncEngine.State.Serialization? = nil
+    ) throws {
         let imageRecordNamesToStage = try imageRecordNamesToStage(changes)
         var stagedImageAssets = try stageImageAssets(changes, allowedRecordNames: imageRecordNamesToStage)
         let allStagedImageFiles = stagedImageAssets.values.flatMap(\.copiedFiles)
@@ -2308,8 +2351,11 @@ private extension CloudKitRecordSyncManager {
 
                 try ensureSyncEnabled()
                 if hasDeferredRemoteRecords {
-                    print("CloudKit sync deferred remote records until their dependencies arrive")
+                    cloudKitSyncLog.info("deferred remote records until their dependencies arrive")
                     requestFullFetchAfterCurrentSync()
+                }
+                if let pendingStateSerialization {
+                    try CloudKitSyncState.setSyncEngineStateSerialization(pendingStateSerialization, in: db)
                 }
             }
         } catch {
@@ -2654,7 +2700,7 @@ private extension CloudKitRecordSyncManager {
     }
 }
 
-private extension CloudKitRecordSyncManager {
+extension CloudKitRecordSyncManager {
     func applyStyleRecord(_ record: CKRecord, in db: Database) throws -> Bool {
         guard let syncId = stringValue(Field.syncId, in: record),
               let name = stringValue(Field.name, in: record),
@@ -2666,7 +2712,7 @@ private extension CloudKitRecordSyncManager {
               let symbolAngle = intValue(Field.symbolAngle, in: record),
               let imageDisplayModeRaw = intValue(Field.imageDisplayMode, in: record),
               let controlAlpha = intValue(Field.controlAlpha, in: record) else {
-            print("CloudKit style import skipped because required fields are missing: \(record.recordID.recordName)")
+            cloudKitSyncLog.info("style import skipped: missing fields for \(record.recordID.recordName, privacy: .private)")
             return false
         }
         let existing = try PostStyle
@@ -2702,7 +2748,7 @@ private extension CloudKitRecordSyncManager {
         guard let syncId = stringValue(Field.syncId, in: record),
               let isPinned = boolValue(Field.isPinned, in: record),
               let order = int64Value(Field.order, in: record) else {
-            print("CloudKit post import skipped because required fields are missing: \(record.recordID.recordName)")
+            cloudKitSyncLog.info("post import skipped: missing fields for \(record.recordID.recordName, privacy: .private)")
             return false
         }
         let existing = try Post
@@ -2741,7 +2787,7 @@ private extension CloudKitRecordSyncManager {
               let postSyncId = stringValue(Field.postSyncId, in: record),
               let content = stringValue(Field.content, in: record),
               let order = int64Value(Field.order, in: record) else {
-            print("CloudKit text import skipped because required fields are missing: \(record.recordID.recordName)")
+            cloudKitSyncLog.info("text import skipped: missing fields for \(record.recordID.recordName, privacy: .private)")
             return (false, false, [])
         }
         let remoteModificationTime = modificationTime(of: record)
@@ -2819,7 +2865,7 @@ private extension CloudKitRecordSyncManager {
               let maxX = int64Value(Field.maxX, in: record),
               let maxY = int64Value(Field.maxY, in: record),
               let order = int64Value(Field.order, in: record) else {
-            print("CloudKit image import skipped because required fields are missing: \(record.recordID.recordName)")
+            cloudKitSyncLog.info("image import skipped: missing fields for \(record.recordID.recordName, privacy: .private)")
             return (false, false, [])
         }
         let remoteModificationTime = modificationTime(of: record)
@@ -2879,7 +2925,7 @@ private extension CloudKitRecordSyncManager {
 
         if (needsOriginalAsset && stagedAssets?.originalName == nil)
             || (needsProcessedAsset && stagedAssets?.processedName == nil) {
-            print("CloudKit image import skipped because assets are incomplete: \(record.recordID.recordName)")
+            cloudKitSyncLog.info("image import skipped: assets incomplete for \(record.recordID.recordName, privacy: .private)")
             CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.imageAssetMissing"))
             return (false, false, [])
         }
@@ -3102,344 +3148,4 @@ private extension CloudKitRecordSyncManager {
     }
 }
 
-private extension CloudKitRecordSyncManager {
-    func applyTombstone(_ tombstone: RemoteTombstone, in db: Database) throws -> (didChangeDatabase: Bool, deletedImageFiles: [(String, CacheImageType)]) {
-        switch tombstone.deletedRecordType {
-        case .post:
-            guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .post),
-                  let post = try Post.filter(Column(Post.CodingKeys.syncId) == syncId).fetchOne(db),
-                  let postId = post.id else {
-                return (false, [])
-            }
-            let images = try PostImage
-                .filter(Column(PostImage.CodingKeys.postId) == postId)
-                .fetchAll(db)
-            let texts = try PostText
-                .filter(Column(PostText.CodingKeys.postId) == postId)
-                .fetchAll(db)
-            let decorations = try PostDecoration
-                .filter(Column(PostDecoration.CodingKeys.postId) == postId)
-                .fetchAll(db)
-            var graphModificationTime = post.modificationTime ?? 0
-            for image in images {
-                graphModificationTime = max(graphModificationTime, image.modificationTime ?? 0)
-            }
-            for text in texts {
-                graphModificationTime = max(graphModificationTime, text.modificationTime ?? 0)
-            }
-            for decoration in decorations {
-                graphModificationTime = max(graphModificationTime, decoration.modificationTime ?? 0)
-            }
-            guard tombstone.deletionTime >= graphModificationTime else {
-                if graphModificationTime > (post.modificationTime ?? 0) {
-                    try Post
-                        .filter(Column(Post.CodingKeys.id) == postId)
-                        .updateAll(db, Column(Post.CodingKeys.modificationTime).set(to: graphModificationTime))
-                }
-                try CloudKitOutboxEntry.enqueueSave(recordType: .post, syncId: post.syncId, modificationTime: graphModificationTime, in: db)
-                return (false, [])
-            }
-            for image in images {
-                try CloudKitLocalTombstone.store(recordType: .image, recordName: image.cloudKitRecordName, deletionTime: tombstone.deletionTime, in: db)
-                try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, deletionTime: tombstone.deletionTime, in: db)
-            }
-            for text in texts {
-                try CloudKitLocalTombstone.store(recordType: .text, recordName: text.cloudKitRecordName, deletionTime: tombstone.deletionTime, in: db)
-                try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, deletionTime: tombstone.deletionTime, in: db)
-            }
-            for decoration in decorations {
-                try CloudKitLocalTombstone.store(recordType: .decoration, recordName: decoration.cloudKitRecordName, deletionTime: tombstone.deletionTime, in: db)
-                try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: tombstone.deletionTime, in: db)
-            }
-            try PostImage.deleteAll(db, ids: images.compactMap(\.id))
-            try PostText.deleteAll(db, ids: texts.compactMap(\.id))
-            try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
-            try Post.deleteAll(db, ids: [postId])
-            try OnboardingLocalRecord.unmark(recordType: .post, syncId: post.syncId, in: db)
-            try OnboardingLocalRecord.unmark(recordType: .image, syncIds: images.map(\.syncId), in: db)
-            try OnboardingLocalRecord.unmark(recordType: .text, syncIds: texts.map(\.syncId), in: db)
-            try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
-            return (true, imageFiles(for: images))
-        case .text:
-            guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .text),
-                  let text = try PostText.filter(Column(PostText.CodingKeys.syncId) == syncId).fetchOne(db),
-                  let textId = text.id else {
-                return (false, [])
-            }
-            guard tombstone.deletionTime >= (text.modificationTime ?? 0) else {
-                try enqueueCloudKitSaveIfNeeded(recordType: .text, syncId: text.syncId, modificationTime: text.modificationTime, in: db)
-                try enqueuePostGraphSaveIfNeeded(postId: text.postId, modificationTime: text.modificationTime, in: db)
-                return (false, [])
-            }
-            try bumpPostGraphForAppliedChildDelete(postId: text.postId, modificationTime: tombstone.deletionTime, in: db)
-            try PostText.deleteAll(db, ids: [textId])
-            try OnboardingLocalRecord.unmark(recordType: .text, syncId: text.syncId, in: db)
-            return (true, [])
-        case .image:
-            guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .image),
-                  let image = try PostImage.filter(Column(PostImage.CodingKeys.syncId) == syncId).fetchOne(db),
-                  let imageId = image.id else {
-                return (false, [])
-            }
-            guard tombstone.deletionTime >= (image.modificationTime ?? 0) else {
-                try enqueueCloudKitSaveIfNeeded(recordType: .image, syncId: image.syncId, modificationTime: image.modificationTime, in: db)
-                try enqueuePostGraphSaveIfNeeded(postId: image.postId, modificationTime: image.modificationTime, in: db)
-                return (false, [])
-            }
-            try bumpPostGraphForAppliedChildDelete(postId: image.postId, modificationTime: tombstone.deletionTime, in: db)
-            try PostImage.deleteAll(db, ids: [imageId])
-            try OnboardingLocalRecord.unmark(recordType: .image, syncId: image.syncId, in: db)
-            return (true, imageFiles(for: [image]))
-        case .style:
-            guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .style) else {
-                return (false, [])
-            }
-            let didClearPendingDefaultStyle = try DefaultStyle.clearPendingCloudKitDefaultStyleIfNeeded(syncId: syncId, in: db)
-            guard let style = try PostStyle.filter(Column(PostStyle.CodingKeys.syncId) == syncId).fetchOne(db),
-                  let styleId = style.id else {
-                return (didClearPendingDefaultStyle, [])
-            }
-            let decorations = try PostDecoration
-                .filter(Column(PostDecoration.CodingKeys.styleId) == styleId)
-                .fetchAll(db)
-            var graphModificationTime = style.modificationTime ?? 0
-            for decoration in decorations {
-                graphModificationTime = max(graphModificationTime, decoration.modificationTime ?? 0)
-            }
-            guard tombstone.deletionTime >= graphModificationTime else {
-                if graphModificationTime > (style.modificationTime ?? 0) {
-                    try PostStyle
-                        .filter(Column(PostStyle.CodingKeys.id) == styleId)
-                        .updateAll(db, Column(PostStyle.CodingKeys.modificationTime).set(to: graphModificationTime))
-                }
-                try CloudKitOutboxEntry.enqueueSave(recordType: .style, syncId: style.syncId, modificationTime: graphModificationTime, in: db)
-                return (didClearPendingDefaultStyle, [])
-            }
-            let fallbackStyle = try PostStyle
-                .filter(PostStyle.Columns.id != styleId)
-                .order(PostStyle.Columns.id.asc)
-                .fetchOne(db)
-            for decoration in decorations {
-                try CloudKitLocalTombstone.store(recordType: .decoration, recordName: decoration.cloudKitRecordName, deletionTime: tombstone.deletionTime, in: db)
-                try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: tombstone.deletionTime, in: db)
-            }
-            try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
-            try PostStyle.deleteAll(db, ids: [styleId])
-            if try DefaultStyle.replaceDeletedStyleIfNeeded(
-                deletedStyle: style,
-                fallbackStyle: fallbackStyle,
-                modificationTime: tombstone.deletionTime,
-                in: db
-            ) {
-                try CloudKitOutboxEntry.enqueueSetting(modificationTime: tombstone.deletionTime, in: db)
-            }
-            try OnboardingLocalRecord.unmark(recordType: .style, syncId: style.syncId, in: db)
-            try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
-            return (true, [])
-        case .decoration:
-            guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .decoration),
-                  let decoration = try PostDecoration.filter(Column(PostDecoration.CodingKeys.syncId) == syncId).fetchOne(db),
-                  let decorationId = decoration.id else {
-                return (false, [])
-            }
-            guard tombstone.deletionTime >= (decoration.modificationTime ?? 0) else {
-                try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
-                try enqueuePostGraphSaveIfNeeded(postId: decoration.postId, modificationTime: decoration.modificationTime, in: db)
-                try enqueueStyleGraphSaveIfNeeded(styleId: decoration.styleId, modificationTime: decoration.modificationTime, in: db)
-                return (false, [])
-            }
-            try bumpPostGraphForAppliedChildDelete(postId: decoration.postId, modificationTime: tombstone.deletionTime, in: db)
-            try bumpStyleGraphForAppliedChildDelete(styleId: decoration.styleId, modificationTime: tombstone.deletionTime, in: db)
-            try PostDecoration.deleteAll(db, ids: [decorationId])
-            try OnboardingLocalRecord.unmark(recordType: .decoration, syncId: decoration.syncId, in: db)
-            return (true, [])
-        case .setting:
-            let setting = try CloudKitSettingRecord.current(in: db)
-            guard tombstone.deletedRecordName == CloudKitRecordName.settingsName,
-                  tombstone.deletionTime >= setting.defaultStyleModificationTime else {
-                return (false, [])
-            }
-            return (try DefaultStyle.clearCloudKitStateForMissingRemoteSetting(in: db), [])
-        }
-    }
 
-    func bumpPostGraphForAppliedChildDelete(postId: Int64, modificationTime: Int64, in db: Database) throws {
-        guard let post = try Post.fetchOne(db, id: postId) else { return }
-        if (post.modificationTime ?? 0) < modificationTime {
-            try Post
-                .filter(Column(Post.CodingKeys.id) == postId)
-                .updateAll(db, Column(Post.CodingKeys.modificationTime).set(to: modificationTime))
-        }
-        guard try !OnboardingLocalRecord.isMarked(recordType: .post, syncId: post.syncId, in: db) else { return }
-        try CloudKitOutboxEntry.enqueueSave(recordType: .post, syncId: post.syncId, modificationTime: modificationTime, in: db)
-    }
-
-    func bumpStyleGraphForAppliedChildDelete(styleId: Int64, modificationTime: Int64, in db: Database) throws {
-        guard let style = try PostStyle.fetchOne(db, id: styleId) else { return }
-        if (style.modificationTime ?? 0) < modificationTime {
-            try PostStyle
-                .filter(Column(PostStyle.CodingKeys.id) == styleId)
-                .updateAll(db, Column(PostStyle.CodingKeys.modificationTime).set(to: modificationTime))
-        }
-        guard try !OnboardingLocalRecord.isMarked(recordType: .style, syncId: style.syncId, in: db) else { return }
-        try CloudKitOutboxEntry.enqueueSave(recordType: .style, syncId: style.syncId, modificationTime: modificationTime, in: db)
-    }
-
-    func imageFiles(for images: [PostImage]) -> [(String, CacheImageType)] {
-        images.flatMap { image in
-            [(image.original, .original), (image.processed, .processed)]
-        }
-    }
-
-    func cleanupCopiedImageFiles(_ copiedImageFiles: [(String, CacheImageType)]) {
-        for (fileName, type) in copiedImageFiles {
-            _ = ImageCacheManager.shared.deleteImage(fileName: fileName, type: type)
-        }
-    }
-
-}
-
-private extension CloudKitRecordSyncManager {
-    func imageRecordNamesToStage(_ changes: RemoteChangeSet) throws -> Set<String> {
-        var recordNames = Set<String>()
-        try AppDatabase.shared.dbWriter?.read { db in
-            let pendingDeletes = try pendingDeleteOutboxByRecordName(in: db)
-            let localTombstones = try CloudKitLocalTombstone.allByRecordName(in: db)
-            for record in activeRemoteRecords(
-                type: .image,
-                changes: changes,
-                pendingDeletes: pendingDeletes,
-                localTombstones: localTombstones
-            ) {
-                guard let syncId = stringValue(Field.syncId, in: record) else {
-                    recordNames.insert(record.recordID.recordName)
-                    continue
-                }
-                let existing = try PostImage
-                    .filter(Column(PostImage.CodingKeys.syncId) == syncId)
-                    .fetchOne(db)
-                guard let existing else {
-                    recordNames.insert(record.recordID.recordName)
-                    continue
-                }
-                let remoteOriginalFileName = stringValue(Field.originalFileName, in: record)
-                let remoteProcessedFileName = stringValue(Field.processedFileName, in: record)
-                let remoteModificationTime = modificationTime(of: record)
-                let needsOriginalAsset = (remoteOriginalFileName != nil && remoteOriginalFileName != existing.original)
-                || ImageCacheManager.shared.getURL(name: existing.original, type: .original) == nil
-                let needsProcessedAsset = (remoteProcessedFileName != nil && remoteProcessedFileName != existing.processed)
-                || ImageCacheManager.shared.getURL(name: existing.processed, type: .processed) == nil
-                if remoteModificationTime > (existing.modificationTime ?? 0) || needsOriginalAsset || needsProcessedAsset {
-                    recordNames.insert(record.recordID.recordName)
-                }
-            }
-        }
-        return recordNames
-    }
-
-    func isDeletedRecord(_ record: CKRecord) -> Bool {
-        boolValue(Field.isDeleted, in: record) == true
-    }
-
-    func makeRemoteTombstone(from record: CKRecord, type: CloudKitRecordType) -> RemoteTombstone? {
-        let deletedRecordName = stringValue(Field.deletedRecordName, in: record) ?? record.recordID.recordName
-        let deletedRecordType = stringValue(Field.deletedRecordType, in: record)
-            .flatMap(CloudKitRecordType.init(rawValue:))
-            ?? type
-        return RemoteTombstone(
-            deletedRecordType: deletedRecordType,
-            deletedRecordName: deletedRecordName,
-            deletionTime: int64Value(Field.deletionTime, in: record) ?? modificationTime(of: record)
-        )
-    }
-
-    func modificationTime(of record: CKRecord) -> Int64 {
-        int64Value(Field.modificationTime, in: record)
-        ?? record.modificationDate?.nanoSecondSince1970
-        ?? 0
-    }
-
-    func stageImageAssets(_ changes: RemoteChangeSet, allowedRecordNames: Set<String>) throws -> [String: StagedImageAssets] {
-        var stagedAssetsByRecordName: [String: StagedImageAssets] = [:]
-        var copiedFiles: [(String, CacheImageType)] = []
-        do {
-            for record in changes.activeRecordsByType[.image] ?? [] {
-                guard allowedRecordNames.contains(record.recordID.recordName) else { continue }
-                let syncId = stringValue(Field.syncId, in: record) ?? record.recordID.recordName
-                let originalName = try copyAsset(
-                    field: Field.originalAsset,
-                    from: record,
-                    preferredFileName: stringValue(Field.originalFileName, in: record) ?? "\(syncId)-original",
-                    type: .original
-                )
-                if let originalName {
-                    copiedFiles.append((originalName, .original))
-                }
-                let processedName = try copyAsset(
-                    field: Field.processedAsset,
-                    from: record,
-                    preferredFileName: stringValue(Field.processedFileName, in: record) ?? "\(syncId)-processed",
-                    type: .processed
-                )
-                if let processedName {
-                    copiedFiles.append((processedName, .processed))
-                }
-                if originalName != nil || processedName != nil {
-                    stagedAssetsByRecordName[record.recordID.recordName] = StagedImageAssets(
-                        originalName: originalName,
-                        processedName: processedName
-                    )
-                }
-            }
-        } catch {
-            cleanupCopiedImageFiles(copiedFiles)
-            throw error
-        }
-        return stagedAssetsByRecordName
-    }
-
-    func copyAsset(
-        field: String,
-        from record: CKRecord,
-        preferredFileName: String,
-        type: CacheImageType
-    ) throws -> String? {
-        guard let asset = record[field] as? CKAsset,
-              let fileURL = asset.fileURL else {
-            return nil
-        }
-        return try ImageCacheManager.shared.copyImage(from: fileURL, preferredFileName: preferredFileName, type: type, overwrite: false)
-    }
-
-    func stringValue(_ field: String, in record: CKRecord) -> String? {
-        record[field] as? String
-    }
-
-    func intValue(_ field: String, in record: CKRecord) -> Int? {
-        (record[field] as? NSNumber)?.intValue
-    }
-
-    func int64Value(_ field: String, in record: CKRecord) -> Int64? {
-        (record[field] as? NSNumber)?.int64Value
-    }
-
-    func boolValue(_ field: String, in record: CKRecord) -> Bool? {
-        (record[field] as? NSNumber)?.boolValue
-    }
-
-    func set(_ value: String?, for field: String, on record: CKRecord) {
-        record[field] = value as CKRecordValue?
-    }
-
-    func set(_ value: Int64?, for field: String, on record: CKRecord) {
-        if let value {
-            record[field] = NSNumber(value: value)
-        } else {
-            record[field] = nil
-        }
-    }
-
-    func set(_ value: Bool, for field: String, on record: CKRecord) {
-        record[field] = NSNumber(value: value)
-    }
-}

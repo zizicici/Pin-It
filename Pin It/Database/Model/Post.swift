@@ -76,7 +76,7 @@ extension Post {
         modificationTime = try container.decodeIfPresent(Int64.self, forKey: .modificationTime)
         expirationTime = try container.decodeIfPresent(Int64.self, forKey: .expirationTime)
         actionLink = try container.decodeIfPresent(String.self, forKey: .actionLink) ?? ""
-        isPinned = try container.decodeIfPresent(Bool.self, forKey: .isPinned) ?? true
+        isPinned = try container.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
         order = try container.decodeIfPresent(Int64.self, forKey: .order) ?? 0
     }
 }

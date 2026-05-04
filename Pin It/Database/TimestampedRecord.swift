@@ -119,20 +119,9 @@ extension TimestampedRecord {
 
     func nextModificationTime(_ db: Database, modificationTime: Date?) throws -> Int64 {
         let timestamp = try modificationTime?.nanoSecondSince1970 ?? db.transactionDate.nanoSecondSince1970
-        let storedModificationTime = try persistedModificationTime(in: db)
-        let currentModificationTime = max(self.modificationTime ?? 0, storedModificationTime ?? 0)
+        let currentModificationTime = self.modificationTime ?? 0
         guard currentModificationTime > 0 else { return timestamp }
         return max(timestamp, currentModificationTime + 1)
-    }
-
-    private func persistedModificationTime(in db: Database) throws -> Int64? {
-        guard let id else { return nil }
-        let row = try Row.fetchOne(
-            db,
-            sql: "SELECT modification_time FROM \"\(Self.databaseTableName)\" WHERE id = ?",
-            arguments: [id]
-        )
-        return row?["modification_time"]
     }
 }
 
