@@ -76,6 +76,9 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
 
         super.init()
 
+        // Lazy vars are not thread-safe; .DatabaseUpdated can arrive from any
+        // thread, so force initialization while init is still single-threaded.
+        _ = updateDebounce
         cleanupTemporaryUploadAssetDirectory()
         NotificationCenter.default.addObserver(self, selector: #selector(databaseDidUpdate), name: .DatabaseUpdated, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(settingsDidUpdate), name: .DefaultStyleDidChanged, object: nil)

@@ -344,8 +344,12 @@ final class AppDatabase {
                 let originalSyncId: String = row["sync_id"]
                 let creationTime: Int64 = row["creation_time"]
                 let modificationTime: Int64 = row["modification_time"]
-                let isPinned: Bool = row["is_pinned"]
-                let nextOrder = nextOrderByPinnedState[isPinned] ?? 0
+                // The split-out text post must not inherit the pinned state:
+                // with MaxPinnedPosts == .one the original and the copy would
+                // otherwise both be pinned after migration. (The original post
+                // keeps its is_pinned untouched.)
+                let newPostIsPinned = false
+                let nextOrder = nextOrderByPinnedState[newPostIsPinned] ?? 0
                 let expirationTime: Int64? = row["expiration_time"]
                 let actionLink: String = row["action_link"]
                 let bumpedOriginalModTime = max(modificationTime, legacyTimestamp + postId)
@@ -370,7 +374,7 @@ final class AppDatabase {
                     arguments: [
                         creationTime,
                         newPostModTime,
-                        isPinned,
+                        newPostIsPinned,
                         nextOrder,
                         expirationTime,
                         actionLink,
@@ -411,7 +415,7 @@ final class AppDatabase {
                         ]
                     )
                 }
-                nextOrderByPinnedState[isPinned] = nextOrder + 1
+                nextOrderByPinnedState[newPostIsPinned] = nextOrder + 1
             }
 
             try db.execute(sql: """
@@ -540,19 +544,6 @@ final class AppDatabase {
         return migrator
     }
     
-    public func disconnect() {
-        self.dbWriter = nil
-    }
-    
-    public func reconnect() {
-        do {
-            let databasePool = try AppDatabase.generateDatabasePool()
-            try migrator.migrate(databasePool)
-            self.dbWriter = databasePool
-        } catch {
-            print(error)
-        }
-    }
 }
 
 extension AppDatabase {
@@ -800,25 +791,31 @@ extension AppDatabase {
         return deletedImages
     }
     
-    func update(post: Post) -> Bool {
-        guard post.id != nil else {
-            return false
-        }
+    /// Updates a post by mutating the freshly fetched row inside the write
+    /// transaction. Callers express intent through `mutate` so columns they did
+    /// not touch keep whatever value a concurrent writer (CloudKit pull) gave
+    /// them — passing a stale in-memory snapshot would silently revert those
+    /// fields and then win LWW with the bumped modification time.
+    func updatePost(id: Int64, mutate: (inout Post) -> Void) -> Bool {
+        var didChange = false
         do {
             _ = try dbWriter?.write{ db in
-                var savePost = post
-                if let postId = savePost.id {
-                    try promotePostGraphToUserContent(postId: postId, in: db)
+                guard var post = try Post.fetchOne(db, id: id) else {
+                    throw AppDatabaseError.missingPost(id)
                 }
-                try savePost.updateWithTimestamp(db)
-                try enqueueCloudKitSaveIfNeeded(recordType: .post, syncId: savePost.syncId, modificationTime: savePost.modificationTime, in: db)
+                guard try post.updateChangesWithTimestamp(db, modify: mutate) else { return }
+                try promotePostGraphToUserContent(postId: id, in: db)
+                try enqueueCloudKitSaveIfNeeded(recordType: .post, syncId: post.syncId, modificationTime: post.modificationTime, in: db)
+                didChange = true
             }
         }
         catch {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        if didChange {
+            NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        }
         return true
     }
     
@@ -954,32 +951,37 @@ extension AppDatabase {
         return true
     }
     
-    func update(image: PostImage) -> Bool {
-        guard let imageId = image.id else {
-            return false
-        }
+    /// See `updatePost(id:mutate:)` for why updates go through a mutation
+    /// closure instead of a caller-provided record.
+    func updateImage(id: Int64, mutate: (inout PostImage) -> Void) -> Bool {
+        var didChange = false
         do {
             _ = try dbWriter?.write{ db in
-                var saveImage = image
-                guard let storedImage = try PostImage.fetchOne(db, id: imageId) else {
-                    throw AppDatabaseError.missingImage(imageId)
+                guard var image = try PostImage.fetchOne(db, id: id) else {
+                    throw AppDatabaseError.missingImage(id)
                 }
-                try requirePost(postId: saveImage.postId, in: db)
-                try promotePostGraphToUserContent(postId: storedImage.postId, in: db)
-                try promotePostGraphToUserContent(postId: saveImage.postId, in: db)
-                try saveImage.updateWithTimestamp(db)
-                try enqueueCloudKitSaveIfNeeded(recordType: .image, syncId: saveImage.syncId, modificationTime: saveImage.modificationTime, in: db)
-                try touchPostForCloudKit(postId: storedImage.postId, modificationTime: saveImage.modificationTime, in: db)
-                if storedImage.postId != saveImage.postId {
-                    try touchPostForCloudKit(postId: saveImage.postId, modificationTime: saveImage.modificationTime, in: db)
+                var mutated = image
+                mutate(&mutated)
+                let originalPostId = image.postId
+                try requirePost(postId: mutated.postId, in: db)
+                guard try image.updateChangesWithTimestamp(db, modify: { $0 = mutated }) else { return }
+                try promotePostGraphToUserContent(postId: originalPostId, in: db)
+                try enqueueCloudKitSaveIfNeeded(recordType: .image, syncId: image.syncId, modificationTime: image.modificationTime, in: db)
+                try touchPostForCloudKit(postId: originalPostId, modificationTime: image.modificationTime, in: db)
+                if mutated.postId != originalPostId {
+                    try promotePostGraphToUserContent(postId: mutated.postId, in: db)
+                    try touchPostForCloudKit(postId: mutated.postId, modificationTime: image.modificationTime, in: db)
                 }
+                didChange = true
             }
         }
         catch {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        if didChange {
+            NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        }
         return true
     }
     
@@ -1061,32 +1063,37 @@ extension AppDatabase {
         return true
     }
     
-    func update(text: PostText) -> Bool {
-        guard let textId = text.id else {
-            return false
-        }
+    /// See `updatePost(id:mutate:)` for why updates go through a mutation
+    /// closure instead of a caller-provided record.
+    func updateText(id: Int64, mutate: (inout PostText) -> Void) -> Bool {
+        var didChange = false
         do {
             _ = try dbWriter?.write{ db in
-                var saveText = text
-                guard let storedText = try PostText.fetchOne(db, id: textId) else {
-                    throw AppDatabaseError.missingText(textId)
+                guard var text = try PostText.fetchOne(db, id: id) else {
+                    throw AppDatabaseError.missingText(id)
                 }
-                try requirePost(postId: saveText.postId, in: db)
-                try promotePostGraphToUserContent(postId: storedText.postId, in: db)
-                try promotePostGraphToUserContent(postId: saveText.postId, in: db)
-                try saveText.updateWithTimestamp(db)
-                try enqueueCloudKitSaveIfNeeded(recordType: .text, syncId: saveText.syncId, modificationTime: saveText.modificationTime, in: db)
-                try touchPostForCloudKit(postId: storedText.postId, modificationTime: saveText.modificationTime, in: db)
-                if storedText.postId != saveText.postId {
-                    try touchPostForCloudKit(postId: saveText.postId, modificationTime: saveText.modificationTime, in: db)
+                var mutated = text
+                mutate(&mutated)
+                let originalPostId = text.postId
+                try requirePost(postId: mutated.postId, in: db)
+                guard try text.updateChangesWithTimestamp(db, modify: { $0 = mutated }) else { return }
+                try promotePostGraphToUserContent(postId: originalPostId, in: db)
+                try enqueueCloudKitSaveIfNeeded(recordType: .text, syncId: text.syncId, modificationTime: text.modificationTime, in: db)
+                try touchPostForCloudKit(postId: originalPostId, modificationTime: text.modificationTime, in: db)
+                if mutated.postId != originalPostId {
+                    try promotePostGraphToUserContent(postId: mutated.postId, in: db)
+                    try touchPostForCloudKit(postId: mutated.postId, modificationTime: text.modificationTime, in: db)
                 }
+                didChange = true
             }
         }
         catch {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        if didChange {
+            NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        }
         return true
     }
     
@@ -1194,15 +1201,23 @@ extension AppDatabase {
         return true
     }
     
-    public func update(posts: [Post]) -> Bool {
+    /// Batch pin/order placement used by drag-to-reorder. Rows are fetched
+    /// fresh inside the transaction; only posts whose placement actually
+    /// differs are written and enqueued.
+    public func updatePostPlacements(_ placements: [(postId: Int64, isPinned: Bool, order: Int64)]) -> Bool {
+        var didChange = false
         do {
             _ = try dbWriter?.write{ db in
-                for var post in posts {
-                    if let postId = post.id {
-                        try promotePostGraphToUserContent(postId: postId, in: db)
+                for placement in placements {
+                    guard var post = try Post.fetchOne(db, id: placement.postId) else { continue }
+                    let changed = try post.updateChangesWithTimestamp(db) {
+                        $0.isPinned = placement.isPinned
+                        $0.order = placement.order
                     }
-                    try post.updateWithTimestamp(db)
+                    guard changed else { continue }
+                    try promotePostGraphToUserContent(postId: placement.postId, in: db)
                     try enqueueCloudKitSaveIfNeeded(recordType: .post, syncId: post.syncId, modificationTime: post.modificationTime, in: db)
+                    didChange = true
                 }
             }
         }
@@ -1210,7 +1225,9 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        if didChange {
+            NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        }
         return true
     }
 }
@@ -1236,26 +1253,29 @@ extension AppDatabase {
         return saveStyle
     }
     
-    func update(style: PostStyle) -> Bool {
-        guard style.id != nil else {
-            return false
-        }
+    /// See `updatePost(id:mutate:)` for why updates go through a mutation
+    /// closure instead of a caller-provided record.
+    func updateStyle(id: Int64, mutate: (inout PostStyle) -> Void) -> Bool {
+        var didChange = false
         do {
             _ = try dbWriter?.write{ db in
-                var saveStyle = style
-                if let styleId = saveStyle.id {
-                    try promoteStyleToUserContent(styleId: styleId, in: db)
+                guard var style = try PostStyle.fetchOne(db, id: id) else {
+                    throw AppDatabaseError.missingStyle(id)
                 }
-                try saveStyle.updateWithTimestamp(db)
-                try enqueueCloudKitSaveIfNeeded(recordType: .style, syncId: saveStyle.syncId, modificationTime: saveStyle.modificationTime, in: db)
+                guard try style.updateChangesWithTimestamp(db, modify: mutate) else { return }
+                try promoteStyleToUserContent(styleId: id, in: db)
+                try enqueueCloudKitSaveIfNeeded(recordType: .style, syncId: style.syncId, modificationTime: style.modificationTime, in: db)
+                didChange = true
             }
         }
         catch {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
-        NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
+        if didChange {
+            NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+            NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
+        }
         return true
     }
     
@@ -1276,8 +1296,12 @@ extension AppDatabase {
                 let decorations = try PostDecoration
                     .filter(Column(PostDecoration.CodingKeys.styleId) == styleId)
                     .fetchAll(db)
+                let decorationDeletionTime = try db.transactionDate.nanoSecondSince1970
                 for decoration in decorations {
                     try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, in: db)
+                    // Cascading a decoration delete changes the post graph, same
+                    // as delete(decoration:) — keep the aggregate version in step.
+                    try touchPostForCloudKit(postId: decoration.postId, modificationTime: decorationDeletionTime, in: db)
                 }
                 try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
                 try PostStyle.deleteAll(db, ids: [styleId])
@@ -1339,41 +1363,47 @@ extension AppDatabase {
         return true
     }
     
-    func update(decoration: PostDecoration) -> Bool {
-        guard let decorationId = decoration.id else {
-            return false
-        }
+    /// See `updatePost(id:mutate:)` for why updates go through a mutation
+    /// closure instead of a caller-provided record.
+    func updateDecoration(id: Int64, mutate: (inout PostDecoration) -> Void) -> Bool {
+        var didChange = false
         do {
             _ = try dbWriter?.write{ db in
-                var saveDecoration = decoration
-                guard let storedDecoration = try PostDecoration.fetchOne(db, id: decorationId) else {
-                    throw AppDatabaseError.missingDecoration(decorationId)
+                guard var decoration = try PostDecoration.fetchOne(db, id: id) else {
+                    throw AppDatabaseError.missingDecoration(id)
                 }
-                try requirePost(postId: saveDecoration.postId, in: db)
-                try requireStyle(styleId: saveDecoration.styleId, in: db)
-                try promotePostGraphToUserContent(postId: storedDecoration.postId, in: db)
-                try promotePostGraphToUserContent(postId: saveDecoration.postId, in: db)
-                try promoteStyleToUserContent(styleId: storedDecoration.styleId, in: db)
-                try promoteStyleToUserContent(styleId: saveDecoration.styleId, in: db)
-                try deleteConflictingDecorations(postId: saveDecoration.postId, excludingId: decorationId, in: db)
-                try saveDecoration.updateWithTimestamp(db)
-                try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: saveDecoration.syncId, modificationTime: saveDecoration.modificationTime, in: db)
-                try touchPostForCloudKit(postId: storedDecoration.postId, modificationTime: saveDecoration.modificationTime, in: db)
-                try touchStyleForCloudKit(styleId: storedDecoration.styleId, modificationTime: saveDecoration.modificationTime, in: db)
-                if storedDecoration.postId != saveDecoration.postId {
-                    try touchPostForCloudKit(postId: saveDecoration.postId, modificationTime: saveDecoration.modificationTime, in: db)
+                var mutated = decoration
+                mutate(&mutated)
+                let originalPostId = decoration.postId
+                let originalStyleId = decoration.styleId
+                try requirePost(postId: mutated.postId, in: db)
+                try requireStyle(styleId: mutated.styleId, in: db)
+                guard try decoration.updateChangesWithTimestamp(db, modify: { $0 = mutated }) else { return }
+                try promotePostGraphToUserContent(postId: originalPostId, in: db)
+                try promoteStyleToUserContent(styleId: originalStyleId, in: db)
+                try deleteConflictingDecorations(postId: decoration.postId, excludingId: id, in: db)
+                try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
+                try touchPostForCloudKit(postId: originalPostId, modificationTime: decoration.modificationTime, in: db)
+                try touchStyleForCloudKit(styleId: originalStyleId, modificationTime: decoration.modificationTime, in: db)
+                if mutated.postId != originalPostId {
+                    try promotePostGraphToUserContent(postId: mutated.postId, in: db)
+                    try touchPostForCloudKit(postId: mutated.postId, modificationTime: decoration.modificationTime, in: db)
                 }
-                if storedDecoration.styleId != saveDecoration.styleId {
-                    try touchStyleForCloudKit(styleId: saveDecoration.styleId, modificationTime: saveDecoration.modificationTime, in: db)
+                if mutated.styleId != originalStyleId {
+                    try promoteStyleToUserContent(styleId: mutated.styleId, in: db)
+                    try touchStyleForCloudKit(styleId: mutated.styleId, modificationTime: decoration.modificationTime, in: db)
                 }
+                didChange = true
             }
         }
         catch {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
-        NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
+        if didChange {
+            NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+            NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
+        }
         return true
     }
     

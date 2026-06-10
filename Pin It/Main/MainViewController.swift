@@ -741,16 +741,35 @@ extension MainViewController {
 extension MainViewController {
     func edit(post: Post.Detail) {
         let editorViewController = EditorViewController(postDetail: post) { detail in
+            // Apply only the fields the editor can change, against fresh rows;
+            // copying whole stale snapshots would revert concurrent CloudKit
+            // edits to untouched columns and re-push them with a newer version.
             for text in detail.texts {
-                _ = DataManager.shared.update(text: text)
+                guard let textId = text.id else { continue }
+                _ = DataManager.shared.updateText(id: textId) { stored in
+                    stored.content = text.content
+                }
             }
             for image in detail.images {
-                _ = DataManager.shared.update(image: image)
+                guard let imageId = image.id else { continue }
+                _ = DataManager.shared.updateImage(id: imageId) { stored in
+                    stored.processed = image.processed
+                    stored.orientation = image.orientation
+                    stored.minX = image.minX
+                    stored.minY = image.minY
+                    stored.maxX = image.maxX
+                    stored.maxY = image.maxY
+                }
             }
             if let style = detail.style {
                 _ = DataManager.shared.update(post: detail.post, styleId: style.id)
             }
-            _ = DataManager.shared.update(post: detail.post)
+            if let postId = detail.post.id {
+                _ = DataManager.shared.updatePost(id: postId) { stored in
+                    stored.expirationTime = detail.post.expirationTime
+                    stored.actionLink = detail.post.actionLink
+                }
+            }
         }
         
         navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
@@ -823,8 +842,10 @@ extension MainViewController {
         let othersItems = snapshot.itemIdentifiers(inSection: .others).compactMap{ $0.post }
         
         let posts = findRequiredUpdates(pinnedPosts: pinnedItems, unpinnedPosts: othersItems)
-        
-        _ = DataManager.shared.update(posts: posts)
+
+        _ = DataManager.shared.updatePostPlacements(posts.compactMap { post in
+            post.id.map { (postId: $0, isPinned: post.isPinned, order: post.order) }
+        })
     }
     
     func findRequiredUpdates(pinnedPosts: [Post], unpinnedPosts: [Post]) -> [Post] {
@@ -973,16 +994,17 @@ extension MainViewController: CropViewControllerDelegate {
         
         let resizedImage = image.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3)
         
-        if var postImage = currentPostImage {
+        if let postImage = currentPostImage, let imageId = postImage.id {
             _ = ImageCacheManager.shared.deleteImage(fileName: postImage.processed, type: .processed)
             if let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
-                postImage.processed = processed
-                postImage.orientation = Int64(angle)
-                postImage.minX = Int64(cropRect.minX)
-                postImage.minY = Int64(cropRect.minY)
-                postImage.maxX = Int64(cropRect.maxX)
-                postImage.maxY = Int64(cropRect.maxY)
-                _ = DataManager.shared.update(image: postImage)
+                _ = DataManager.shared.updateImage(id: imageId) { stored in
+                    stored.processed = processed
+                    stored.orientation = Int64(angle)
+                    stored.minX = Int64(cropRect.minX)
+                    stored.minY = Int64(cropRect.minY)
+                    stored.maxX = Int64(cropRect.maxX)
+                    stored.maxY = Int64(cropRect.maxY)
+                }
             }
         } else {
             if let currentImage = currentImage, let original = ImageCacheManager.shared.storeImage(currentImage, type: .original), let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {

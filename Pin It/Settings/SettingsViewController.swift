@@ -306,7 +306,7 @@ class SettingsViewController: UIViewController {
         return parts.joined(separator: "\n")
     }
 
-    private static func loadCloudKitFailedOutboxSummary() -> String? {
+    private nonisolated static func loadCloudKitFailedOutboxSummary() -> String? {
         var failedCount = 0
         var entries: [CloudKitOutboxEntry] = []
         do {
@@ -329,7 +329,7 @@ class SettingsViewController: UIViewController {
         return lines.joined(separator: "\n")
     }
 
-    private static func cloudKitRecordTypeName(_ recordType: CloudKitRecordType?) -> String {
+    private nonisolated static func cloudKitRecordTypeName(_ recordType: CloudKitRecordType?) -> String {
         switch recordType {
         case .post:
             return String(localized: "settings.cloudKitSync.recordType.post")
@@ -601,6 +601,19 @@ class SettingsViewController: UIViewController {
         }
         snapshot.appendItems([.reset], toSection: .reset)
 
+        // Busy states (checking/rebuilding/clearing/resetting) are rendered by the
+        // cell provider, but these items' identities don't change with the busy
+        // flags — without an explicit reconfigure the diff is empty and the
+        // in-progress text and disabled state never appear.
+        let busyDependentItems = snapshot.itemIdentifiers.filter { item in
+            switch item {
+            case .automatic(.cloudKitSync), .rebuildCloudKitSync, .clearCloudKitData, .reset:
+                return true
+            default:
+                return false
+            }
+        }
+        snapshot.reconfigureItems(busyDependentItems)
         dataSource.apply(snapshot, animatingDifferences: false)
         refreshCloudKitFailedOutboxSummary()
     }
@@ -608,8 +621,10 @@ class SettingsViewController: UIViewController {
     private func refreshCloudKitFailedOutboxSummary() {
         guard !isLoadingCloudKitFailedOutboxSummary else { return }
         isLoadingCloudKitFailedOutboxSummary = true
-        Task { [weak self] in
-            let summary = Self.loadCloudKitFailedOutboxSummary()
+        // A plain Task {} would inherit this controller's MainActor isolation and
+        // run the database read on the main thread.
+        Task.detached(priority: .utility) { [weak self] in
+            let summary = SettingsViewController.loadCloudKitFailedOutboxSummary()
             await MainActor.run {
                 guard let self else { return }
                 self.isLoadingCloudKitFailedOutboxSummary = false
@@ -700,12 +715,27 @@ extension SettingsViewController {
 
 extension SettingsViewController: StyleEditorDelegate {
     func styleEditor(_ editor: StyleViewController, didUpdateStyle style: PostStyle) {
-        if style.id == nil {
+        if let styleId = style.id {
+            // Update: the editor form covers every payload field, so copy them
+            // all onto the fresh row; identity and sync metadata stay untouched.
+            _ = DataManager.shared.updateStyle(id: styleId) { stored in
+                stored.name = style.name
+                stored.lockBackgroundColor = style.lockBackgroundColor
+                stored.lockTextColor = style.lockTextColor
+                stored.lockTextSize = style.lockTextSize
+                stored.lockTextAlignment = style.lockTextAlignment
+                stored.islandTextColor = style.islandTextColor
+                stored.islandTextSize = style.islandTextSize
+                stored.islandTextAlignment = style.islandTextAlignment
+                stored.symbol = style.symbol
+                stored.symbolColor = style.symbolColor
+                stored.symbolAngle = style.symbolAngle
+                stored.imageDisplayMode = style.imageDisplayMode
+                stored.controlAlpha = style.controlAlpha
+            }
+        } else {
             // Create
             _ = DataManager.shared.add(style: style)
-        } else {
-            // Update
-            _ = DataManager.shared.update(style: style)
         }
     }
 }

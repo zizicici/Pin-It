@@ -1116,7 +1116,9 @@ struct DefaultStyle: RawRepresentable, UserDefaultSettable {
                 )
             }
         }
-        setValue(value)
+        // Reached from the GRDB writer queue via OnboardingManager's
+        // afterNextTransaction callback; the notification must go out on main.
+        setValueNotifyingOnMain(value)
 
         postOnMain(.DefaultStyleDidChanged)
     }

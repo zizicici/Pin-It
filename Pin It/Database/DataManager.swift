@@ -225,16 +225,16 @@ final class DataManager {
         )
     }
     
-    public func update(post: Post) -> Bool {
-        return AppDatabase.shared.update(post: post)
+    public func updatePost(id: Int64, mutate: (inout Post) -> Void) -> Bool {
+        return AppDatabase.shared.updatePost(id: id, mutate: mutate)
     }
-    
-    public func update(text: PostText) -> Bool {
-        return AppDatabase.shared.update(text: text)
+
+    public func updateText(id: Int64, mutate: (inout PostText) -> Void) -> Bool {
+        return AppDatabase.shared.updateText(id: id, mutate: mutate)
     }
-    
-    public func update(image: PostImage) -> Bool {
-        return AppDatabase.shared.update(image: image)
+
+    public func updateImage(id: Int64, mutate: (inout PostImage) -> Void) -> Bool {
+        return AppDatabase.shared.updateImage(id: id, mutate: mutate)
     }
     
     public func delete(post: Post) -> Bool {
@@ -252,8 +252,8 @@ final class DataManager {
         return result
     }
     
-    public func update(posts: [Post]) -> Bool {
-        return AppDatabase.shared.update(posts: posts)
+    public func updatePostPlacements(_ placements: [(postId: Int64, isPinned: Bool, order: Int64)]) -> Bool {
+        return AppDatabase.shared.updatePostPlacements(placements)
     }
     
     public func deleteAllUnpins() -> Bool {
@@ -292,10 +292,8 @@ final class DataManager {
     }
     
     public func update(post: Post, expirationTime: Int64?) -> Bool {
-        var post = post
-        post.expirationTime = expirationTime
-        
-        return update(post: post)
+        guard let postId = post.id else { return false }
+        return updatePost(id: postId) { $0.expirationTime = expirationTime }
     }
 }
 
@@ -381,8 +379,8 @@ extension DataManager {
         return AppDatabase.shared.add(style: style)
     }
     
-    func update(style: PostStyle) -> Bool {
-        return AppDatabase.shared.update(style: style)
+    func updateStyle(id: Int64, mutate: (inout PostStyle) -> Void) -> Bool {
+        return AppDatabase.shared.updateStyle(id: id, mutate: mutate)
     }
     
     func delete(style: PostStyle) -> Bool {
@@ -410,8 +408,8 @@ extension DataManager {
         return AppDatabase.shared.add(decoration: decoration)
     }
     
-    func update(decoration: PostDecoration) -> Bool {
-        return AppDatabase.shared.update(decoration: decoration)
+    func updateDecoration(id: Int64, mutate: (inout PostDecoration) -> Void) -> Bool {
+        return AppDatabase.shared.updateDecoration(id: id, mutate: mutate)
     }
     
     func delete(decoration: PostDecoration) -> Bool {
@@ -422,9 +420,8 @@ extension DataManager {
         guard let postId = post.id else { return false }
         if let styleId = styleId {
             guard fetchStyle(by: styleId) != nil else { return false }
-            if var decoration = fetchDecoration(by: postId) {
-                decoration.styleId = styleId
-                return update(decoration: decoration)
+            if let decorationId = fetchDecoration(by: postId)?.id {
+                return updateDecoration(id: decorationId) { $0.styleId = styleId }
             } else {
                 let decoration = PostDecoration(styleId: styleId, postId: postId)
                 return add(decoration: decoration)

@@ -38,6 +38,20 @@ extension Notification.Name {
     static let cloudKitSyncDidChange = Notification.Name(rawValue: "com.zizicici.pin.cloudKitSync.didChange")
 }
 
+extension UserDefaultSettable where Self: RawRepresentable, Self.RawValue == Int {
+    /// MoreKit's `setValue` posts `.SettingsUpdate` synchronously on the calling
+    /// thread, but observers (MoreViewController, MainViewController, ...) touch
+    /// UIKit without hopping to main. CloudKit sync and GRDB `afterNextTransaction`
+    /// callbacks run on background threads, so the value must land synchronously
+    /// while the notification is deferred to the main queue.
+    static func setValueNotifyingOnMain(_ value: Self) {
+        userDefaults.set(value.rawValue, forKey: getKey())
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .SettingsUpdate, object: nil)
+        }
+    }
+}
+
 enum AutoBackup: Int, CaseIterable, Codable {
     case enable
     case disable
@@ -87,7 +101,12 @@ extension CloudKitSync: UserDefaultSettable {
         guard oldValue != value else { return }
 
         setLastError(nil, postsUpdate: false)
-        setValue(value)
+        if value == .enable {
+            // A stale flag would otherwise resurface the "disabled by account
+            // change" alert even though sync is running again.
+            userDefaults.removeObject(forKey: UserDefaults.Settings.CloudKitSyncDisabledByAccountChange.rawValue)
+        }
+        userDefaults.set(value.rawValue, forKey: getKey())
         DispatchQueue.main.async {
             NotificationCenter.default.post(name: .SettingsUpdate, object: nil)
             NotificationCenter.default.post(name: .cloudKitSyncDidChange, object: nil)
@@ -95,7 +114,10 @@ extension CloudKitSync: UserDefaultSettable {
     }
 
     static func disableAfterAccountChange() {
-        setValue(.disable)
+        // Called from the sync engine's background executor. The value write must
+        // stay synchronous (the sync loop checks `current` immediately after), so
+        // bypass MoreKit's setValue and post only from main.
+        userDefaults.set(CloudKitSync.disable.rawValue, forKey: getKey())
         setLastError(String(localized: "settings.cloudKitSync.error.accountChanged"), postsUpdate: false)
         userDefaults.set(true, forKey: UserDefaults.Settings.CloudKitSyncDisabledByAccountChange.rawValue)
         DispatchQueue.main.async {

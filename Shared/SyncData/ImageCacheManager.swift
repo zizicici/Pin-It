@@ -333,13 +333,27 @@ class ImageCacheManager {
         return originalDeleted + processedDeleted
     }
 
+    /// Files land in the cache before the database row referencing them commits
+    /// (both local creation and CloudKit asset staging), so a caller's reference
+    /// snapshot can be stale. Never treat recently written files as unreferenced;
+    /// genuine orphans older than the grace window get cleaned on a later pass.
+    private static let unreferencedImageGracePeriod: TimeInterval = 60 * 60
+
     private func deleteUnreferencedImages(type: CacheImageType, keeping referencedFileNames: Set<String>) -> Int {
         guard let folderURL = getFolderURL(for: type) else { return 0 }
         guard let fileNames = try? fileManager.contentsOfDirectory(atPath: folderURL.path) else { return 0 }
 
+        let cutoffDate = Date(timeIntervalSinceNow: -Self.unreferencedImageGracePeriod)
         var deletedCount = 0
         for fileName in fileNames where !referencedFileNames.contains(fileName) {
             let fileURL = folderURL.appendingPathComponent(fileName)
+            // Unreadable dates count as recent: deleting is the irreversible side.
+            guard let resourceValues = try? fileURL.resourceValues(forKeys: [.contentModificationDateKey, .creationDateKey]) else { continue }
+            let newestActivity = max(
+                resourceValues.contentModificationDate ?? .distantFuture,
+                resourceValues.creationDate ?? .distantPast
+            )
+            guard newestActivity < cutoffDate else { continue }
             do {
                 try fileManager.removeItem(at: fileURL)
                 deletedCount += 1

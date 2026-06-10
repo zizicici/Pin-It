@@ -30,14 +30,20 @@ extension CloudKitRecordSyncManager {
                     recordNames.insert(record.recordID.recordName)
                     continue
                 }
+                // applyImageRecord only saves when the remote record is strictly
+                // newer, so staging assets for an equal-or-older record is a
+                // guaranteed-discarded download. Skipping those also stops the
+                // re-download on every full fetch for records whose landed file
+                // name diverged from the remote one (cross-device name clash).
+                let remoteModificationTime = modificationTime(of: record)
+                guard remoteModificationTime > (existing.modificationTime ?? 0) else { continue }
                 let remoteOriginalFileName = stringValue(Field.originalFileName, in: record)
                 let remoteProcessedFileName = stringValue(Field.processedFileName, in: record)
-                let remoteModificationTime = modificationTime(of: record)
                 let needsOriginalAsset = (remoteOriginalFileName != nil && remoteOriginalFileName != existing.original)
                 || ImageCacheManager.shared.getURL(name: existing.original, type: .original) == nil
                 let needsProcessedAsset = (remoteProcessedFileName != nil && remoteProcessedFileName != existing.processed)
                 || ImageCacheManager.shared.getURL(name: existing.processed, type: .processed) == nil
-                if remoteModificationTime > (existing.modificationTime ?? 0) || needsOriginalAsset || needsProcessedAsset {
+                if needsOriginalAsset || needsProcessedAsset {
                     recordNames.insert(record.recordID.recordName)
                 }
             }
