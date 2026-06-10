@@ -193,10 +193,16 @@ extension CloudKitSync: UserDefaultSettable {
     }
 
     static func setPendingRemoteReset(_ value: Bool) {
+        guard value != pendingRemoteReset else { return }
         if value {
             userDefaults.set(true, forKey: UserDefaults.Settings.CloudKitPendingRemoteReset.rawValue)
         } else {
             userDefaults.removeObject(forKey: UserDefaults.Settings.CloudKitPendingRemoteReset.rawValue)
+        }
+        // The settings footer surfaces this state; setLastError dedupes nil→nil
+        // and no longer refreshes the page incidentally.
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .SettingsUpdate, object: nil)
         }
     }
 }

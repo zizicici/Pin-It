@@ -375,6 +375,13 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
                 runOnboardingAfterInitialCloudGateIfNeeded()
                 return
             }
+            // Batches delivered before the failure were accumulated and just
+            // discarded, but the engine's in-memory token already moved past
+            // them. Keeping the instance would resume from that token and never
+            // re-deliver — fatal for a probe/full-snapshot pass (the keep-vs-
+            // prune decision would silently never happen). Drop the engine so
+            // the next pass rebuilds from the last persisted token.
+            invalidateSyncEngineForRedelivery()
             throw error
         }
         try ensureEngineGeneration(syncGeneration)
@@ -1237,7 +1244,7 @@ extension CloudKitRecordSyncManager {
 
     func isZoneNotFound(_ error: Error) -> Bool {
         guard let cloudKitError = error as? CKError else { return false }
-        if cloudKitError.code == .zoneNotFound || cloudKitError.code == .unknownItem {
+        if cloudKitError.code == .zoneNotFound || cloudKitError.code == .unknownItem || cloudKitError.code == .userDeletedZone {
             return true
         }
         guard cloudKitError.code == .partialFailure,
@@ -1393,6 +1400,20 @@ extension CloudKitRecordSyncManager {
             try CloudKitSyncState.clearBootstrapSuppression(in: db)
             try CloudKitSyncState.clearLocalRecordPreservation(in: db)
         }
+    }
+
+    /// Drops the in-memory engine (and any deferred fetch state) so the next
+    /// pass rebuilds it from the last persisted state token and CloudKit
+    /// re-delivers everything after that point. Disk-side flags are untouched:
+    /// a pending discontinuity probe stays pending.
+    func invalidateSyncEngineForRedelivery() {
+        stateLock.lock()
+        engineGeneration += 1
+        syncEngine = nil
+        fetchAccumulator = nil
+        pendingFetchStateSerialization = nil
+        serverRecordCacheByRecordName.removeAll()
+        stateLock.unlock()
     }
 
     private func resetSyncEngineState(flags: (Database) throws -> Void) throws {
@@ -1555,12 +1576,13 @@ extension CloudKitRecordSyncManager {
                 try persistSyncEngineStateSerialization(lateState)
             }
         } catch {
-            // applyRemoteChanges may throw before its dbWriter.write block (e.g. asset
-            // staging) or have its txn rolled back inside it. In either case the state
-            // token never reached disk, so put it back so a later success can persist it.
-            if let pendingState {
-                setPendingFetchStateSerialization(pendingState)
-            }
+            // The accumulated records are lost (applyRemoteChanges threw before or
+            // inside its transaction) while the engine's in-memory token already
+            // moved past them. Persisting the held state token later would skip
+            // them forever — drop the engine instead, so the next pass rebuilds
+            // it from the last persisted token and CloudKit re-delivers
+            // everything since (re-applies are version-guarded, so harmless).
+            invalidateSyncEngineForRedelivery()
             throw error
         }
     }
@@ -2437,7 +2459,10 @@ extension CloudKitRecordSyncManager {
                         // A peer deliberately rebuilt the zone (reset/rebuild/clear):
                         // adopt its snapshot. Previously-synced records missing from
                         // it are pruned below; pending local changes survive via the
-                        // outbox protections inside the prune.
+                        // outbox protections inside the prune. Divergent local edits
+                        // (made while sync was off, or not yet pulled by the
+                        // rebuilding peer) gain that protection here.
+                        try CloudKitOutboxEntry.enqueueDivergentSaves(in: db)
                         shouldPruneMissingLocalRecords = true
                     } else {
                         // No marker (accidental zone loss, legacy zone) or unchanged
@@ -2748,6 +2773,10 @@ extension CloudKitRecordSyncManager {
         let defaultStyleSyncId = try CloudKitSettingRecord.current(in: db).defaultStyleSyncId
         var didChangeDatabase = false
         var deletedImageFiles: [(String, CacheImageType)] = []
+        // Children of a graph kept alive by a pending save must survive the
+        // per-type loops below, or the re-uploaded post/style comes back as an
+        // empty shell (no text, no image, no decoration).
+        var protectedRecordNames = Set<String>()
 
         // Only prune records the manager has previously synced (i.e. there's a metadata
         // row for them). A record without metadata was created locally while sync was
@@ -2758,6 +2787,17 @@ extension CloudKitRecordSyncManager {
             knownRecordNames.contains(recordName)
                 && !remoteRecordNames.contains(recordName)
                 && !pendingSaveRecordNames.contains(recordName)
+        }
+
+        // Pruned rows must drop their sync bookkeeping too: a leftover metadata
+        // row keeps remoteDataMayExist stuck on, and makes a later re-enable
+        // reconciliation mistake the pruned record for an offline delete —
+        // backfilling tombstones into the zone a peer just reset.
+        func clearPrunedRecordState(_ recordNames: [String]) throws {
+            for recordName in recordNames {
+                try CloudKitRecordMetadata.deleteOne(db, key: recordName)
+                try CloudKitLocalTombstone.deleteOne(db, key: recordName)
+            }
         }
 
         for post in try Post.fetchAll(db) {
@@ -2776,6 +2816,7 @@ extension CloudKitRecordSyncManager {
                 + texts.map(\.cloudKitRecordName)
                 + decorations.map(\.cloudKitRecordName)
             if graphRecordNames.contains(where: { pendingSaveRecordNames.contains($0) }) {
+                protectedRecordNames.formUnion(graphRecordNames)
                 var graphModificationTime = post.modificationTime ?? 0
                 for image in images {
                     graphModificationTime = max(graphModificationTime, image.modificationTime ?? 0)
@@ -2803,32 +2844,13 @@ extension CloudKitRecordSyncManager {
             try OnboardingLocalRecord.unmark(recordType: .image, syncIds: images.map(\.syncId), in: db)
             try OnboardingLocalRecord.unmark(recordType: .text, syncIds: texts.map(\.syncId), in: db)
             try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
+            try clearPrunedRecordState(graphRecordNames)
             deletedImageFiles.append(contentsOf: imageFiles(for: images))
             didChangeDatabase = true
         }
 
-        for image in try PostImage.fetchAll(db) where shouldPrune(image.cloudKitRecordName) {
-            guard let imageId = image.id else { continue }
-            try PostImage.deleteAll(db, ids: [imageId])
-            try OnboardingLocalRecord.unmark(recordType: .image, syncId: image.syncId, in: db)
-            deletedImageFiles.append(contentsOf: imageFiles(for: [image]))
-            didChangeDatabase = true
-        }
-
-        for text in try PostText.fetchAll(db) where shouldPrune(text.cloudKitRecordName) {
-            guard let textId = text.id else { continue }
-            try PostText.deleteAll(db, ids: [textId])
-            try OnboardingLocalRecord.unmark(recordType: .text, syncId: text.syncId, in: db)
-            didChangeDatabase = true
-        }
-
-        for decoration in try PostDecoration.fetchAll(db) where shouldPrune(decoration.cloudKitRecordName) {
-            guard let decorationId = decoration.id else { continue }
-            try PostDecoration.deleteAll(db, ids: [decorationId])
-            try OnboardingLocalRecord.unmark(recordType: .decoration, syncId: decoration.syncId, in: db)
-            didChangeDatabase = true
-        }
-
+        // Styles before the per-type child loops so a protected style graph
+        // exempts its decorations from the generic decoration prune.
         for style in try PostStyle.fetchAll(db) {
             guard let styleId = style.id else { continue }
             let decorations = try PostDecoration
@@ -2837,6 +2859,7 @@ extension CloudKitRecordSyncManager {
             let graphRecordNames = [style.cloudKitRecordName] + decorations.map(\.cloudKitRecordName)
             if graphRecordNames.contains(where: { pendingSaveRecordNames.contains($0) })
                 || (pendingSaveRecordNames.contains(CloudKitRecordName.settingsName) && defaultStyleSyncId == style.syncId) {
+                protectedRecordNames.formUnion(graphRecordNames)
                 var graphModificationTime = style.modificationTime ?? 0
                 for decoration in decorations {
                     graphModificationTime = max(graphModificationTime, decoration.modificationTime ?? 0)
@@ -2864,13 +2887,44 @@ extension CloudKitRecordSyncManager {
             )
             try OnboardingLocalRecord.unmark(recordType: .style, syncId: style.syncId, in: db)
             try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
+            try clearPrunedRecordState(graphRecordNames)
+            didChangeDatabase = true
+        }
+
+        for image in try PostImage.fetchAll(db)
+        where shouldPrune(image.cloudKitRecordName) && !protectedRecordNames.contains(image.cloudKitRecordName) {
+            guard let imageId = image.id else { continue }
+            try PostImage.deleteAll(db, ids: [imageId])
+            try OnboardingLocalRecord.unmark(recordType: .image, syncId: image.syncId, in: db)
+            try clearPrunedRecordState([image.cloudKitRecordName])
+            deletedImageFiles.append(contentsOf: imageFiles(for: [image]))
+            didChangeDatabase = true
+        }
+
+        for text in try PostText.fetchAll(db)
+        where shouldPrune(text.cloudKitRecordName) && !protectedRecordNames.contains(text.cloudKitRecordName) {
+            guard let textId = text.id else { continue }
+            try PostText.deleteAll(db, ids: [textId])
+            try OnboardingLocalRecord.unmark(recordType: .text, syncId: text.syncId, in: db)
+            try clearPrunedRecordState([text.cloudKitRecordName])
+            didChangeDatabase = true
+        }
+
+        for decoration in try PostDecoration.fetchAll(db)
+        where shouldPrune(decoration.cloudKitRecordName) && !protectedRecordNames.contains(decoration.cloudKitRecordName) {
+            guard let decorationId = decoration.id else { continue }
+            try PostDecoration.deleteAll(db, ids: [decorationId])
+            try OnboardingLocalRecord.unmark(recordType: .decoration, syncId: decoration.syncId, in: db)
+            try clearPrunedRecordState([decoration.cloudKitRecordName])
             didChangeDatabase = true
         }
 
         if !remoteRecordNames.contains(CloudKitRecordName.settingsName),
-           !pendingSaveRecordNames.contains(CloudKitRecordName.settingsName),
-           try DefaultStyle.clearCloudKitStateForMissingRemoteSetting(in: db) {
-            didChangeDatabase = true
+           !pendingSaveRecordNames.contains(CloudKitRecordName.settingsName) {
+            if try DefaultStyle.clearCloudKitStateForMissingRemoteSetting(in: db) {
+                didChangeDatabase = true
+            }
+            try CloudKitRecordMetadata.deleteOne(db, key: CloudKitRecordName.settingsName)
         }
 
         return (didChangeDatabase, deletedImageFiles)
@@ -3288,18 +3342,31 @@ extension CloudKitRecordSyncManager {
     func restoreMissingImageFiles(for image: PostImage, stagedAssets: StagedImageAssets?, in db: Database) throws -> Bool {
         guard let imageId = image.id, let stagedAssets else { return false }
         var assignments: [ColumnAssignment] = []
+        var consumedOriginal = false
+        var consumedProcessed = false
         if ImageCacheManager.shared.getURL(name: image.original, type: .original) == nil,
            let stagedOriginal = stagedAssets.originalName {
             assignments.append(Column(PostImage.CodingKeys.original).set(to: stagedOriginal))
+            consumedOriginal = true
         }
         if ImageCacheManager.shared.getURL(name: image.processed, type: .processed) == nil,
            let stagedProcessed = stagedAssets.processedName {
             assignments.append(Column(PostImage.CodingKeys.processed).set(to: stagedProcessed))
+            consumedProcessed = true
         }
         guard !assignments.isEmpty else { return false }
         try PostImage
             .filter(Column(PostImage.CodingKeys.id) == imageId)
             .updateAll(db, assignments)
+        // The caller drops the whole staged entry once anything was restored, so
+        // clean the unconsumed half here instead of leaking it until the next
+        // launch's orphan sweep.
+        if !consumedOriginal, let stagedOriginal = stagedAssets.originalName, stagedOriginal != image.original {
+            _ = ImageCacheManager.shared.deleteImage(fileName: stagedOriginal, type: .original)
+        }
+        if !consumedProcessed, let stagedProcessed = stagedAssets.processedName, stagedProcessed != image.processed {
+            _ = ImageCacheManager.shared.deleteImage(fileName: stagedProcessed, type: .processed)
+        }
         return true
     }
 

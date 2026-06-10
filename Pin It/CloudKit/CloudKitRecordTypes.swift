@@ -374,6 +374,21 @@ extension CloudKitOutboxEntry {
     /// records — by metadata.lastSyncedVersion for edits, and by metadata-rows-with-
     /// no-local-row for offline deletes. Called when re-enabling sync on a device
     /// that already had CloudKit metadata (not a true first-time setup).
+    /// The save half of offline reconciliation, standalone: enqueue records whose
+    /// local modification time advanced past the last synced version. The
+    /// zone-discontinuity probe runs this before pruning so divergent local edits
+    /// gain outbox protection and re-upload afterwards.
+    static func enqueueDivergentSaves(in db: Database) throws {
+        let metadataRows = try CloudKitRecordMetadata.fetchAll(db)
+        let metadataByName = Dictionary(uniqueKeysWithValues: metadataRows.map { ($0.recordName, $0) })
+        var seenRecordNames = Set<String>()
+        try enqueueDivergentSaves(recordType: .post, records: Post.fetchAll(db), metadataByName: metadataByName, seen: &seenRecordNames, in: db)
+        try enqueueDivergentSaves(recordType: .text, records: PostText.fetchAll(db), metadataByName: metadataByName, seen: &seenRecordNames, in: db)
+        try enqueueDivergentSaves(recordType: .image, records: PostImage.fetchAll(db), metadataByName: metadataByName, seen: &seenRecordNames, in: db)
+        try enqueueDivergentSaves(recordType: .style, records: PostStyle.fetchAll(db), metadataByName: metadataByName, seen: &seenRecordNames, in: db)
+        try enqueueDivergentSaves(recordType: .decoration, records: PostDecoration.fetchAll(db), metadataByName: metadataByName, seen: &seenRecordNames, in: db)
+    }
+
     static func enqueueOfflineReconciliation(in db: Database) throws {
         let metadataRows = try CloudKitRecordMetadata.fetchAll(db)
         let metadataByName = Dictionary(uniqueKeysWithValues: metadataRows.map { ($0.recordName, $0) })
