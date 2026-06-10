@@ -147,19 +147,13 @@ final class AppDatabase {
             let legacyTimestamp = try db.transactionDate.nanoSecondSince1970
 
             func deterministicSyncId(seed: String) -> String {
-                let digest = SHA256.hash(data: Data(seed.utf8))
-                var bytes = Array(digest.prefix(16))
-                // Mark as RFC 4122 v5 (name-based SHA-1 — close enough for parsers
-                // that sniff version/variant; CloudKit itself accepts arbitrary
-                // record names).
+                // SHA-256 truncated to 128 bits, version/variant nibbles overwritten
+                // so the result parses as an RFC 4122 v5-shaped UUID. We're not using
+                // SHA-1, but downstream parsers only sniff the version/variant bits.
+                var bytes = Array(SHA256.hash(data: Data(seed.utf8)).prefix(16))
                 bytes[6] = (bytes[6] & 0x0F) | 0x50
                 bytes[8] = (bytes[8] & 0x3F) | 0x80
-                let uuid: uuid_t = (
-                    bytes[0], bytes[1], bytes[2], bytes[3],
-                    bytes[4], bytes[5], bytes[6], bytes[7],
-                    bytes[8], bytes[9], bytes[10], bytes[11],
-                    bytes[12], bytes[13], bytes[14], bytes[15]
-                )
+                let uuid = bytes.withUnsafeBytes { $0.load(as: uuid_t.self) }
                 return UUID(uuid: uuid).uuidString
             }
 
@@ -1461,9 +1455,23 @@ private extension AppDatabase {
     }
 
     func enqueueCloudKitDeleteIfNeeded(recordType: CloudKitRecordType, syncId: String, in db: Database) throws {
-        guard tracksLocalCloudKitChanges() else { return }
         guard try !OnboardingLocalRecord.isMarked(recordType: recordType, syncId: syncId, in: db) else { return }
-        try CloudKitOutboxEntry.enqueueDelete(recordType: recordType, syncId: syncId, in: db)
+        if tracksLocalCloudKitChanges() {
+            try CloudKitOutboxEntry.enqueueDelete(recordType: recordType, syncId: syncId, in: db)
+        } else if CloudKitSync.remoteDataMayExist {
+            // Sync is off but a previous session synced this record. Stash a real
+            // tombstone with the actual deletion time so the next re-enable's
+            // reconciliation can ship the delete with a timestamp that wins against
+            // server edits made between disable and now (rather than the stale
+            // lastSyncedVersion+1 fallback).
+            let recordName = CloudKitRecordName.make(recordType, syncId: syncId)
+            try CloudKitLocalTombstone.store(
+                recordType: recordType,
+                recordName: recordName,
+                deletionTime: try db.transactionDate.nanoSecondSince1970,
+                in: db
+            )
+        }
     }
 
     func enqueueCloudKitSaveIfNeeded(recordType: CloudKitRecordType, syncId: String, modificationTime: Int64?, in db: Database) throws {

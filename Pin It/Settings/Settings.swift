@@ -107,6 +107,20 @@ extension CloudKitSync: UserDefaultSettable {
         userDefaults.bool(forKey: UserDefaults.Settings.CloudKitSyncDisabledByAccountChange.rawValue)
     }
 
+    /// Mirror of the user's last default-style change wall-clock time, written
+    /// regardless of whether sync is on. Lets re-enable reconciliation ship the
+    /// real timestamp instead of the moment the user toggled sync back on.
+    static var defaultStyleLocalModificationTime: Int64 {
+        let value = userDefaults.object(forKey: UserDefaults.Settings.DefaultStyleModificationTime.rawValue)
+        if let int = value as? Int64 { return int }
+        if let number = value as? NSNumber { return number.int64Value }
+        return 0
+    }
+
+    static func setDefaultStyleLocalModificationTime(_ value: Int64) {
+        userDefaults.set(NSNumber(value: value), forKey: UserDefaults.Settings.DefaultStyleModificationTime.rawValue)
+    }
+
     static func consumeDisabledByAccountChange() -> Bool {
         let value = disabledByAccountChange
         if value {

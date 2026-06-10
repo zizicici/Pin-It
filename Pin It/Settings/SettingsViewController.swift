@@ -776,7 +776,8 @@ extension SettingsViewController {
                 await MainActor.run {
                     self?.showCloudKitResultAlert(
                         title: String(localized: "settings.cloudKitSync.enable.failure.title"),
-                        message: error.localizedDescription
+                        message: error.localizedDescription,
+                        isError: true
                     )
                 }
             }
@@ -877,7 +878,8 @@ extension SettingsViewController {
                 await MainActor.run {
                     self?.showCloudKitResultAlert(
                         title: String(localized: "settings.cloudKitSync.rebuild.failure.title"),
-                        message: error.localizedDescription
+                        message: error.localizedDescription,
+                        isError: true
                     )
                 }
             }
@@ -907,7 +909,8 @@ extension SettingsViewController {
                 await MainActor.run {
                     self?.showCloudKitResultAlert(
                         title: String(localized: "settings.cloudKitSync.clear.failure.title"),
-                        message: error.localizedDescription
+                        message: error.localizedDescription,
+                        isError: true
                     )
                 }
             }
@@ -932,9 +935,13 @@ extension SettingsViewController {
         )
     }
 
-    func showCloudKitResultAlert(title: String, message: String) {
+    func showCloudKitResultAlert(title: String, message: String, isError: Bool = false) {
         guard view.window != nil, presentedViewController == nil else {
-            CloudKitSync.setLastError(message)
+            // Drop success notifications that can't be presented; only error text
+            // belongs in the persistent footer slot.
+            if isError {
+                CloudKitSync.setLastError(message)
+            }
             return
         }
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)

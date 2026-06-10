@@ -8,13 +8,23 @@ import Foundation
 import GRDB
 
 extension CloudKitRecordSyncManager {
-    func applyTombstone(_ tombstone: RemoteTombstone, in db: Database) throws -> (didChangeDatabase: Bool, deletedImageFiles: [(String, CacheImageType)]) {
+    /// `tombstoneApplied` is true when the remote tombstone is canonical for this
+    /// record (we deleted now, or it was already gone). It is false only when local
+    /// is newer than the tombstone and we re-enqueued a save, in which case caller
+    /// must NOT mark the metadata isDeleted=true.
+    struct TombstoneApplyOutcome {
+        var didChangeDatabase: Bool
+        var deletedImageFiles: [(String, CacheImageType)]
+        var tombstoneApplied: Bool
+    }
+
+    func applyTombstone(_ tombstone: RemoteTombstone, in db: Database) throws -> TombstoneApplyOutcome {
         switch tombstone.deletedRecordType {
         case .post:
             guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .post),
                   let post = try Post.filter(Column(Post.CodingKeys.syncId) == syncId).fetchOne(db),
                   let postId = post.id else {
-                return (false, [])
+                return TombstoneApplyOutcome(didChangeDatabase: false, deletedImageFiles: [], tombstoneApplied: true)
             }
             let images = try PostImage
                 .filter(Column(PostImage.CodingKeys.postId) == postId)
@@ -42,7 +52,7 @@ extension CloudKitRecordSyncManager {
                         .updateAll(db, Column(Post.CodingKeys.modificationTime).set(to: graphModificationTime))
                 }
                 try CloudKitOutboxEntry.enqueueSave(recordType: .post, syncId: post.syncId, modificationTime: graphModificationTime, in: db)
-                return (false, [])
+                return TombstoneApplyOutcome(didChangeDatabase: false, deletedImageFiles: [], tombstoneApplied: false)
             }
             for image in images {
                 try CloudKitLocalTombstone.store(recordType: .image, recordName: image.cloudKitRecordName, deletionTime: tombstone.deletionTime, in: db)
@@ -64,45 +74,45 @@ extension CloudKitRecordSyncManager {
             try OnboardingLocalRecord.unmark(recordType: .image, syncIds: images.map(\.syncId), in: db)
             try OnboardingLocalRecord.unmark(recordType: .text, syncIds: texts.map(\.syncId), in: db)
             try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
-            return (true, imageFiles(for: images))
+            return TombstoneApplyOutcome(didChangeDatabase: true, deletedImageFiles: imageFiles(for: images), tombstoneApplied: true)
         case .text:
             guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .text),
                   let text = try PostText.filter(Column(PostText.CodingKeys.syncId) == syncId).fetchOne(db),
                   let textId = text.id else {
-                return (false, [])
+                return TombstoneApplyOutcome(didChangeDatabase: false, deletedImageFiles: [], tombstoneApplied: true)
             }
             guard tombstone.deletionTime >= (text.modificationTime ?? 0) else {
                 try enqueueCloudKitSaveIfNeeded(recordType: .text, syncId: text.syncId, modificationTime: text.modificationTime, in: db)
                 try enqueuePostGraphSaveIfNeeded(postId: text.postId, modificationTime: text.modificationTime, in: db)
-                return (false, [])
+                return TombstoneApplyOutcome(didChangeDatabase: false, deletedImageFiles: [], tombstoneApplied: false)
             }
             try bumpPostGraphForAppliedChildDelete(postId: text.postId, modificationTime: tombstone.deletionTime, in: db)
             try PostText.deleteAll(db, ids: [textId])
             try OnboardingLocalRecord.unmark(recordType: .text, syncId: text.syncId, in: db)
-            return (true, [])
+            return TombstoneApplyOutcome(didChangeDatabase: true, deletedImageFiles: [], tombstoneApplied: true)
         case .image:
             guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .image),
                   let image = try PostImage.filter(Column(PostImage.CodingKeys.syncId) == syncId).fetchOne(db),
                   let imageId = image.id else {
-                return (false, [])
+                return TombstoneApplyOutcome(didChangeDatabase: false, deletedImageFiles: [], tombstoneApplied: true)
             }
             guard tombstone.deletionTime >= (image.modificationTime ?? 0) else {
                 try enqueueCloudKitSaveIfNeeded(recordType: .image, syncId: image.syncId, modificationTime: image.modificationTime, in: db)
                 try enqueuePostGraphSaveIfNeeded(postId: image.postId, modificationTime: image.modificationTime, in: db)
-                return (false, [])
+                return TombstoneApplyOutcome(didChangeDatabase: false, deletedImageFiles: [], tombstoneApplied: false)
             }
             try bumpPostGraphForAppliedChildDelete(postId: image.postId, modificationTime: tombstone.deletionTime, in: db)
             try PostImage.deleteAll(db, ids: [imageId])
             try OnboardingLocalRecord.unmark(recordType: .image, syncId: image.syncId, in: db)
-            return (true, imageFiles(for: [image]))
+            return TombstoneApplyOutcome(didChangeDatabase: true, deletedImageFiles: imageFiles(for: [image]), tombstoneApplied: true)
         case .style:
             guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .style) else {
-                return (false, [])
+                return TombstoneApplyOutcome(didChangeDatabase: false, deletedImageFiles: [], tombstoneApplied: true)
             }
             let didClearPendingDefaultStyle = try DefaultStyle.clearPendingCloudKitDefaultStyleIfNeeded(syncId: syncId, in: db)
             guard let style = try PostStyle.filter(Column(PostStyle.CodingKeys.syncId) == syncId).fetchOne(db),
                   let styleId = style.id else {
-                return (didClearPendingDefaultStyle, [])
+                return TombstoneApplyOutcome(didChangeDatabase: didClearPendingDefaultStyle, deletedImageFiles: [], tombstoneApplied: true)
             }
             let decorations = try PostDecoration
                 .filter(Column(PostDecoration.CodingKeys.styleId) == styleId)
@@ -118,7 +128,7 @@ extension CloudKitRecordSyncManager {
                         .updateAll(db, Column(PostStyle.CodingKeys.modificationTime).set(to: graphModificationTime))
                 }
                 try CloudKitOutboxEntry.enqueueSave(recordType: .style, syncId: style.syncId, modificationTime: graphModificationTime, in: db)
-                return (didClearPendingDefaultStyle, [])
+                return TombstoneApplyOutcome(didChangeDatabase: didClearPendingDefaultStyle, deletedImageFiles: [], tombstoneApplied: false)
             }
             let fallbackStyle = try PostStyle
                 .filter(PostStyle.Columns.id != styleId)
@@ -140,31 +150,32 @@ extension CloudKitRecordSyncManager {
             }
             try OnboardingLocalRecord.unmark(recordType: .style, syncId: style.syncId, in: db)
             try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
-            return (true, [])
+            return TombstoneApplyOutcome(didChangeDatabase: true, deletedImageFiles: [], tombstoneApplied: true)
         case .decoration:
             guard let syncId = CloudKitRecordName.syncId(from: tombstone.deletedRecordName, type: .decoration),
                   let decoration = try PostDecoration.filter(Column(PostDecoration.CodingKeys.syncId) == syncId).fetchOne(db),
                   let decorationId = decoration.id else {
-                return (false, [])
+                return TombstoneApplyOutcome(didChangeDatabase: false, deletedImageFiles: [], tombstoneApplied: true)
             }
             guard tombstone.deletionTime >= (decoration.modificationTime ?? 0) else {
                 try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
                 try enqueuePostGraphSaveIfNeeded(postId: decoration.postId, modificationTime: decoration.modificationTime, in: db)
                 try enqueueStyleGraphSaveIfNeeded(styleId: decoration.styleId, modificationTime: decoration.modificationTime, in: db)
-                return (false, [])
+                return TombstoneApplyOutcome(didChangeDatabase: false, deletedImageFiles: [], tombstoneApplied: false)
             }
             try bumpPostGraphForAppliedChildDelete(postId: decoration.postId, modificationTime: tombstone.deletionTime, in: db)
             try bumpStyleGraphForAppliedChildDelete(styleId: decoration.styleId, modificationTime: tombstone.deletionTime, in: db)
             try PostDecoration.deleteAll(db, ids: [decorationId])
             try OnboardingLocalRecord.unmark(recordType: .decoration, syncId: decoration.syncId, in: db)
-            return (true, [])
+            return TombstoneApplyOutcome(didChangeDatabase: true, deletedImageFiles: [], tombstoneApplied: true)
         case .setting:
             let setting = try CloudKitSettingRecord.current(in: db)
             guard tombstone.deletedRecordName == CloudKitRecordName.settingsName,
                   tombstone.deletionTime >= setting.defaultStyleModificationTime else {
-                return (false, [])
+                return TombstoneApplyOutcome(didChangeDatabase: false, deletedImageFiles: [], tombstoneApplied: false)
             }
-            return (try DefaultStyle.clearCloudKitStateForMissingRemoteSetting(in: db), [])
+            let didChange = try DefaultStyle.clearCloudKitStateForMissingRemoteSetting(in: db)
+            return TombstoneApplyOutcome(didChangeDatabase: didChange, deletedImageFiles: [], tombstoneApplied: true)
         }
     }
 

@@ -364,6 +364,59 @@ extension CloudKitOutboxEntry {
         try enqueueBootstrapSaves(recordType: .decoration, records: PostDecoration.fetchAll(db), in: db)
     }
 
+    /// Enqueue saves and deletes for records that diverged from CloudKit while sync
+    /// was disabled. Compared with bootstrap, this only queues genuinely-changed
+    /// records — by metadata.lastSyncedVersion for edits, and by metadata-rows-with-
+    /// no-local-row for offline deletes. Called when re-enabling sync on a device
+    /// that already had CloudKit metadata (not a true first-time setup).
+    static func enqueueOfflineReconciliation(in db: Database) throws {
+        let metadataRows = try CloudKitRecordMetadata.fetchAll(db)
+        let metadataByName = Dictionary(uniqueKeysWithValues: metadataRows.map { ($0.recordName, $0) })
+        let tombstonesByRecordName = try CloudKitLocalTombstone.allByRecordName(in: db)
+        var seenRecordNames = Set<String>()
+
+        try enqueueDivergentSaves(recordType: .post, records: Post.fetchAll(db), metadataByName: metadataByName, seen: &seenRecordNames, in: db)
+        try enqueueDivergentSaves(recordType: .text, records: PostText.fetchAll(db), metadataByName: metadataByName, seen: &seenRecordNames, in: db)
+        try enqueueDivergentSaves(recordType: .image, records: PostImage.fetchAll(db), metadataByName: metadataByName, seen: &seenRecordNames, in: db)
+        try enqueueDivergentSaves(recordType: .style, records: PostStyle.fetchAll(db), metadataByName: metadataByName, seen: &seenRecordNames, in: db)
+        try enqueueDivergentSaves(recordType: .decoration, records: PostDecoration.fetchAll(db), metadataByName: metadataByName, seen: &seenRecordNames, in: db)
+
+        for metadata in metadataRows {
+            guard !metadata.isDeleted,
+                  !seenRecordNames.contains(metadata.recordName),
+                  let recordType = CloudKitRecordType(rawValue: metadata.recordType),
+                  recordType != .setting else { continue }
+            // Prefer the real tombstone written at delete time (offline deletes
+            // store one when remoteDataMayExist). Fall back to lastSyncedVersion+1
+            // — conservative: server-equal-or-newer wins via serverStateWins, so a
+            // remote edit made after our last sync isn't tombstoned.
+            let deletionTime = tombstonesByRecordName[metadata.recordName]?.deletionTime
+                ?? (metadata.lastSyncedVersion + 1)
+            try CloudKitOutboxEntry.enqueueDelete(
+                recordType: recordType,
+                recordName: metadata.recordName,
+                deletionTime: deletionTime,
+                in: db
+            )
+        }
+    }
+
+    private static func enqueueDivergentSaves<Record: CloudKitPersistedRecord>(
+        recordType: CloudKitRecordType,
+        records: [Record],
+        metadataByName: [String: CloudKitRecordMetadata],
+        seen: inout Set<String>,
+        in db: Database
+    ) throws {
+        for record in records {
+            seen.insert(record.cloudKitRecordName)
+            guard try !OnboardingLocalRecord.isMarked(recordType: recordType, syncId: record.syncId, in: db) else { continue }
+            let lastSynced = metadataByName[record.cloudKitRecordName]?.lastSyncedVersion ?? -1
+            guard (record.modificationTime ?? 0) > lastSynced else { continue }
+            try enqueueSave(recordType: recordType, syncId: record.syncId, modificationTime: record.modificationTime, in: db)
+        }
+    }
+
     static func enqueuePostGraphSave(postId: Int64, modificationTime: Int64?, in db: Database) throws {
         guard let post = try Post.fetchOne(db, id: postId) else { return }
         let transactionTime = try db.transactionDate.nanoSecondSince1970

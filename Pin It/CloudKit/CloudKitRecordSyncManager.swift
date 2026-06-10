@@ -274,6 +274,12 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
         let freshEngineMode = try freshEngineMode(hasStoredEngineState: hasEngineState)
         if freshEngineMode.bootstrapsLocalRecords {
             try enqueueBootstrapOutbox()
+        } else if !hasEngineState {
+            // Fresh engine without bootstrap = re-enable on a device that already
+            // synced before. Reconcile any drift accumulated while sync was off so
+            // the upcoming full-fetch's remote-wins logic doesn't clobber local edits
+            // and so offline deletes actually reach CloudKit.
+            try enqueueOfflineReconciliationOutbox()
         }
 
         let engine = try syncEngineInstance(expectedGeneration: syncGeneration)
@@ -342,7 +348,7 @@ extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
         do {
             switch event {
             case .stateUpdate(let stateUpdate):
-                if isAccumulatingFetch() {
+                if shouldDeferStateUpdates() {
                     setPendingFetchStateSerialization(stateUpdate.stateSerialization)
                 } else {
                     try persistSyncEngineStateSerialization(stateUpdate.stateSerialization)
@@ -692,9 +698,6 @@ extension CloudKitRecordSyncManager {
     }
 
     func handleAccountChange() throws {
-        // cancelActiveOperations bumps engineGeneration, nils syncEngine/accumulator/
-        // pendingFetchStateSerialization/serverRecordCache, and cleans the upload-asset
-        // tmp directory. Concurrent in-flight CKDatabaseOperations are cancelled.
         cancelActiveOperations()
         endBackgroundTaskIfNeeded()
         CloudKitSync.clearRemoteDataMayExist()
@@ -707,10 +710,8 @@ extension CloudKitRecordSyncManager {
             try CloudKitRecordMetadata.deleteAll(db)
             try CloudKitLocalTombstone.deleteAll(db)
             try CloudKitSettingRecord.deleteAll(db)
-            // Tell the next fresh-engine fetch to keep local records intact. Without
-            // this flag, freshEngineMode would set prunesMissingLocalRecords=true and
-            // the user's local content would be deleted to match the new (empty)
-            // account's zone on first sync after re-enable.
+            // Without this flag the next fresh-engine fetch would set prunesMissing
+            // LocalRecords=true and wipe user data to match the new account's zone.
             try CloudKitSyncState.preserveLocalRecordsForNextFullFetch(in: db)
         }
 
@@ -880,12 +881,7 @@ extension CloudKitRecordSyncManager {
             guard !pendingChanges.isEmpty else { continue }
 
             do {
-                if serverStateWins(
-                    recordName: entry.recordName,
-                    entryModificationTime: entry.modificationTime,
-                    operation: operation,
-                    serverRecordState: serverRecordState
-                ) {
+                if serverStateWins(entry: entry, operation: operation, against: serverRecordState) {
                     requestFullFetchAfterCurrentSync()
                     continue
                 }
@@ -1309,6 +1305,20 @@ extension CloudKitRecordSyncManager {
         return fetchAccumulator != nil
     }
 
+    /// Defer .stateUpdate writes for the entire fetch lifecycle: accumulation, the
+    /// subsequent apply window, AND any time a full-fetch reset is queued. The reset
+    /// flag covers the unexplained-physical-delete branch (which sets it before
+    /// applyRemoteChanges ever runs) plus the window between apply finishing and
+    /// resetForRequestedFullFetchIfNeeded clearing the disk token. Without this we'd
+    /// risk persisting a state token past records that need re-delivery.
+    func shouldDeferStateUpdates() -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return fetchAccumulator != nil
+            || isApplyingRemoteChanges
+            || needsFullFetchAfterCurrentSync
+    }
+
     func setPendingFetchStateSerialization(_ serialization: CKSyncEngine.State.Serialization) {
         stateLock.lock()
         pendingFetchStateSerialization = serialization
@@ -1353,6 +1363,14 @@ extension CloudKitRecordSyncManager {
                 prunesMissingLocalRecords: accumulator.isFullSnapshot && accumulator.prunesMissingLocalRecords,
                 pendingStateSerialization: pendingState
             )
+            // Drain anything a late .stateUpdate dropped into the pending slot while
+            // apply was running. If apply requested a full fetch, discard — reset will
+            // wipe disk state anyway. Otherwise persist; it's monotonically newer than
+            // what apply just wrote inside its txn.
+            if let lateState = takePendingFetchStateSerialization(),
+               !needsFullFetchAfterCurrentSyncIsRequested() {
+                try persistSyncEngineStateSerialization(lateState)
+            }
         } catch {
             // applyRemoteChanges may throw before its dbWriter.write block (e.g. asset
             // staging) or have its txn rolled back inside it. In either case the state
@@ -1377,6 +1395,12 @@ extension CloudKitRecordSyncManager {
         needsFullFetchAfterCurrentSync = false
         stateLock.unlock()
         return value
+    }
+
+    func needsFullFetchAfterCurrentSyncIsRequested() -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return needsFullFetchAfterCurrentSync
     }
 
     func validateLocalCloudKitSnapshotForRebuild() throws {
@@ -1506,25 +1530,31 @@ extension CloudKitRecordSyncManager {
     }
 
     func sendChangesAndCleanupUploadAssets(_ engine: CKSyncEngine) async throws {
-        // Per-record cleanup happens in handleSentRecordZoneChanges as soon as
-        // CKSyncEngine acks each save. After sendChanges returns there should be
-        // nothing left in uploadAssetFilesByRecordName for the records the engine
-        // just processed; whatever remains is orphaned (engine threw, was cancelled,
-        // or never produced an ack for it) and would otherwise pile up in tmp until
-        // the next cancelActiveOperations or app launch.
-        do {
-            try await engine.sendChanges()
-        } catch {
-            cleanupAllUploadAssetFiles()
-            throw error
-        }
-        cleanupAllUploadAssetFiles()
+        // Per-record cleanup runs in handleSentRecordZoneChanges; this drains anything
+        // left behind when sendChanges throws or completes without acking every entry.
+        defer { cleanupAllUploadAssetFiles() }
+        try await engine.sendChanges()
     }
 
     func enqueueBootstrapOutbox() throws {
         let defaultStyleSyncId = DefaultStyle.currentStyleSyncIdForCloudKit()
         _ = try AppDatabase.shared.dbWriter?.write { db in
             try CloudKitOutboxEntry.enqueueBootstrapSaves(in: db)
+            try enqueueDefaultStyleSettingIfNeeded(syncId: defaultStyleSyncId, in: db)
+        }
+    }
+
+    /// Re-enable scenario: previous sync left CloudKit metadata behind, but local
+    /// edits during the disabled period weren't tracked. Catch up the outbox before
+    /// the first fetch so remote-wins-on-pull doesn't overwrite divergent local data.
+    func enqueueOfflineReconciliationOutbox() throws {
+        // Read the actual local UserDefaults selection, not currentStyleSyncIdForCloudKit
+        // which would prefer the (potentially stale) CloudKitSettingRecord when remote
+        // DataMayExist is true. During the disabled period the user may have changed
+        // default style locally and that change must propagate.
+        let defaultStyleSyncId = DataManager.shared.fetchStyle(by: Int64(DefaultStyle.getValue().rawValue))?.syncId
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            try CloudKitOutboxEntry.enqueueOfflineReconciliation(in: db)
             try enqueueDefaultStyleSettingIfNeeded(syncId: defaultStyleSyncId, in: db)
         }
     }
@@ -1539,7 +1569,11 @@ extension CloudKitRecordSyncManager {
         if setting.defaultStyleSyncId == syncId, setting.defaultStyleModificationTime > 0 {
             modificationTime = setting.defaultStyleModificationTime
         } else {
-            modificationTime = try db.transactionDate.nanoSecondSince1970
+            // Prefer the locally-tracked change time (written even when sync is off)
+            // so an offline default-style swap doesn't get re-stamped with the moment
+            // of re-enable, which would silently overwrite a newer remote setting.
+            let localChange = CloudKitSync.defaultStyleLocalModificationTime
+            modificationTime = localChange > 0 ? localChange : (try db.transactionDate.nanoSecondSince1970)
         }
         try CloudKitSettingRecord.saveDefaultStyle(syncId: syncId, modificationTime: modificationTime, in: db)
         try CloudKitOutboxEntry.enqueueSetting(modificationTime: modificationTime, in: db)
@@ -1671,31 +1705,21 @@ extension CloudKitRecordSyncManager {
     }
 
     func clearOutbox(ids: [Int64]) throws {
-        let recordNames = try recordNames(forOutboxIDs: ids)
+        var recordNames: [String] = []
         _ = try AppDatabase.shared.dbWriter?.write { db in
+            recordNames = try CloudKitOutboxEntry.filter(ids: ids).fetchAll(db).map(\.recordName)
             try CloudKitOutboxEntry.clear(ids: ids, in: db)
         }
         evictCachedServerRecords(for: recordNames)
     }
 
     func dropOutbox(ids: [Int64]) throws {
-        let recordNames = try recordNames(forOutboxIDs: ids)
+        var recordNames: [String] = []
         _ = try AppDatabase.shared.dbWriter?.write { db in
+            recordNames = try CloudKitOutboxEntry.filter(ids: ids).fetchAll(db).map(\.recordName)
             try CloudKitOutboxEntry.drop(ids: ids, in: db)
         }
         evictCachedServerRecords(for: recordNames)
-    }
-
-    func recordNames(forOutboxIDs ids: [Int64]) throws -> [String] {
-        guard !ids.isEmpty else { return [] }
-        var names: [String] = []
-        try AppDatabase.shared.dbWriter?.read { db in
-            names = try CloudKitOutboxEntry
-                .filter(ids: ids)
-                .fetchAll(db)
-                .map(\.recordName)
-        }
-        return names
     }
 
     func evictCachedServerRecords(for recordNames: [String]) {
@@ -1760,12 +1784,6 @@ extension CloudKitRecordSyncManager {
             }
         }
         return result
-    }
-
-    func clearServerRecordCache() {
-        stateLock.lock()
-        serverRecordCacheByRecordName.removeAll()
-        stateLock.unlock()
     }
 
     func fetchRecords(recordIDs: [CKRecord.ID]) async throws -> [String: CKRecord] {
@@ -1836,34 +1854,32 @@ extension CloudKitRecordSyncManager {
     }
 
     func serverStateWins(
-        recordName: String,
-        entryModificationTime: Int64,
+        entry: CloudKitOutboxEntry,
         operation: CloudKitOutboxEntry.Operation,
-        serverRecordState: ServerRecordState
+        against serverRecordState: ServerRecordState
     ) -> Bool {
+        let recordName = entry.recordName
+        let entryModificationTime = entry.modificationTime
         switch operation {
         case .delete, .purge:
-            // Local deletes still proceed against an older server state OR a server
-            // tombstone (where merging is a no-op). But a NEWER active server record
-            // means the user updated this record on another device after our local
-            // delete intent was queued — server wins so we don't tombstone newer data.
+            // Local deletes proceed against an older server state OR a server tombstone
+            // (where merging is a no-op). A NEWER active server record means another
+            // device updated this record after our delete was queued — let server win
+            // so we don't tombstone newer data.
             if let serverRecord = serverRecordState.activeRecordsByRecordName[recordName],
                modificationTime(of: serverRecord) > entryModificationTime {
                 return true
             }
             return false
         case .save:
-            break
+            // Server-equal-time wins so a simultaneous remote delete isn't overwritten.
+            if let tombstone = serverRecordState.tombstonesByDeletedRecordName[recordName],
+               tombstone.deletionTime >= entryModificationTime {
+                return true
+            }
+            guard let serverRecord = serverRecordState.activeRecordsByRecordName[recordName] else { return false }
+            return modificationTime(of: serverRecord) > entryModificationTime
         }
-        // For save, server-equal-time wins. The local save would otherwise overwrite
-        // a server tombstone with the same deletionTime — losing a remote delete that
-        // happened simultaneously on another device.
-        if let tombstone = serverRecordState.tombstonesByDeletedRecordName[recordName],
-           tombstone.deletionTime >= entryModificationTime {
-            return true
-        }
-        guard let serverRecord = serverRecordState.activeRecordsByRecordName[recordName] else { return false }
-        return modificationTime(of: serverRecord) > entryModificationTime
     }
 }
 
@@ -2223,14 +2239,17 @@ extension CloudKitRecordSyncManager {
                 try ensureSyncEnabled()
                 let pendingDeletes = try pendingDeleteOutboxByRecordName(in: db)
                 let localTombstones = try CloudKitLocalTombstone.allByRecordName(in: db)
-                if prunesMissingLocalRecords {
-                    try enqueueDeletesForLocalTombstonesThatBeatActiveRemoteRecords(
-                        changes,
-                        pendingDeletes: pendingDeletes,
-                        localTombstones: localTombstones,
-                        in: db
-                    )
-                }
+                // Tombstone-beats-remote-active should fire on every fetch, not only
+                // pruning ones. activeRemoteRecords would otherwise filter out the
+                // stale active record (because of the local tombstone) without ever
+                // pushing the delete to CloudKit, leaving the stale record alive on
+                // other devices.
+                try enqueueDeletesForLocalTombstonesThatBeatActiveRemoteRecords(
+                    changes,
+                    pendingDeletes: pendingDeletes,
+                    localTombstones: localTombstones,
+                    in: db
+                )
                 let postIdBySyncIdBefore = try idMap(table: Post.databaseTableName, in: db)
                 let styleIdBySyncIdBefore = try idMap(table: PostStyle.databaseTableName, in: db)
                 let postModificationTimeBySyncIdBefore = try modificationTimeMap(table: Post.databaseTableName, in: db)
@@ -2365,7 +2384,12 @@ extension CloudKitRecordSyncManager {
                         didChangeDatabase = true
                         deletedImageFiles.append(contentsOf: deletion.deletedImageFiles)
                     }
-                    try markServerTombstoneMetadata(tombstone, in: db)
+                    // Use the explicit tombstoneApplied flag so a tombstone that's
+                    // already-applied (local row was missing) is still recorded as
+                    // deleted in metadata. Only the local-wins path keeps isDeleted
+                    // false so enqueueExpiredTombstonePurgesIfNeeded doesn't later
+                    // purge the still-live record on CloudKit.
+                    try markServerTombstoneMetadata(tombstone, isDeleted: deletion.tombstoneApplied, in: db)
                     try CloudKitOutboxEntry.clear(recordName: tombstone.deletedRecordName, modifiedBefore: tombstone.deletionTime, in: db)
                 }
 
@@ -2413,10 +2437,14 @@ extension CloudKitRecordSyncManager {
 
                 try ensureSyncEnabled()
                 if hasDeferredRemoteRecords {
+                    // The "needs full fetch" intent is in-memory only. If we also
+                    // advanced the on-disk state token here, a kill before reset
+                    // ForRequestedFullFetchIfNeeded would leave us past the deferred
+                    // record permanently. Leave the token at its previous value so
+                    // CKSyncEngine re-delivers everything on next launch.
                     cloudKitSyncLog.info("deferred remote records until their dependencies arrive")
                     requestFullFetchAfterCurrentSync()
-                }
-                if let pendingStateSerialization {
+                } else if let pendingStateSerialization {
                     try CloudKitSyncState.setSyncEngineStateSerialization(pendingStateSerialization, in: db)
                 }
             }
@@ -2758,7 +2786,7 @@ extension CloudKitRecordSyncManager {
         )
     }
 
-    func markServerTombstoneMetadata(_ tombstone: RemoteTombstone, in db: Database) throws {
+    func markServerTombstoneMetadata(_ tombstone: RemoteTombstone, isDeleted: Bool, in db: Database) throws {
         try CloudKitRecordMetadata.markServerRecord(
             recordName: tombstone.deletedRecordName,
             recordType: tombstone.deletedRecordType,
@@ -2766,7 +2794,7 @@ extension CloudKitRecordSyncManager {
             aggregateName: tombstone.deletedRecordName,
             serverChangeTag: nil,
             version: tombstone.deletionTime,
-            isDeleted: true,
+            isDeleted: isDeleted,
             in: db
         )
     }
