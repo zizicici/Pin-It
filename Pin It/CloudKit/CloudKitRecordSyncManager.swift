@@ -70,6 +70,11 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
     private var uploadAssetFilesByRecordName: [String: [URL]] = [:]
     private var syncRunID: UInt64 = 0
     private var engineGeneration: UInt64 = 0
+    private var didEnsureRecordZone = false
+
+    private static let maxConsecutiveSyncFailures = 5
+    private static let maxSyncRoundsPerRun = 20
+    private static let maxRetryDelaySeconds: Double = 60
 
     init(client: CloudKitDatabaseClient = LiveCloudKitDatabaseClient()) {
         self.client = client
@@ -122,6 +127,13 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
             try await deleteRecordZoneIfExists()
             try rebuildLocalCloudKitStateForCurrentDevice()
             try await ensureRecordZone()
+            setDidEnsureRecordZone(true)
+            // Stamp the rebuilt zone with a fresh generation so peers can tell a
+            // deliberate rebuild (adopt this snapshot, prune their extras) from
+            // accidental zone loss (keep local data and merge).
+            let zoneGeneration = UUID().uuidString
+            try await saveZoneResetMarker(generation: zoneGeneration)
+            try persistZoneGeneration(zoneGeneration)
             let syncGeneration = currentEngineGeneration()
             let engine = try syncEngineInstance(expectedGeneration: syncGeneration)
             try syncEnginePendingChangesFromOutbox(engine)
@@ -169,6 +181,13 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
             clearFollowUpSync(runID: syncRun)
             try await validateAccountForEnabling()
             try await deleteRecordZoneIfExists(requiresSyncEnabled: false)
+            // Leave behind an empty zone holding only a fresh reset marker: peers
+            // that still sync then prune their local copies, which is what the
+            // clear alert promises ("the deletion will sync to other devices") —
+            // instead of treating the missing zone as accidental loss and
+            // re-uploading everything.
+            try await ensureRecordZone(requiresSyncEnabled: false)
+            try await saveZoneResetMarker(generation: UUID().uuidString)
             try clearLocalCloudKitState()
             CloudKitSync.setPendingRemoteReset(false)
             CloudKitSync.clearRemoteDataMayExist()
@@ -220,11 +239,23 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
         }
         guard let runID = beginSync() else { return }
 
+        var consecutiveFailures = 0
+        var rounds = 0
         while true {
+            rounds += 1
+            if rounds > Self.maxSyncRoundsPerRun {
+                // Persistent follow-up churn (e.g. serverRecordChanged ping-pong
+                // against a peer that keeps writing). Yield; the next trigger
+                // (foreground, local edit) starts a fresh run.
+                cloudKitSyncLog.error("sync run exceeded \(Self.maxSyncRoundsPerRun) rounds; deferring")
+                abortSyncRun(runID: runID)
+                return
+            }
             clearFollowUpSync(runID: runID)
             do {
                 try ensureSyncEnabled()
                 try await performSync()
+                consecutiveFailures = 0
             } catch is CloudKitSyncDisabledError {
                 runOnboardingAfterInitialCloudGateIfNeeded()
             } catch is CancellationError {
@@ -244,12 +275,42 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
                 cloudKitSyncLog.error("sync failed: \(error.localizedDescription, privacy: .public)")
                 CloudKitSync.setLastError(error.localizedDescription)
                 runOnboardingAfterInitialCloudGateIfNeeded()
+                consecutiveFailures += 1
+                if consecutiveFailures >= Self.maxConsecutiveSyncFailures {
+                    cloudKitSyncLog.error("giving up after \(consecutiveFailures) consecutive sync failures")
+                    abortSyncRun(runID: runID)
+                    return
+                }
+                let delaySeconds = retryDelaySeconds(for: error, attempt: consecutiveFailures)
+                if delaySeconds > 0 {
+                    try? await Task.sleep(nanoseconds: UInt64(delaySeconds * 1_000_000_000))
+                }
             }
 
             if finishSyncIfNoFollowUp(runID: runID) {
                 return
             }
         }
+    }
+
+    /// Honors the server's CKErrorRetryAfterKey when present, otherwise backs
+    /// off exponentially from the second consecutive failure on.
+    private func retryDelaySeconds(for error: Error, attempt: Int) -> Double {
+        let retryAfter = cloudKitRetryAfterSeconds(error) ?? 0
+        let backoff = attempt >= 2 ? min(pow(2.0, Double(attempt - 1)), 30.0) : 0
+        return min(max(retryAfter, backoff), Self.maxRetryDelaySeconds)
+    }
+
+    private func cloudKitRetryAfterSeconds(_ error: Error) -> Double? {
+        guard let cloudKitError = error as? CKError else { return nil }
+        var values: [Double] = []
+        if let retryAfter = cloudKitError.retryAfterSeconds {
+            values.append(retryAfter)
+        }
+        if let partialErrors = cloudKitError.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] {
+            values.append(contentsOf: partialErrors.values.compactMap { ($0 as? CKError)?.retryAfterSeconds })
+        }
+        return values.max()
     }
 
     private func performSync() async throws {
@@ -267,7 +328,13 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
             return
         }
 
-        try await ensureRecordZone()
+        if zoneNeedsEnsure() {
+            // CKModifyRecordZonesOperation is a full server round trip; do it once
+            // per launch. zoneNotFound recovery paths reset the flag if the zone
+            // disappears later.
+            try await ensureRecordZone()
+            setDidEnsureRecordZone(true)
+        }
         OnboardingManager.shared.markExistingOnboardingRecordsIfNeeded()
 
         let syncGeneration = currentEngineGeneration()
@@ -275,7 +342,10 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
         try cleanupLocalCloudKitOrphans()
 
         let freshEngineMode = try freshEngineMode(hasStoredEngineState: hasEngineState)
-        if freshEngineMode.bootstrapsLocalRecords {
+        if freshEngineMode.probesZoneDiscontinuity {
+            // Keep-vs-prune is decided inside the apply transaction once the
+            // snapshot's reset marker is known; don't enqueue anything yet.
+        } else if freshEngineMode.bootstrapsLocalRecords {
             try enqueueBootstrapOutbox()
         } else if !hasEngineState {
             // Fresh engine without bootstrap = re-enable on a device that already
@@ -291,14 +361,15 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
 
         beginFetchAccumulation(
             isFullSnapshot: !hasEngineState,
-            prunesMissingLocalRecords: freshEngineMode.prunesMissingLocalRecords
+            prunesMissingLocalRecords: freshEngineMode.prunesMissingLocalRecords,
+            probesZoneDiscontinuity: freshEngineMode.probesZoneDiscontinuity
         )
         do {
             try await engine.fetchChanges()
         } catch {
             discardFetchAccumulation()
             if isZoneNotFound(error) || isChangeTokenExpired(error) {
-                try resetSyncEngineStateForFullFetch(suppressesBootstrap: false, preservesLocalRecords: true)
+                try resetSyncEngineStateForZoneDiscontinuity()
                 requestFollowUpSync()
                 CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.fullRefresh"))
                 runOnboardingAfterInitialCloudGateIfNeeded()
@@ -370,7 +441,7 @@ extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
             case .didFetchRecordZoneChanges(let changes):
                 if let error = changes.error, isZoneNotFound(error) || isChangeTokenExpired(error) {
                     discardFetchAccumulation()
-                    try resetSyncEngineStateForFullFetch(suppressesBootstrap: false, preservesLocalRecords: true)
+                    try resetSyncEngineStateForZoneDiscontinuity()
                     CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.fullRefresh"))
                     requestFollowUpSync()
                 }
@@ -569,6 +640,29 @@ extension CloudKitRecordSyncManager {
         stateLock.unlock()
     }
 
+    /// Ends the run without clearing needsFollowUpSync: pending work survives
+    /// for the next trigger instead of being retried right now.
+    func abortSyncRun(runID: UInt64) {
+        stateLock.lock()
+        if runID == syncRunID {
+            isSyncing = false
+        }
+        stateLock.unlock()
+        endBackgroundTaskIfNeeded()
+    }
+
+    func zoneNeedsEnsure() -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return !didEnsureRecordZone
+    }
+
+    func setDidEnsureRecordZone(_ value: Bool) {
+        stateLock.lock()
+        didEnsureRecordZone = value
+        stateLock.unlock()
+    }
+
     func localResetRebuildIsQueued() -> Bool {
         stateLock.lock()
         defer { stateLock.unlock() }
@@ -622,6 +716,8 @@ extension CloudKitRecordSyncManager {
                     try CloudKitRecordMetadata.deleteAll(db)
                     try CloudKitLocalTombstone.deleteAll(db)
                     try CloudKitSettingRecord.deleteAll(db)
+                    try CloudKitSyncState.clearZoneDiscontinuityProbe(in: db)
+                    try CloudKitSyncState.clearZoneGeneration(in: db)
                 }
             }
         } catch {
@@ -695,7 +791,7 @@ extension CloudKitRecordSyncManager {
 extension CloudKitRecordSyncManager {
     func handleFetchedDatabaseChanges(_ changes: CKSyncEngine.Event.FetchedDatabaseChanges) throws {
         guard changes.deletions.contains(where: { $0.zoneID == CloudKitRecordName.zoneID }) else { return }
-        try resetSyncEngineStateForFullFetch(suppressesBootstrap: false, preservesLocalRecords: true)
+        try resetSyncEngineStateForZoneDiscontinuity()
         CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.fullRefresh"))
         requestFollowUpSync()
     }
@@ -703,12 +799,16 @@ extension CloudKitRecordSyncManager {
     func handleAccountChange() throws {
         cancelActiveOperations()
         endBackgroundTaskIfNeeded()
+        setDidEnsureRecordZone(false)
         CloudKitSync.clearRemoteDataMayExist()
         CloudKitSync.setPendingRemoteReset(false)
 
         _ = try AppDatabase.shared.dbWriter?.write { db in
             try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
             try CloudKitSyncState.clearBootstrapSuppression(in: db)
+            // The new account's zone has its own generation history.
+            try CloudKitSyncState.clearZoneDiscontinuityProbe(in: db)
+            try CloudKitSyncState.clearZoneGeneration(in: db)
             try CloudKitOutboxEntry.deleteAll(db)
             try CloudKitRecordMetadata.deleteAll(db)
             try CloudKitLocalTombstone.deleteAll(db)
@@ -944,8 +1044,14 @@ extension CloudKitRecordSyncManager {
     ) -> RemoteChangeSet {
         var activeRecordsByType: [CloudKitRecordType: [CKRecord]] = [:]
         var tombstonesByDeletedRecordName: [String: RemoteTombstone] = [:]
+        var zoneResetGeneration: String?
 
         for record in changedRecords {
+            if record.recordID.recordName == CloudKitRecordName.zoneMetaName,
+               record.recordType == CloudKitRecordName.zoneMetaRecordType {
+                zoneResetGeneration = stringValue(Field.resetGeneration, in: record)
+                continue
+            }
             guard let type = CloudKitRecordType(rawValue: record.recordType) else { continue }
             if isDeletedRecord(record),
                let tombstone = makeRemoteTombstone(from: record, type: type) {
@@ -960,13 +1066,15 @@ extension CloudKitRecordSyncManager {
         }
 
         let hasUnexplainedPhysicalDeletes = physicalDeletedRecords.contains { deletion in
-            return tombstonesByDeletedRecordName[deletion.recordName] == nil
+            return deletion.recordName != CloudKitRecordName.zoneMetaName
+                && tombstonesByDeletedRecordName[deletion.recordName] == nil
         }
 
         return RemoteChangeSet(
             activeRecordsByType: activeRecordsByType,
             tombstonesByDeletedRecordName: tombstonesByDeletedRecordName,
-            hasUnexplainedPhysicalDeletes: hasUnexplainedPhysicalDeletes
+            hasUnexplainedPhysicalDeletes: hasUnexplainedPhysicalDeletes,
+            zoneResetGeneration: zoneResetGeneration
         )
     }
 
@@ -974,8 +1082,10 @@ extension CloudKitRecordSyncManager {
         try await client.accountStatus()
     }
 
-    func ensureRecordZone() async throws {
-        try ensureSyncEnabled()
+    func ensureRecordZone(requiresSyncEnabled: Bool = true) async throws {
+        if requiresSyncEnabled {
+            try ensureSyncEnabled()
+        }
         let zone = CKRecordZone(zoneID: CloudKitRecordName.zoneID)
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let operation = CKModifyRecordZonesOperation(recordZonesToSave: [zone], recordZoneIDsToDelete: nil)
@@ -991,7 +1101,38 @@ extension CloudKitRecordSyncManager {
         }
     }
 
+    /// Writes the zone reset marker peers use to tell a deliberate rebuild from
+    /// accidental zone loss. Saved directly (not through the engine/outbox) so
+    /// it never mixes with record-level sync state.
+    func saveZoneResetMarker(generation: String) async throws {
+        let record = CKRecord(
+            recordType: CloudKitRecordName.zoneMetaRecordType,
+            recordID: CloudKitRecordName.recordID(CloudKitRecordName.zoneMetaName)
+        )
+        set(generation, for: Field.resetGeneration, on: record)
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let operation = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+            operation.savePolicy = .allKeys
+            operation.modifyRecordsResultBlock = { result in
+                switch result {
+                case .success:
+                    continuation.resume()
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+            addOperation(operation)
+        }
+    }
+
+    func persistZoneGeneration(_ generation: String) throws {
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            try CloudKitSyncState.setZoneGeneration(generation, in: db)
+        }
+    }
+
     func deleteRecordZoneIfExists(requiresSyncEnabled: Bool = true) async throws {
+        setDidEnsureRecordZone(false)
         if requiresSyncEnabled {
             try ensureSyncEnabled()
         }
@@ -1025,6 +1166,7 @@ extension CloudKitRecordSyncManager {
         serverRecordCacheByRecordName.removeAll()
         needsFullFetchAfterCurrentSync = false
         uploadAssetFilesByRecordName.removeAll()
+        didEnsureRecordZone = false
         stateLock.unlock()
 
         cleanupTemporaryUploadAssetDirectory()
@@ -1032,6 +1174,8 @@ extension CloudKitRecordSyncManager {
             try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
             try CloudKitSyncState.clearBootstrapSuppression(in: db)
             try CloudKitSyncState.clearLocalRecordPreservation(in: db)
+            try CloudKitSyncState.clearZoneDiscontinuityProbe(in: db)
+            try CloudKitSyncState.clearZoneGeneration(in: db)
             try CloudKitOutboxEntry.deleteAll(db)
             try CloudKitRecordMetadata.deleteAll(db)
             try CloudKitLocalTombstone.deleteAll(db)
@@ -1189,9 +1333,22 @@ extension CloudKitRecordSyncManager {
         }
         var suppressesBootstrap = false
         var preservesLocalRecords = false
+        var probesZoneDiscontinuity = false
         _ = try AppDatabase.shared.dbWriter?.write { db in
+            // The probe flag is read, not consumed: it's cleared atomically inside
+            // the apply transaction together with the keep-vs-prune outcome, so a
+            // crash between fetch and apply simply probes again.
+            probesZoneDiscontinuity = try CloudKitSyncState.isZoneDiscontinuityProbePending(in: db)
+            guard !probesZoneDiscontinuity else { return }
             suppressesBootstrap = try CloudKitSyncState.consumeBootstrapSuppression(in: db)
             preservesLocalRecords = try CloudKitSyncState.consumeLocalRecordPreservation(in: db)
+        }
+        if probesZoneDiscontinuity {
+            return FreshEngineMode(
+                bootstrapsLocalRecords: false,
+                prunesMissingLocalRecords: false,
+                probesZoneDiscontinuity: true
+            )
         }
         let bootstrapsLocalRecords = preservesLocalRecords || (!suppressesBootstrap && !CloudKitSync.remoteDataMayExist)
         // Prune local-only records on a fresh full fetch unless we're explicitly
@@ -1210,17 +1367,7 @@ extension CloudKitRecordSyncManager {
     }
 
     func resetSyncEngineStateForFullFetch(suppressesBootstrap: Bool, preservesLocalRecords: Bool = false) throws {
-        stateLock.lock()
-        engineGeneration += 1
-        syncEngine = nil
-        fetchAccumulator = nil
-        pendingFetchStateSerialization = nil
-        serverRecordCacheByRecordName.removeAll()
-        needsFullFetchAfterCurrentSync = false
-        stateLock.unlock()
-
-        _ = try AppDatabase.shared.dbWriter?.write { db in
-            try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
+        try resetSyncEngineState { db in
             if suppressesBootstrap {
                 try CloudKitSyncState.suppressBootstrapForNextFreshEngine(in: db)
             } else {
@@ -1231,6 +1378,37 @@ extension CloudKitRecordSyncManager {
             } else {
                 try CloudKitSyncState.clearLocalRecordPreservation(in: db)
             }
+            try CloudKitSyncState.clearZoneDiscontinuityProbe(in: db)
+        }
+    }
+
+    /// The zone disappeared (deleted by a peer, zoneNotFound, expired change
+    /// token). Whether the local data should be kept (accidental loss → merge)
+    /// or pruned (a peer deliberately rebuilt → adopt its snapshot) can only be
+    /// decided once the next full fetch reveals the zone's reset marker, so
+    /// just flag the probe here.
+    func resetSyncEngineStateForZoneDiscontinuity() throws {
+        try resetSyncEngineState { db in
+            try CloudKitSyncState.markZoneDiscontinuityProbe(in: db)
+            try CloudKitSyncState.clearBootstrapSuppression(in: db)
+            try CloudKitSyncState.clearLocalRecordPreservation(in: db)
+        }
+    }
+
+    private func resetSyncEngineState(flags: (Database) throws -> Void) throws {
+        stateLock.lock()
+        engineGeneration += 1
+        syncEngine = nil
+        fetchAccumulator = nil
+        pendingFetchStateSerialization = nil
+        serverRecordCacheByRecordName.removeAll()
+        needsFullFetchAfterCurrentSync = false
+        didEnsureRecordZone = false
+        stateLock.unlock()
+
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
+            try flags(db)
         }
     }
 
@@ -1242,11 +1420,12 @@ extension CloudKitRecordSyncManager {
         return true
     }
 
-    func beginFetchAccumulation(isFullSnapshot: Bool, prunesMissingLocalRecords: Bool) {
+    func beginFetchAccumulation(isFullSnapshot: Bool, prunesMissingLocalRecords: Bool, probesZoneDiscontinuity: Bool) {
         stateLock.lock()
         fetchAccumulator = FetchAccumulator(
             isFullSnapshot: isFullSnapshot,
-            prunesMissingLocalRecords: prunesMissingLocalRecords
+            prunesMissingLocalRecords: prunesMissingLocalRecords,
+            probesZoneDiscontinuity: probesZoneDiscontinuity
         )
         stateLock.unlock()
     }
@@ -1364,6 +1543,7 @@ extension CloudKitRecordSyncManager {
                 remoteChanges,
                 missingDependenciesAreOrphans: accumulator.isFullSnapshot,
                 prunesMissingLocalRecords: accumulator.isFullSnapshot && accumulator.prunesMissingLocalRecords,
+                probesZoneDiscontinuity: accumulator.isFullSnapshot && accumulator.probesZoneDiscontinuity,
                 pendingStateSerialization: pendingState
             )
             // Drain anything a late .stateUpdate dropped into the pending slot while
@@ -1523,6 +1703,7 @@ extension CloudKitRecordSyncManager {
             try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
             try CloudKitSyncState.clearBootstrapSuppression(in: db)
             try CloudKitSyncState.clearLocalRecordPreservation(in: db)
+            try CloudKitSyncState.clearZoneDiscontinuityProbe(in: db)
             try CloudKitLocalTombstone.deleteAll(db)
             try CloudKitOutboxEntry.deleteAll(db)
             try CloudKitRecordMetadata.deleteAll(db)
@@ -1575,8 +1756,12 @@ extension CloudKitRecordSyncManager {
             // Prefer the locally-tracked change time (written even when sync is off)
             // so an offline default-style swap doesn't get re-stamped with the moment
             // of re-enable, which would silently overwrite a newer remote setting.
+            // No recorded change at all means the user never explicitly picked a
+            // default (legacy-upgrade fallback selection) — don't push an implicit
+            // choice with a fresh timestamp over a peer's explicit one.
             let localChange = CloudKitSync.defaultStyleLocalModificationTime
-            modificationTime = localChange > 0 ? localChange : (try db.transactionDate.nanoSecondSince1970)
+            guard localChange > 0 else { return }
+            modificationTime = localChange
         }
         try CloudKitSettingRecord.saveDefaultStyle(syncId: syncId, modificationTime: modificationTime, in: db)
         try CloudKitOutboxEntry.enqueueSetting(modificationTime: modificationTime, in: db)
@@ -2226,20 +2411,46 @@ extension CloudKitRecordSyncManager {
         _ changes: RemoteChangeSet,
         missingDependenciesAreOrphans: Bool,
         prunesMissingLocalRecords: Bool,
+        probesZoneDiscontinuity: Bool = false,
         pendingStateSerialization: CKSyncEngine.State.Serialization? = nil
     ) throws {
         let imageRecordNamesToStage = try imageRecordNamesToStage(changes)
         var stagedImageAssets = try stageImageAssets(changes, allowedRecordNames: imageRecordNamesToStage)
         let allStagedImageFiles = stagedImageAssets.values.flatMap(\.copiedFiles)
+        // Read outside the write transaction (goes through DataManager's reader).
+        let probeDefaultStyleSyncId = probesZoneDiscontinuity
+            ? DataManager.shared.fetchStyle(by: Int64(DefaultStyle.getValue().rawValue))?.syncId
+            : nil
         var deletedImageFiles: [(String, CacheImageType)] = []
         var didChangeDatabase = false
         var didApplyRemoteUserContent = false
         var shouldRunOnboardingSetup = false
         var hasDeferredRemoteRecords = false
+        var shouldPruneMissingLocalRecords = prunesMissingLocalRecords
 
         do {
             try AppDatabase.shared.dbWriter?.write { db in
                 try ensureSyncEnabled()
+                if probesZoneDiscontinuity {
+                    let storedGeneration = try CloudKitSyncState.zoneGeneration(in: db)
+                    if let fetchedGeneration = changes.zoneResetGeneration, fetchedGeneration != storedGeneration {
+                        // A peer deliberately rebuilt the zone (reset/rebuild/clear):
+                        // adopt its snapshot. Previously-synced records missing from
+                        // it are pruned below; pending local changes survive via the
+                        // outbox protections inside the prune.
+                        shouldPruneMissingLocalRecords = true
+                    } else {
+                        // No marker (accidental zone loss, legacy zone) or unchanged
+                        // generation (expired change token): keep local data and
+                        // re-upload — the pre-marker merge behavior.
+                        try CloudKitOutboxEntry.enqueueBootstrapSaves(in: db)
+                        try enqueueDefaultStyleSettingIfNeeded(syncId: probeDefaultStyleSyncId, in: db)
+                    }
+                    try CloudKitSyncState.clearZoneDiscontinuityProbe(in: db)
+                }
+                if let fetchedGeneration = changes.zoneResetGeneration {
+                    try CloudKitSyncState.setZoneGeneration(fetchedGeneration, in: db)
+                }
                 let pendingDeletes = try pendingDeleteOutboxByRecordName(in: db)
                 let localTombstones = try CloudKitLocalTombstone.allByRecordName(in: db)
                 // Tombstone-beats-remote-active should fire on every fetch, not only
@@ -2419,7 +2630,7 @@ extension CloudKitRecordSyncManager {
                     didChangeDatabase = true
                 }
 
-                if prunesMissingLocalRecords {
+                if shouldPruneMissingLocalRecords {
                     let pruning = try pruneLocalRecordsMissingFromFullFetch(changes, in: db)
                     if pruning.didChangeDatabase {
                         didChangeDatabase = true
@@ -2994,7 +3205,11 @@ extension CloudKitRecordSyncManager {
         let existing = try PostImage
             .filter(Column(PostImage.CodingKeys.syncId) == syncId)
             .fetchOne(db)
-        guard existing == nil || remoteModificationTime > (existing?.modificationTime ?? 0) else { return (false, false, []) }
+        if let existing, remoteModificationTime <= (existing.modificationTime ?? 0) {
+            guard remoteModificationTime == (existing.modificationTime ?? 0) else { return (false, false, []) }
+            let didRestore = try restoreMissingImageFiles(for: existing, stagedAssets: stagedAssets, in: db)
+            return (didRestore, false, [])
+        }
 
         let texts = try PostText
             .filter(Column(PostText.CodingKeys.postId) == postId)
@@ -3063,6 +3278,29 @@ extension CloudKitRecordSyncManager {
             deletedImageFiles.append((existing.processed, .processed))
         }
         return (true, false, deletedImageFiles)
+    }
+
+    /// Remote and local are at the same version, so the asset content matches
+    /// the row; a lost cache file (e.g. an interrupted crop that deleted the old
+    /// file before the replacement landed) can be restored from the staged
+    /// download. modification_time stays untouched — no LWW impact, no echo
+    /// back to the server.
+    func restoreMissingImageFiles(for image: PostImage, stagedAssets: StagedImageAssets?, in db: Database) throws -> Bool {
+        guard let imageId = image.id, let stagedAssets else { return false }
+        var assignments: [ColumnAssignment] = []
+        if ImageCacheManager.shared.getURL(name: image.original, type: .original) == nil,
+           let stagedOriginal = stagedAssets.originalName {
+            assignments.append(Column(PostImage.CodingKeys.original).set(to: stagedOriginal))
+        }
+        if ImageCacheManager.shared.getURL(name: image.processed, type: .processed) == nil,
+           let stagedProcessed = stagedAssets.processedName {
+            assignments.append(Column(PostImage.CodingKeys.processed).set(to: stagedProcessed))
+        }
+        guard !assignments.isEmpty else { return false }
+        try PostImage
+            .filter(Column(PostImage.CodingKeys.id) == imageId)
+            .updateAll(db, assignments)
+        return true
     }
 
     func applyDecorationRecord(

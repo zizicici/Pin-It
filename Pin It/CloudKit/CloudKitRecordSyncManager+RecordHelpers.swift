@@ -30,20 +30,27 @@ extension CloudKitRecordSyncManager {
                     recordNames.insert(record.recordID.recordName)
                     continue
                 }
-                // applyImageRecord only saves when the remote record is strictly
-                // newer, so staging assets for an equal-or-older record is a
-                // guaranteed-discarded download. Skipping those also stops the
-                // re-download on every full fetch for records whose landed file
+                // Stage only what apply can actually use: a strictly-newer remote
+                // record that needs assets, or an equal-version one whose local
+                // cache file was lost (restoreMissingImageFiles heals those).
+                // Anything else is a guaranteed-discarded download — including
+                // the per-full-fetch re-download for records whose landed file
                 // name diverged from the remote one (cross-device name clash).
                 let remoteModificationTime = modificationTime(of: record)
-                guard remoteModificationTime > (existing.modificationTime ?? 0) else { continue }
-                let remoteOriginalFileName = stringValue(Field.originalFileName, in: record)
-                let remoteProcessedFileName = stringValue(Field.processedFileName, in: record)
-                let needsOriginalAsset = (remoteOriginalFileName != nil && remoteOriginalFileName != existing.original)
-                || ImageCacheManager.shared.getURL(name: existing.original, type: .original) == nil
-                let needsProcessedAsset = (remoteProcessedFileName != nil && remoteProcessedFileName != existing.processed)
-                || ImageCacheManager.shared.getURL(name: existing.processed, type: .processed) == nil
-                if needsOriginalAsset || needsProcessedAsset {
+                let localModificationTime = existing.modificationTime ?? 0
+                let originalFileMissing = ImageCacheManager.shared.getURL(name: existing.original, type: .original) == nil
+                let processedFileMissing = ImageCacheManager.shared.getURL(name: existing.processed, type: .processed) == nil
+                if remoteModificationTime > localModificationTime {
+                    let remoteOriginalFileName = stringValue(Field.originalFileName, in: record)
+                    let remoteProcessedFileName = stringValue(Field.processedFileName, in: record)
+                    let needsOriginalAsset = (remoteOriginalFileName != nil && remoteOriginalFileName != existing.original)
+                    || originalFileMissing
+                    let needsProcessedAsset = (remoteProcessedFileName != nil && remoteProcessedFileName != existing.processed)
+                    || processedFileMissing
+                    if needsOriginalAsset || needsProcessedAsset {
+                        recordNames.insert(record.recordID.recordName)
+                    }
+                } else if remoteModificationTime == localModificationTime, originalFileMissing || processedFileMissing {
                     recordNames.insert(record.recordID.recordName)
                 }
             }

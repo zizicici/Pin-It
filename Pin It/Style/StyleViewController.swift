@@ -1162,7 +1162,14 @@ struct DefaultStyle: RawRepresentable, UserDefaultSettable {
         if updatesCloudKitSetting {
             _ = try CloudKitSettingRecord.clearPendingDefaultStyle(syncId: deletedStyle.syncId, in: db)
         }
-        guard storedSyncId == deletedStyle.syncId || storedLocalId == Int(deletedStyleId) else {
+        // While a remote-apply transaction is in flight, UserDefaults lags behind
+        // (it's updated in an afterNextTransaction callback). When the CloudKit
+        // setting names a different style than the one being deleted, that value
+        // is authoritative — replacing based on the stale local id would
+        // overwrite the just-applied remote choice with a fresh timestamp.
+        let localFallbackApplies = storedLocalId == Int(deletedStyleId)
+            && (!updatesCloudKitSetting || storedSyncId == nil)
+        guard storedSyncId == deletedStyle.syncId || localFallbackApplies else {
             return false
         }
 

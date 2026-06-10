@@ -89,6 +89,9 @@ extension CloudKitSync: UserDefaultSettable {
         if let lastError {
             parts.append(lastError)
         }
+        if pendingRemoteReset {
+            parts.append(String(localized: "settings.cloudKitSync.pendingReset.footer"))
+        }
         if current == .enable {
             parts.append(String(localized: "settings.cloudKitSync.foregroundOnly.footer"))
             parts.append(String(localized: "settings.cloudKitSync.rebuild.footer"))
@@ -156,8 +159,13 @@ extension CloudKitSync: UserDefaultSettable {
     }
 
     static func setLastError(_ message: String?, postsUpdate: Bool = true) {
-        if let message, !message.isEmpty {
-            userDefaults.set(message, forKey: UserDefaults.Settings.CloudKitSyncLastError.rawValue)
+        let normalized = (message?.isEmpty == false) ? message : nil
+        // Every sync pass ends in setLastError; an unchanged value (usually
+        // nil → nil) must not broadcast .SettingsUpdate, or each no-op sync
+        // rebuilds the settings page, main menu, and every visible cell menu.
+        guard normalized != lastError else { return }
+        if let normalized {
+            userDefaults.set(normalized, forKey: UserDefaults.Settings.CloudKitSyncLastError.rawValue)
         } else {
             userDefaults.removeObject(forKey: UserDefaults.Settings.CloudKitSyncLastError.rawValue)
         }

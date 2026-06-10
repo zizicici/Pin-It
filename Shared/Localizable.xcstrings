@@ -18807,6 +18807,106 @@
         }
       }
     },
+    "settings.cloudKitSync.pendingReset.footer" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A CloudKit rebuild is pending and will retry when iCloud is available. To abandon it, turn off CloudKit Sync, then use Clear CloudKit Data."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A CloudKit rebuild is pending and will retry when iCloud is available. To abandon it, turn off CloudKit Sync, then use Clear CloudKit Data."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A CloudKit rebuild is pending and will retry when iCloud is available. To abandon it, turn off CloudKit Sync, then use Clear CloudKit Data."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A CloudKit rebuild is pending and will retry when iCloud is available. To abandon it, turn off CloudKit Sync, then use Clear CloudKit Data."
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A CloudKit rebuild is pending and will retry when iCloud is available. To abandon it, turn off CloudKit Sync, then use Clear CloudKit Data."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A CloudKit rebuild is pending and will retry when iCloud is available. To abandon it, turn off CloudKit Sync, then use Clear CloudKit Data."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A CloudKit rebuild is pending and will retry when iCloud is available. To abandon it, turn off CloudKit Sync, then use Clear CloudKit Data."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A CloudKit rebuild is pending and will retry when iCloud is available. To abandon it, turn off CloudKit Sync, then use Clear CloudKit Data."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A CloudKit rebuild is pending and will retry when iCloud is available. To abandon it, turn off CloudKit Sync, then use Clear CloudKit Data."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A CloudKit rebuild is pending and will retry when iCloud is available. To abandon it, turn off CloudKit Sync, then use Clear CloudKit Data."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A CloudKit rebuild is pending and will retry when iCloud is available. To abandon it, turn off CloudKit Sync, then use Clear CloudKit Data."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A CloudKit rebuild is pending and will retry when iCloud is available. To abandon it, turn off CloudKit Sync, then use Clear CloudKit Data."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A CloudKit rebuild is pending and will retry when iCloud is available. To abandon it, turn off CloudKit Sync, then use Clear CloudKit Data."
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 重建尚未完成，將在 iCloud 可用時重試。如要放棄重建，請先關閉 CloudKit 同步，再使用「清空 CloudKit 資料」。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 重建尚未完成，将在 iCloud 可用时重试。如要放弃重建，请先关闭 CloudKit 同步，再使用「清空 CloudKit 数据」。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CloudKit 重建尚未完成，將在 iCloud 可用時重試。如要放棄重建，請先關閉 CloudKit 同步，再使用「清空 CloudKit 資料」。"
+          }
+        }
+      }
+    },
     "settings.cloudKitSync.rebuild" : {
       "localizations" : {
         "ar" : {

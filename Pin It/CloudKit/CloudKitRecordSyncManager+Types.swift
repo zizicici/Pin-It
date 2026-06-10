@@ -22,11 +22,13 @@ extension CloudKitRecordSyncManager {
         var activeRecordsByType: [CloudKitRecordType: [CKRecord]]
         var tombstonesByDeletedRecordName: [String: RemoteTombstone]
         var hasUnexplainedPhysicalDeletes: Bool
+        var zoneResetGeneration: String?
     }
 
     struct FetchAccumulator {
         var isFullSnapshot: Bool
         var prunesMissingLocalRecords: Bool
+        var probesZoneDiscontinuity: Bool = false
         var changedRecords: [CKRecord] = []
         var physicalDeletedRecords: [PhysicalDeletedRecord] = []
     }
@@ -34,6 +36,7 @@ extension CloudKitRecordSyncManager {
     struct FreshEngineMode {
         var bootstrapsLocalRecords: Bool
         var prunesMissingLocalRecords: Bool
+        var probesZoneDiscontinuity: Bool = false
     }
 
     struct ServerRecordState {
@@ -108,5 +111,7 @@ extension CloudKitRecordSyncManager {
         static let deletedRecordType = "deletedRecordType"
         static let deletedRecordName = "deletedRecordName"
         static let deletionTime = "deletionTime"
+
+        static let resetGeneration = "resetGeneration"
     }
 }

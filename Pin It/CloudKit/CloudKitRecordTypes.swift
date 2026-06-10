@@ -39,6 +39,11 @@ enum CloudKitRecordName {
     static let zoneName = "PinItCloudKitSync"
     static let zoneID = CKRecordZone.ID(zoneName: zoneName, ownerName: CKCurrentUserDefaultName)
     static let settingsName = "setting.default"
+    /// Marker record stamped into the zone on every deliberate rebuild/clear.
+    /// Lives outside CloudKitRecordType on purpose: it must never enter the
+    /// outbox/apply pipeline, tombstones, or pruning.
+    static let zoneMetaName = "zone.meta"
+    static let zoneMetaRecordType = "PinZoneMeta"
 
     static func make(_ type: CloudKitRecordType, syncId: String) -> String {
         "\(type.recordNamePrefix).\(syncId)"
@@ -499,6 +504,8 @@ struct CloudKitSyncState: Codable, FetchableRecord, MutablePersistableRecord, Ta
         static let syncEngineState = "sync_engine_state"
         static let suppressNextBootstrap = "suppress_next_bootstrap"
         static let preserveLocalOnNextFullFetch = "preserve_local_on_next_full_fetch"
+        static let zoneGeneration = "zone_generation"
+        static let pendingZoneDiscontinuityProbe = "pending_zone_discontinuity_probe"
     }
 
     enum Columns {
@@ -605,6 +612,41 @@ extension CloudKitSyncState {
             try clearBootstrapSuppression(in: db)
         }
         return isSuppressed
+    }
+
+    /// Last reset-marker generation observed in (or written to) the zone. Used
+    /// to tell a peer's deliberate rebuild apart from accidental zone loss.
+    static func zoneGeneration(in db: Database) throws -> String? {
+        guard let state = try CloudKitSyncState.fetchOne(db, key: Key.zoneGeneration),
+              let data = state.value else {
+            return nil
+        }
+        return String(data: data, encoding: .utf8)
+    }
+
+    static func setZoneGeneration(_ generation: String, in db: Database) throws {
+        var state = CloudKitSyncState(key: Key.zoneGeneration, value: generation.data(using: .utf8))
+        try state.save(db)
+    }
+
+    static func clearZoneGeneration(in db: Database) throws {
+        try deleteValue(forKey: Key.zoneGeneration, in: db)
+    }
+
+    /// Set when the zone disappeared (deleted by a peer, zoneNotFound, expired
+    /// change token). The next full fetch decides keep-vs-prune by comparing the
+    /// fetched reset marker against the stored zone generation, and clears this
+    /// flag atomically inside the apply transaction.
+    static func markZoneDiscontinuityProbe(in db: Database) throws {
+        try setIntegerValue(1, forKey: Key.pendingZoneDiscontinuityProbe, in: db)
+    }
+
+    static func clearZoneDiscontinuityProbe(in db: Database) throws {
+        try deleteValue(forKey: Key.pendingZoneDiscontinuityProbe, in: db)
+    }
+
+    static func isZoneDiscontinuityProbePending(in db: Database) throws -> Bool {
+        (try integerValue(forKey: Key.pendingZoneDiscontinuityProbe, in: db) ?? 0) != 0
     }
 
     static func preserveLocalRecordsForNextFullFetch(in db: Database) throws {

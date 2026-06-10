@@ -564,7 +564,7 @@ extension AppDatabase {
             print(error)
             return nil
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return result
     }
 
@@ -623,7 +623,7 @@ extension AppDatabase {
             print(error)
             return nil
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return result
     }
 
@@ -695,7 +695,7 @@ extension AppDatabase {
             print(error)
             return nil
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return result
     }
 
@@ -733,7 +733,7 @@ extension AppDatabase {
             print(error)
             return nil
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return deletedImages
     }
 
@@ -787,7 +787,7 @@ extension AppDatabase {
             print(error)
             return nil
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return deletedImages
     }
     
@@ -814,7 +814,7 @@ extension AppDatabase {
             return false
         }
         if didChange {
-            NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+            DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         }
         return true
     }
@@ -863,7 +863,7 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return true
     }
     
@@ -923,7 +923,7 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return true
     }
 }
@@ -947,7 +947,7 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return true
     }
     
@@ -980,7 +980,7 @@ extension AppDatabase {
             return false
         }
         if didChange {
-            NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+            DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         }
         return true
     }
@@ -1006,7 +1006,7 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return true
     }
     
@@ -1035,7 +1035,7 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return true
     }
 }
@@ -1059,7 +1059,7 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return true
     }
     
@@ -1092,7 +1092,7 @@ extension AppDatabase {
             return false
         }
         if didChange {
-            NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+            DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         }
         return true
     }
@@ -1118,7 +1118,7 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return true
     }
     
@@ -1147,7 +1147,7 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return true
     }
 }
@@ -1174,7 +1174,7 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return true
     }
 
@@ -1197,7 +1197,7 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return true
     }
     
@@ -1226,7 +1226,7 @@ extension AppDatabase {
             return false
         }
         if didChange {
-            NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+            DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         }
         return true
     }
@@ -1248,8 +1248,8 @@ extension AppDatabase {
             print(error)
             return nil
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
-        NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
+        DatabaseUpdateNotifier.shared.post(.DatabaseStyleUpdated)
         return saveStyle
     }
     
@@ -1273,8 +1273,8 @@ extension AppDatabase {
             return false
         }
         if didChange {
-            NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
-            NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
+            DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
+            DatabaseUpdateNotifier.shared.post(.DatabaseStyleUpdated)
         }
         return true
     }
@@ -1329,8 +1329,8 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
-        NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
+        DatabaseUpdateNotifier.shared.post(.DatabaseStyleUpdated)
         return true
     }
 }
@@ -1358,8 +1358,8 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
-        NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
+        DatabaseUpdateNotifier.shared.post(.DatabaseStyleUpdated)
         return true
     }
     
@@ -1378,10 +1378,12 @@ extension AppDatabase {
                 let originalStyleId = decoration.styleId
                 try requirePost(postId: mutated.postId, in: db)
                 try requireStyle(styleId: mutated.styleId, in: db)
+                // Clear whatever decoration already occupies the target post BEFORE
+                // the UPDATE trips over the unique index on decoration.post_id.
+                try deleteConflictingDecorations(postId: mutated.postId, excludingId: id, in: db)
                 guard try decoration.updateChangesWithTimestamp(db, modify: { $0 = mutated }) else { return }
                 try promotePostGraphToUserContent(postId: originalPostId, in: db)
                 try promoteStyleToUserContent(styleId: originalStyleId, in: db)
-                try deleteConflictingDecorations(postId: decoration.postId, excludingId: id, in: db)
                 try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
                 try touchPostForCloudKit(postId: originalPostId, modificationTime: decoration.modificationTime, in: db)
                 try touchStyleForCloudKit(styleId: originalStyleId, modificationTime: decoration.modificationTime, in: db)
@@ -1401,8 +1403,8 @@ extension AppDatabase {
             return false
         }
         if didChange {
-            NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
-            NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
+            DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
+            DatabaseUpdateNotifier.shared.post(.DatabaseStyleUpdated)
         }
         return true
     }
@@ -1429,8 +1431,8 @@ extension AppDatabase {
             print(error)
             return false
         }
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
-        NotificationCenter.default.post(name: Notification.Name.DatabaseStyleUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
+        DatabaseUpdateNotifier.shared.post(.DatabaseStyleUpdated)
         return true
     }
 }
@@ -1575,10 +1577,15 @@ extension AppDatabase {
 
     public func reset() -> Bool {
         let shouldRebuildCloudKit = CloudKitSync.current == .enable
+        let hadPendingRemoteReset = CloudKitSync.pendingRemoteReset
         do {
             guard let dbWriter else { return false }
             if shouldRebuildCloudKit {
                 CloudKitRecordSyncManager.shared.cancelSyncForLocalReset()
+                // Before the destructive write: dying between the commit and this
+                // flag would otherwise let the next full fetch quietly restore the
+                // cloud copy of everything the user just reset.
+                CloudKitSync.setPendingRemoteReset(true)
             }
             try dbWriter.write { db in
                 try PostImage.deleteAll(db)
@@ -1593,6 +1600,7 @@ extension AppDatabase {
                 try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
                 try CloudKitSyncState.clearBootstrapSuppression(in: db)
                 try CloudKitSyncState.clearLocalRecordPreservation(in: db)
+                try CloudKitSyncState.clearZoneDiscontinuityProbe(in: db)
                 try CloudKitSettingRecord.deleteAll(db)
                 try db.execute(
                     sql: """
@@ -1608,17 +1616,58 @@ extension AppDatabase {
                     """
                 )
             }
-            if shouldRebuildCloudKit {
-                CloudKitSync.setPendingRemoteReset(true)
-            }
         } catch {
             print(error)
+            if shouldRebuildCloudKit && !hadPendingRemoteReset {
+                CloudKitSync.setPendingRemoteReset(false)
+            }
             return false
         }
         
         OnboardingManager.shared.requestOnboardingSeed()
-        NotificationCenter.default.post(name: Notification.Name.DatabaseUpdated, object: nil)
+        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         return true
+    }
+}
+
+/// Coalesces change notifications onto the next main-runloop tick: one user
+/// action can hit several write APIs (an editor save touches text, image,
+/// decoration, and post), and posting from each call made every main-thread
+/// observer rebuild its UI once per write. Also normalizes posts from
+/// background callers (e.g. reset on a utility queue) onto the main thread.
+final class DatabaseUpdateNotifier {
+    static let shared = DatabaseUpdateNotifier()
+
+    // Main-thread confined.
+    private var pendingNames: [Notification.Name] = []
+
+    func post(_ name: Notification.Name) {
+        if Thread.isMainThread {
+            enqueue(name)
+        } else {
+            DispatchQueue.main.async {
+                self.enqueue(name)
+            }
+        }
+    }
+
+    private func enqueue(_ name: Notification.Name) {
+        if pendingNames.isEmpty {
+            DispatchQueue.main.async {
+                self.flush()
+            }
+        }
+        if !pendingNames.contains(name) {
+            pendingNames.append(name)
+        }
+    }
+
+    private func flush() {
+        let names = pendingNames
+        pendingNames = []
+        for name in names {
+            NotificationCenter.default.post(name: name, object: nil)
+        }
     }
 }
 

@@ -623,9 +623,9 @@ class SettingsViewController: UIViewController {
         isLoadingCloudKitFailedOutboxSummary = true
         // A plain Task {} would inherit this controller's MainActor isolation and
         // run the database read on the main thread.
-        Task.detached(priority: .utility) { [weak self] in
+        Task.detached(priority: .utility) {
             let summary = SettingsViewController.loadCloudKitFailedOutboxSummary()
-            await MainActor.run {
+            await MainActor.run { [weak self] in
                 guard let self else { return }
                 self.isLoadingCloudKitFailedOutboxSummary = false
                 guard self.cloudKitFailedOutboxSummary != summary else { return }
