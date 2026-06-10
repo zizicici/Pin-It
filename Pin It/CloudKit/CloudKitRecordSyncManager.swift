@@ -144,6 +144,9 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
             let hasOutboxFailures = try hasOutboxFailures()
             try markRemoteDataMayExistIfCloudKitStateExists()
             CloudKitSync.setPendingRemoteReset(false)
+            // A rebuild deletes the zone and stamps a fresh reset marker — it
+            // fully supersedes any interrupted clear.
+            CloudKitSync.setPendingRemoteClear(false)
             CloudKitSync.setLastError(
                 hasOutboxFailures ? String(localized: "settings.cloudKitSync.error.uploadFailed") : nil
             )
@@ -180,6 +183,12 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
         do {
             clearFollowUpSync(runID: syncRun)
             try await validateAccountForEnabling()
+            // Persisted across a crash/kill: if the app dies between the zone
+            // deletion and the new reset marker, the zone has no marker and
+            // peers would misread the loss as accidental and re-upload — the
+            // clear would be silently undone. The flag makes the interruption
+            // visible on next launch so the user can re-run the clear.
+            CloudKitSync.setPendingRemoteClear(true)
             try await deleteRecordZoneIfExists(requiresSyncEnabled: false)
             // Leave behind an empty zone holding only a fresh reset marker: peers
             // that still sync then prune their local copies, which is what the
@@ -189,6 +198,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
             try await ensureRecordZone(requiresSyncEnabled: false)
             try await saveZoneResetMarker(generation: UUID().uuidString)
             try clearLocalCloudKitState()
+            CloudKitSync.setPendingRemoteClear(false)
             CloudKitSync.setPendingRemoteReset(false)
             CloudKitSync.clearRemoteDataMayExist()
             CloudKitSync.setLastError(nil)
@@ -315,6 +325,8 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
 
     private func performSync() async throws {
         try ensureSyncEnabled()
+        try finishInterruptedDisableCleanupIfNeeded()
+        try recoverInterruptedRemoteClearIfNeeded()
         guard !CloudKitSync.pendingRemoteReset else {
             rebuildCloudKitDataAfterLocalReset()
             return
@@ -709,27 +721,69 @@ extension CloudKitRecordSyncManager {
     func disableSyncAndClearLocalState() {
         cancelActiveOperations()
         endBackgroundTaskIfNeeded()
-        let preservesLocalSyncIntent = CloudKitSync.remoteDataMayExist || CloudKitSync.pendingRemoteReset
         stateLock.lock()
         syncEngine = nil
         stateLock.unlock()
-        do {
-            try AppDatabase.shared.dbWriter?.write { db in
-                try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
-                try CloudKitSyncState.clearBootstrapSuppression(in: db)
-                try CloudKitSyncState.clearLocalRecordPreservation(in: db)
-                if !preservesLocalSyncIntent {
-                    try CloudKitOutboxEntry.deleteAll(db)
-                    try CloudKitRecordMetadata.deleteAll(db)
-                    try CloudKitLocalTombstone.deleteAll(db)
-                    try CloudKitSettingRecord.deleteAll(db)
-                    try CloudKitSyncState.clearZoneDiscontinuityProbe(in: db)
-                    try CloudKitSyncState.clearZoneGeneration(in: db)
-                }
+        // Synchronous marker, deferred cleanup: the DB write must not run on
+        // this (main) thread — it would block behind any in-flight remote-apply
+        // transaction — but a kill before the deferred write lands would leave
+        // the engine state behind and make a later re-enable skip offline
+        // reconciliation. The flag survives the kill; the next sync finishes
+        // the cleanup first (finishInterruptedDisableCleanupIfNeeded).
+        CloudKitSync.setPendingDisableCleanup(true)
+        let preservesLocalSyncIntent = CloudKitSync.remoteDataMayExist || CloudKitSync.pendingRemoteReset
+        AppDatabase.shared.dbWriter?.asyncWrite({ db in
+            try Self.clearLocalStateForDisable(preservesLocalSyncIntent: preservesLocalSyncIntent, in: db)
+        }, completion: { _, result in
+            switch result {
+            case .success:
+                CloudKitSync.setPendingDisableCleanup(false)
+            case .failure(let error):
+                CloudKitSync.setLastError(error.localizedDescription)
             }
-        } catch {
-            CloudKitSync.setLastError(error.localizedDescription)
+        })
+    }
+
+    private static func clearLocalStateForDisable(preservesLocalSyncIntent: Bool, in db: Database) throws {
+        try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
+        try CloudKitSyncState.clearBootstrapSuppression(in: db)
+        try CloudKitSyncState.clearLocalRecordPreservation(in: db)
+        if !preservesLocalSyncIntent {
+            try CloudKitOutboxEntry.deleteAll(db)
+            try CloudKitRecordMetadata.deleteAll(db)
+            try CloudKitLocalTombstone.deleteAll(db)
+            try CloudKitSettingRecord.deleteAll(db)
+            try CloudKitSyncState.clearZoneDiscontinuityProbe(in: db)
+            try CloudKitSyncState.clearZoneGeneration(in: db)
         }
+    }
+
+    /// Finishes a disable-time cleanup that never committed (app killed before
+    /// the deferred asyncWrite ran, or it failed). Runs synchronously on the
+    /// caller's (background) task; also barriers the subsequent engine-state
+    /// reads in performSync behind the cleanup, closing the read-vs-asyncWrite
+    /// race of a rapid disable→enable toggle.
+    func finishInterruptedDisableCleanupIfNeeded() throws {
+        guard CloudKitSync.pendingDisableCleanup else { return }
+        let preservesLocalSyncIntent = CloudKitSync.remoteDataMayExist || CloudKitSync.pendingRemoteReset
+        try AppDatabase.shared.dbWriter?.write { db in
+            try Self.clearLocalStateForDisable(preservesLocalSyncIntent: preservesLocalSyncIntent, in: db)
+        }
+        CloudKitSync.setPendingDisableCleanup(false)
+    }
+
+    /// Re-enabling sync supersedes an interrupted "clear CloudKit data": the
+    /// zone may be missing (or missing its reset marker) while local sync
+    /// metadata still exists, and the upcoming full fetch of that empty zone
+    /// would otherwise PRUNE every previously-synced local record. Preserve
+    /// local data for that fetch (bootstrap re-uploads it) and drop the stale
+    /// clear intent.
+    func recoverInterruptedRemoteClearIfNeeded() throws {
+        guard CloudKitSync.pendingRemoteClear else { return }
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            try CloudKitSyncState.preserveLocalRecordsForNextFullFetch(in: db)
+        }
+        CloudKitSync.setPendingRemoteClear(false)
     }
 
     func cancelSyncForLocalReset() {
@@ -809,6 +863,11 @@ extension CloudKitRecordSyncManager {
         setDidEnsureRecordZone(false)
         CloudKitSync.clearRemoteDataMayExist()
         CloudKitSync.setPendingRemoteReset(false)
+        // An interrupted clear of the OLD account's zone must not be re-run
+        // (or surfaced) against the new account.
+        CloudKitSync.setPendingRemoteClear(false)
+        // The account-change wipe below is a superset of the disable cleanup.
+        CloudKitSync.setPendingDisableCleanup(false)
 
         _ = try AppDatabase.shared.dbWriter?.write { db in
             try CloudKitSyncState.clearSyncEngineStateSerialization(in: db)
@@ -1188,6 +1247,8 @@ extension CloudKitRecordSyncManager {
             try CloudKitLocalTombstone.deleteAll(db)
             try CloudKitSettingRecord.deleteAll(db)
         }
+        // This wipe is a superset of the disable-time cleanup.
+        CloudKitSync.setPendingDisableCleanup(false)
     }
 
     func ensureSyncEnabled() throws {
@@ -1733,6 +1794,8 @@ extension CloudKitRecordSyncManager {
             try CloudKitOutboxEntry.enqueueBootstrapSaves(in: db)
             try enqueueDefaultStyleSettingIfNeeded(syncId: defaultStyleSyncId, in: db)
         }
+        // This rebuild wipe is a superset of the disable-time cleanup.
+        CloudKitSync.setPendingDisableCleanup(false)
     }
 
     func sendChangesAndCleanupUploadAssets(_ engine: CKSyncEngine) async throws {
@@ -2570,9 +2633,22 @@ extension CloudKitRecordSyncManager {
                         stagedImageAssets.removeValue(forKey: record.recordID.recordName)
                     }
                     if !imageApply.isDeferred {
+                        // LWW arbitration applies even when the record couldn't be
+                        // applied for missing assets: a judged-loser local intent
+                        // (e.g. an older offline delete) left in the outbox would
+                        // otherwise be pushed and delete the newer server version.
                         try clearOutboxIfRemoteWins(record, in: db)
-                        try markServerRecordMetadata(record, type: .image, in: db)
                         try clearLocalTombstone(recordName: record.recordID.recordName, in: db)
+                        // But a record skipped for missing assets was NOT applied:
+                        // advancing its metadata would (a) claim a server version
+                        // the local row doesn't have, and (b) for a brand-new image
+                        // leave a metadata row with no local row behind, which a
+                        // later offline reconciliation would misread as an offline
+                        // delete and push a tombstone — deleting the photo on every
+                        // device.
+                        if !imageApply.skippedForMissingAssets {
+                            try markServerRecordMetadata(record, type: .image, in: db)
+                        }
                     }
                     deletedImageFiles.append(contentsOf: imageApply.deletedImageFiles)
                 }
@@ -3224,7 +3300,7 @@ extension CloudKitRecordSyncManager {
         missingDependenciesAreOrphans: Bool,
         stagedAssets: StagedImageAssets?,
         in db: Database
-    ) throws -> (didChangeDatabase: Bool, isDeferred: Bool, deletedImageFiles: [(String, CacheImageType)]) {
+    ) throws -> (didChangeDatabase: Bool, isDeferred: Bool, deletedImageFiles: [(String, CacheImageType)], skippedForMissingAssets: Bool) {
         guard let syncId = stringValue(Field.syncId, in: record),
               let postSyncId = stringValue(Field.postSyncId, in: record),
               let orientation = int64Value(Field.orientation, in: record),
@@ -3234,7 +3310,7 @@ extension CloudKitRecordSyncManager {
               let maxY = int64Value(Field.maxY, in: record),
               let order = int64Value(Field.order, in: record) else {
             cloudKitSyncLog.info("image import skipped: missing fields for \(record.recordID.recordName, privacy: .private)")
-            return (false, false, [])
+            return (false, false, [], false)
         }
         let remoteModificationTime = modificationTime(of: record)
         let postId: Int64
@@ -3252,17 +3328,17 @@ extension CloudKitRecordSyncManager {
             postId = id
         case .deleted(let deletionTime):
             try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: syncId, deletionTime: deletionTime, in: db)
-            return (false, false, [])
+            return (false, false, [], false)
         case .missing:
-            return (false, true, [])
+            return (false, true, [], false)
         }
         let existing = try PostImage
             .filter(Column(PostImage.CodingKeys.syncId) == syncId)
             .fetchOne(db)
         if let existing, remoteModificationTime <= (existing.modificationTime ?? 0) {
-            guard remoteModificationTime == (existing.modificationTime ?? 0) else { return (false, false, []) }
+            guard remoteModificationTime == (existing.modificationTime ?? 0) else { return (false, false, [], false) }
             let didRestore = try restoreMissingImageFiles(for: existing, stagedAssets: stagedAssets, in: db)
-            return (didRestore, false, [])
+            return (didRestore, false, [], false)
         }
 
         let texts = try PostText
@@ -3276,13 +3352,8 @@ extension CloudKitRecordSyncManager {
                 deletionTime: latestTextModificationTime,
                 in: db
             )
-            return (false, false, [])
+            return (false, false, [], false)
         }
-        for text in texts {
-            try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, deletionTime: remoteModificationTime, in: db)
-        }
-        try PostText.deleteAll(db, ids: texts.compactMap(\.id))
-        try OnboardingLocalRecord.unmark(recordType: .text, syncIds: texts.map(\.syncId), in: db)
 
         let remoteOriginalFileName = stringValue(Field.originalFileName, in: record)
         let remoteProcessedFileName = stringValue(Field.processedFileName, in: record)
@@ -3299,12 +3370,18 @@ extension CloudKitRecordSyncManager {
             || (needsProcessedAsset && stagedAssets?.processedName == nil) {
             cloudKitSyncLog.info("image import skipped: assets incomplete for \(record.recordID.recordName, privacy: .private)")
             CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.imageAssetMissing"))
-            return (false, false, [])
+            return (false, false, [], true)
         }
+
+        for text in texts {
+            try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, deletionTime: remoteModificationTime, in: db)
+        }
+        try PostText.deleteAll(db, ids: texts.compactMap(\.id))
+        try OnboardingLocalRecord.unmark(recordType: .text, syncIds: texts.map(\.syncId), in: db)
 
         guard let originalName = stagedAssets?.originalName ?? remoteOriginalFileName ?? existing?.original,
               let processedName = stagedAssets?.processedName ?? remoteProcessedFileName ?? existing?.processed else {
-            return (false, false, [])
+            return (false, false, [], false)
         }
 
         var image = PostImage(
@@ -3331,7 +3408,7 @@ extension CloudKitRecordSyncManager {
         if let existing, existing.processed != processedName {
             deletedImageFiles.append((existing.processed, .processed))
         }
-        return (true, false, deletedImageFiles)
+        return (true, false, deletedImageFiles, false)
     }
 
     /// Remote and local are at the same version, so the asset content matches

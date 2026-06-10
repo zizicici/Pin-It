@@ -14207,6 +14207,106 @@
         }
       }
     },
+    "settings.cloudKitSync.error.clearInterrupted" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The last \"Clear CloudKit Data\" did not finish. Please run it again to make sure the deletion syncs to other devices."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The last \"Clear CloudKit Data\" did not finish. Please run it again to make sure the deletion syncs to other devices."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The last \"Clear CloudKit Data\" did not finish. Please run it again to make sure the deletion syncs to other devices."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The last \"Clear CloudKit Data\" did not finish. Please run it again to make sure the deletion syncs to other devices."
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The last \"Clear CloudKit Data\" did not finish. Please run it again to make sure the deletion syncs to other devices."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The last \"Clear CloudKit Data\" did not finish. Please run it again to make sure the deletion syncs to other devices."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The last \"Clear CloudKit Data\" did not finish. Please run it again to make sure the deletion syncs to other devices."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The last \"Clear CloudKit Data\" did not finish. Please run it again to make sure the deletion syncs to other devices."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The last \"Clear CloudKit Data\" did not finish. Please run it again to make sure the deletion syncs to other devices."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The last \"Clear CloudKit Data\" did not finish. Please run it again to make sure the deletion syncs to other devices."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The last \"Clear CloudKit Data\" did not finish. Please run it again to make sure the deletion syncs to other devices."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The last \"Clear CloudKit Data\" did not finish. Please run it again to make sure the deletion syncs to other devices."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "The last \"Clear CloudKit Data\" did not finish. Please run it again to make sure the deletion syncs to other devices."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上次「清空 CloudKit 数据」未完成。请重新执行一次，以确保删除同步到其他设备。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上次「清空 CloudKit 資料」未完成。請重新執行一次，以確保刪除同步到其他裝置。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上次「清空 CloudKit 資料」未完成。請重新執行一次，以確保刪除同步到其他裝置。"
+          }
+        }
+      }
+    },
     "settings.defaultExpirationTime.footer" : {
       "localizations" : {
         "ar" : {

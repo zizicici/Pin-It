@@ -1073,6 +1073,15 @@ struct DefaultStyle: RawRepresentable, UserDefaultSettable {
         }
         return defaultOption
     }
+
+    /// `current` is a protocol requirement; without this concrete witness it
+    /// resolves to MoreKit's extension implementation, which statically calls
+    /// MoreKit's `getValue()` and skips the deleted-style fallback above — so
+    /// generic call sites (option pickers, menu checkmarks) would see a stale
+    /// style id after a synced deletion.
+    static var current: DefaultStyle {
+        getValue()
+    }
     
     func getName() -> String {
         let style = DataManager.shared.fetchStyle(by: Int64(rawValue))

@@ -80,22 +80,6 @@ final class DataManager {
         return result
     }
     
-    public func fetchLastPost(isPinned: Bool) -> Post? {
-        var result: Post?
-        do {
-            try AppDatabase.shared.reader?.read { db in
-                let orderColumn = Post.Columns.order
-                let isPinnedColumn = Post.Columns.isPinned
-                result = try Post.order(orderColumn.desc).filter(isPinnedColumn == isPinned).fetchOne(db)
-            }
-        }
-        catch {
-            print(error)
-        }
-        
-        return result
-    }
-    
     func fetchPostDetail(for ids: [Int64]) -> [Post.Detail] {
         var result: [Post.Detail] = []
         do {
@@ -138,10 +122,6 @@ final class DataManager {
         }
         
         return result
-    }
-    
-    private func getNewOrder(isPinned: Bool) -> Int64 {
-        return (fetchLastPost(isPinned: isPinned)?.order ?? -1) + 1
     }
     
     public func updateImage(original: String, processed: String, rect: CGRect, orientation: Int, to post: Post) -> Bool {
@@ -216,11 +196,9 @@ final class DataManager {
     }
     
     public func update(postIds: [Int64], isPinned: Bool, promotesLocalOnboarding: Bool = true) -> Bool {
-        let newOrder = getNewOrder(isPinned: isPinned)
         return AppDatabase.shared.update(
             postIds: postIds,
             isPinned: isPinned,
-            newOrder: newOrder,
             promotesLocalOnboarding: promotesLocalOnboarding
         )
     }
@@ -470,11 +448,17 @@ extension DataManager {
     }
     
     public func clearExpiredPosts() {
-        let expiredIds = fetchAllPosts().filter({ $0.isExpired() }).compactMap({ $0.id })
         switch ExpirationAction.current {
         case .unpin:
+            // Only still-pinned expired posts need the pass. Rewriting the
+            // already-unpinned ones on every activation would bump their
+            // modification_time each time and re-upload them to CloudKit.
+            let expiredIds = fetchAllPosts().filter({ $0.isExpired() && $0.isPinned }).compactMap({ $0.id })
+            guard !expiredIds.isEmpty else { return }
             _ = update(postIds: expiredIds, isPinned: false, promotesLocalOnboarding: false)
         case .delete:
+            let expiredIds = fetchAllPosts().filter({ $0.isExpired() }).compactMap({ $0.id })
+            guard !expiredIds.isEmpty else { return }
             _ = deletePosts(by: expiredIds)
         }
     }

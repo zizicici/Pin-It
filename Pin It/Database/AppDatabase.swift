@@ -543,31 +543,10 @@ final class AppDatabase {
 
         return migrator
     }
-    
+
 }
 
 extension AppDatabase {
-    func add(post: Post) -> Post? {
-        guard post.id == nil else {
-            return nil
-        }
-        var result: Post?
-        do {
-            try dbWriter?.write{ db in
-                var savePost = post
-                try savePost.save(db)
-                try enqueueCloudKitSaveIfNeeded(recordType: .post, syncId: savePost.syncId, modificationTime: savePost.modificationTime, in: db)
-                result = savePost
-            }
-        }
-        catch {
-            print(error)
-            return nil
-        }
-        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
-        return result
-    }
-
     func createTextPost(
         content: String,
         actionLink: String,
@@ -823,6 +802,7 @@ extension AppDatabase {
         guard let postId = post.id else {
             return false
         }
+        var didChangeDatabase = false
         do {
             _ = try dbWriter?.write{ db in
                 let storedPost = try Post.fetchOne(db, id: postId)
@@ -857,17 +837,21 @@ extension AppDatabase {
                 try OnboardingLocalRecord.unmark(recordType: .image, syncIds: images.map(\.syncId), in: db)
                 try OnboardingLocalRecord.unmark(recordType: .text, syncIds: texts.map(\.syncId), in: db)
                 try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
+                didChangeDatabase = storedPost != nil || !images.isEmpty || !texts.isEmpty || !decorations.isEmpty
             }
         }
         catch {
             print(error)
             return false
         }
-        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
+        if didChangeDatabase {
+            DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
+        }
         return true
     }
-    
+
     func deletePosts(by ids: [Int64]) -> Bool {
+        guard !ids.isEmpty else { return true }
         do {
             _ = try dbWriter?.write{ db in
                 var imageIds: [Int64] = []
@@ -929,28 +913,6 @@ extension AppDatabase {
 }
 
 extension AppDatabase {
-    func add(image: PostImage) -> Bool {
-        guard image.id == nil else {
-            return false
-        }
-        do {
-            try dbWriter?.write{ db in
-                var saveImage = image
-                try requirePost(postId: saveImage.postId, in: db)
-                try promotePostGraphToUserContent(postId: saveImage.postId, in: db)
-                try saveImage.save(db)
-                try enqueueCloudKitSaveIfNeeded(recordType: .image, syncId: saveImage.syncId, modificationTime: saveImage.modificationTime, in: db)
-                try touchPostForCloudKit(postId: saveImage.postId, modificationTime: saveImage.modificationTime, in: db)
-            }
-        }
-        catch {
-            print(error)
-            return false
-        }
-        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
-        return true
-    }
-    
     /// See `updatePost(id:mutate:)` for why updates go through a mutation
     /// closure instead of a caller-provided record.
     func updateImage(id: Int64, mutate: (inout PostImage) -> Void) -> Bool {
@@ -1041,28 +1003,6 @@ extension AppDatabase {
 }
 
 extension AppDatabase {
-    func add(text: PostText) -> Bool {
-        guard text.id == nil else {
-            return false
-        }
-        do {
-            try dbWriter?.write{ db in
-                var saveText = text
-                try requirePost(postId: saveText.postId, in: db)
-                try promotePostGraphToUserContent(postId: saveText.postId, in: db)
-                try saveText.save(db)
-                try enqueueCloudKitSaveIfNeeded(recordType: .text, syncId: saveText.syncId, modificationTime: saveText.modificationTime, in: db)
-                try touchPostForCloudKit(postId: saveText.postId, modificationTime: saveText.modificationTime, in: db)
-            }
-        }
-        catch {
-            print(error)
-            return false
-        }
-        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
-        return true
-    }
-    
     /// See `updatePost(id:mutate:)` for why updates go through a mutation
     /// closure instead of a caller-provided record.
     func updateText(id: Int64, mutate: (inout PostText) -> Void) -> Bool {
@@ -1153,20 +1093,34 @@ extension AppDatabase {
 }
 
 extension AppDatabase {
-    public func update(postIds: [Int64], isPinned: Bool, newOrder: Int64, promotesLocalOnboarding: Bool = true) -> Bool {
+    public func update(postIds: [Int64], isPinned: Bool, promotesLocalOnboarding: Bool = true) -> Bool {
+        guard !postIds.isEmpty else { return true }
+        var didChangeDatabase = false
         do {
             _ = try dbWriter?.write{ db in
-                try postIds.enumerated().forEach { (index, id) in
+                // Compute the order inside the transaction: a concurrent writer
+                // (e.g. a CloudKit pull) may insert posts between a read-only
+                // pre-computation and this write.
+                var nextOrder = try nextPostOrder(isPinned: isPinned, in: db)
+                for id in postIds {
                     guard var post = try Post.fetchOne(db, id: id) else {
-                        return
+                        continue
+                    }
+                    // Skip posts already in the target state: rewriting them would
+                    // bump modification_time and order on every pass and flood the
+                    // CloudKit outbox with no-op saves.
+                    guard post.isPinned != isPinned else {
+                        continue
                     }
                     post.isPinned = isPinned
-                    post.order = newOrder + Int64(index)
+                    post.order = nextOrder
+                    nextOrder += 1
                     if promotesLocalOnboarding, let id = post.id {
                         try promotePostGraphToUserContent(postId: id, in: db)
                     }
                     try post.updateWithTimestamp(db)
                     try enqueueCloudKitSaveIfNeeded(recordType: .post, syncId: post.syncId, modificationTime: post.modificationTime, in: db)
+                    didChangeDatabase = true
                 }
             }
         }
@@ -1174,7 +1128,9 @@ extension AppDatabase {
             print(error)
             return false
         }
-        DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
+        if didChangeDatabase {
+            DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
+        }
         return true
     }
 

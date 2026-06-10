@@ -45,6 +45,12 @@ class SettingsViewController: UIViewController {
     private var isResettingData = false
     private var cloudKitFailedOutboxSummary: String?
     private var isLoadingCloudKitFailedOutboxSummary = false
+    private var needsAnotherCloudKitFailedOutboxRefresh = false
+    /// What the table last actually rendered for the CloudKit section footer.
+    /// Diffable snapshot applies don't re-ask footer titles when item identities
+    /// are unchanged, so reloadData() compares against this to decide whether
+    /// the section needs an explicit reload (e.g. lastError appeared/cleared).
+    private var lastRenderedCloudKitFooter: String?
     
     enum Section: Hashable {
         case membership
@@ -299,6 +305,12 @@ class SettingsViewController: UIViewController {
     }
 
     func cloudKitSyncFooter() -> String? {
+        let footer = computedCloudKitSyncFooter()
+        lastRenderedCloudKitFooter = footer
+        return footer
+    }
+
+    private func computedCloudKitSyncFooter() -> String? {
         var parts = [CloudKitSync.getFooter()].compactMap(\.self)
         if let failedOutboxSummary = cloudKitFailedOutboxSummary {
             parts.append(failedOutboxSummary)
@@ -614,12 +626,24 @@ class SettingsViewController: UIViewController {
             }
         }
         snapshot.reconfigureItems(busyDependentItems)
+        // Footer titles aren't re-queried when the diff is empty; if the
+        // CloudKit footer text changed (lastError appeared or cleared), force
+        // the section to reload so the stale text doesn't linger.
+        if lastRenderedCloudKitFooter != nil, computedCloudKitSyncFooter() != lastRenderedCloudKitFooter {
+            snapshot.reloadSections([.cloudKit])
+        }
         dataSource.apply(snapshot, animatingDifferences: false)
         refreshCloudKitFailedOutboxSummary()
     }
 
     private func refreshCloudKitFailedOutboxSummary() {
-        guard !isLoadingCloudKitFailedOutboxSummary else { return }
+        guard !isLoadingCloudKitFailedOutboxSummary else {
+            // Coalesce instead of dropping: a refresh requested while one is in
+            // flight re-runs once the current load lands, so the footer can't
+            // get stuck on a stale summary until the next SettingsUpdate.
+            needsAnotherCloudKitFailedOutboxRefresh = true
+            return
+        }
         isLoadingCloudKitFailedOutboxSummary = true
         // A plain Task {} would inherit this controller's MainActor isolation and
         // run the database read on the main thread.
@@ -628,9 +652,18 @@ class SettingsViewController: UIViewController {
             await MainActor.run { [weak self] in
                 guard let self else { return }
                 self.isLoadingCloudKitFailedOutboxSummary = false
+                defer {
+                    if self.needsAnotherCloudKitFailedOutboxRefresh {
+                        self.needsAnotherCloudKitFailedOutboxRefresh = false
+                        self.refreshCloudKitFailedOutboxSummary()
+                    }
+                }
                 guard self.cloudKitFailedOutboxSummary != summary else { return }
                 self.cloudKitFailedOutboxSummary = summary
-                self.tableView.reloadData()
+                guard self.dataSource.snapshot().sectionIdentifiers.contains(.cloudKit) else { return }
+                var snapshot = self.dataSource.snapshot()
+                snapshot.reloadSections([.cloudKit])
+                self.dataSource.apply(snapshot, animatingDifferences: false)
             }
         }
     }
@@ -904,6 +937,11 @@ extension SettingsViewController {
                         : String(localized: "settings.cloudKitSync.rebuild.success.message")
                     )
                 }
+            } catch is CancellationError {
+                // Preempted by a queued local-reset rebuild (or an engine
+                // restart): the rebuild has been re-queued and will complete on
+                // its own. A "rebuild failed / cancelled" alert would be wrong —
+                // the pending-reset footer already explains the state.
             } catch {
                 await MainActor.run {
                     self?.showCloudKitResultAlert(

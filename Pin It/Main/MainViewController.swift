@@ -187,6 +187,14 @@ class MainViewController: UIViewController {
     
     @objc
     func updateMinusMenu() {
+        // .SettingsUpdate is posted from main by convention, but the convention
+        // is enforced per-publisher; guard like PostCell.reloadMenus does.
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?.updateMinusMenu()
+            }
+            return
+        }
         self.minusButton?.menu = minusMenu()
     }
     
@@ -995,15 +1003,26 @@ extension MainViewController: CropViewControllerDelegate {
         let resizedImage = image.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3)
         
         if let postImage = currentPostImage, let imageId = postImage.id {
-            _ = ImageCacheManager.shared.deleteImage(fileName: postImage.processed, type: .processed)
+            // Store the replacement before touching the old file: deleting first
+            // would leave the row pointing at a missing file if the store fails
+            // (blank cell, and a permanently failing CloudKit upload for this
+            // image). Orphans from the failure paths are swept by the cache
+            // cleanup on next launch.
             if let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
-                _ = DataManager.shared.updateImage(id: imageId) { stored in
+                let didUpdate = DataManager.shared.updateImage(id: imageId) { stored in
                     stored.processed = processed
                     stored.orientation = Int64(angle)
                     stored.minX = Int64(cropRect.minX)
                     stored.minY = Int64(cropRect.minY)
                     stored.maxX = Int64(cropRect.maxX)
                     stored.maxY = Int64(cropRect.maxY)
+                }
+                if didUpdate {
+                    if postImage.processed != processed {
+                        _ = ImageCacheManager.shared.deleteImage(fileName: postImage.processed, type: .processed)
+                    }
+                } else {
+                    _ = ImageCacheManager.shared.deleteImage(fileName: processed, type: .processed)
                 }
             }
         } else {

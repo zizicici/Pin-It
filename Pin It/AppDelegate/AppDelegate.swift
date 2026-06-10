@@ -50,6 +50,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
         _ = PinInfoManager.shared
         _ = PostSyncManager.shared
+        if CloudKitSync.pendingRemoteClear, CloudKitSync.current == .disable {
+            // A previous "clear CloudKit data" died between deleting the zone and
+            // writing the new reset marker. Don't redo the destructive operation
+            // automatically — the iCloud account may have changed since — just
+            // surface it so the user re-runs the clear. Only while sync stays
+            // disabled: re-enabling supersedes the clear (the sync manager then
+            // consumes the flag and protects local data from the empty-zone
+            // prune), and the clear row isn't even visible while enabled.
+            CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.clearInterrupted"))
+        }
         if CloudKitSync.current == .enable {
             if CloudKitSync.pendingRemoteReset {
                 CloudKitRecordSyncManager.shared.rebuildCloudKitDataAfterLocalReset()

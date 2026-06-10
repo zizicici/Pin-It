@@ -29,6 +29,8 @@ extension UserDefaults {
         case CloudKitSyncLastError = "com.zizicici.pin.settings.CloudKitSyncLastError"
         case CloudKitRemoteDataMayExist = "com.zizicici.pin.settings.CloudKitRemoteDataMayExist"
         case CloudKitPendingRemoteReset = "com.zizicici.pin.settings.CloudKitPendingRemoteReset"
+        case CloudKitPendingRemoteClear = "com.zizicici.pin.settings.CloudKitPendingRemoteClear"
+        case CloudKitPendingDisableCleanup = "com.zizicici.pin.settings.CloudKitPendingDisableCleanup"
         case CloudKitSyncDisabledByAccountChange = "com.zizicici.pin.settings.CloudKitSyncDisabledByAccountChange"
     }
 }
@@ -182,6 +184,42 @@ extension CloudKitSync: UserDefaultSettable {
 
     static var pendingRemoteReset: Bool {
         userDefaults.bool(forKey: UserDefaults.Settings.CloudKitPendingRemoteReset.rawValue)
+    }
+
+    /// Set for the duration of "clear CloudKit data": from just before the zone
+    /// deletion until the new reset marker and the local cleanup have landed.
+    /// If it survives to the next launch, the clear was interrupted mid-flight —
+    /// the zone may be missing its reset marker, which peers would misread as
+    /// accidental loss and re-upload everything.
+    static var pendingRemoteClear: Bool {
+        userDefaults.bool(forKey: UserDefaults.Settings.CloudKitPendingRemoteClear.rawValue)
+    }
+
+    static func setPendingRemoteClear(_ value: Bool) {
+        if value {
+            userDefaults.set(true, forKey: UserDefaults.Settings.CloudKitPendingRemoteClear.rawValue)
+        } else {
+            userDefaults.removeObject(forKey: UserDefaults.Settings.CloudKitPendingRemoteClear.rawValue)
+        }
+    }
+
+    /// The disable-time state cleanup runs as a deferred asyncWrite (it must not
+    /// block the main thread). If the app is killed before that write lands, the
+    /// stored engine state survives the disable — and a later re-enable would
+    /// skip offline reconciliation and silently never push edits/deletes made
+    /// while sync was off. This flag is set synchronously at disable time and
+    /// consumed once the cleanup actually commits, so the next sync can finish
+    /// an interrupted cleanup first.
+    static var pendingDisableCleanup: Bool {
+        userDefaults.bool(forKey: UserDefaults.Settings.CloudKitPendingDisableCleanup.rawValue)
+    }
+
+    static func setPendingDisableCleanup(_ value: Bool) {
+        if value {
+            userDefaults.set(true, forKey: UserDefaults.Settings.CloudKitPendingDisableCleanup.rawValue)
+        } else {
+            userDefaults.removeObject(forKey: UserDefaults.Settings.CloudKitPendingDisableCleanup.rawValue)
+        }
     }
 
     static func markRemoteDataMayExist() {

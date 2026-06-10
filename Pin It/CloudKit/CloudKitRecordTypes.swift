@@ -289,6 +289,9 @@ extension CloudKitOutboxEntry {
         try CloudKitRecordMetadata.markSynced(syncedEntries, in: db)
         for entry in purgeEntries {
             try CloudKitRecordMetadata.deleteOne(db, key: entry.recordName)
+            // The purge closes the record's lifecycle; without this the local
+            // tombstone row would outlive the remote tombstone forever.
+            try CloudKitLocalTombstone.deleteOne(db, key: entry.recordName)
         }
         try CloudKitOutboxEntry.deleteAll(db, ids: ids)
     }
@@ -441,8 +444,7 @@ extension CloudKitOutboxEntry {
         guard let post = try Post.fetchOne(db, id: postId) else { return }
         let transactionTime = try db.transactionDate.nanoSecondSince1970
         let requestedVersion = modificationTime ?? transactionTime
-        var graphVersion = max(requestedVersion, (post.modificationTime ?? 0) + 1)
-        graphVersion = max(graphVersion, post.modificationTime ?? 0)
+        let graphVersion = max(requestedVersion, (post.modificationTime ?? 0) + 1)
         let aggregateName = post.cloudKitRecordName
 
         try Post
