@@ -282,7 +282,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
                     }
                     continue
                 }
-                cloudKitSyncLog.error("sync failed: \(error.localizedDescription, privacy: .public)")
+                cloudKitSyncLog.error("sync failed: \(error.localizedDescription, privacy: .private)")
                 CloudKitSync.setLastError(error.localizedDescription)
                 runOnboardingAfterInitialCloudGateIfNeeded()
                 consecutiveFailures += 1
@@ -347,11 +347,19 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
             try await ensureRecordZone()
             setDidEnsureRecordZone(true)
         }
-        OnboardingManager.shared.markExistingOnboardingRecordsIfNeeded()
-
         let syncGeneration = currentEngineGeneration()
         let hasEngineState = hasActiveSyncEngine() ? true : try hasStoredSyncEngineState()
-        try cleanupLocalCloudKitOrphans()
+        if !hasEngineState {
+            // Both passes only matter before a fresh engine enqueues pre-existing
+            // rows (bootstrap / offline reconciliation / discontinuity probe):
+            // seed marking keeps onboarding data out of the upload and the
+            // orphan sweep keeps broken graphs from failing record builds.
+            // Steady-state syncs were paying a write transaction plus full-table
+            // scans per pass for rows the transactional write paths can't
+            // produce.
+            OnboardingManager.shared.markExistingOnboardingRecordsIfNeeded()
+            try cleanupLocalCloudKitOrphans()
+        }
 
         let freshEngineMode = try freshEngineMode(hasStoredEngineState: hasEngineState)
         if freshEngineMode.probesZoneDiscontinuity {
@@ -446,8 +454,8 @@ extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
                 } else {
                     try persistSyncEngineStateSerialization(stateUpdate.stateSerialization)
                 }
-            case .accountChange:
-                try handleAccountChange()
+            case .accountChange(let accountChange):
+                try handleAccountChange(accountChange.changeType)
                 requestFollowUpSync()
             case .fetchedDatabaseChanges(let changes):
                 try handleFetchedDatabaseChanges(changes)
@@ -475,7 +483,7 @@ extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
                 break
             }
         } catch {
-            cloudKitSyncLog.error("sync engine event failed: \(error.localizedDescription, privacy: .public)")
+            cloudKitSyncLog.error("sync engine event failed: \(error.localizedDescription, privacy: .private)")
             CloudKitSync.setLastError(error.localizedDescription)
             requestFollowUpSync()
         }
@@ -488,7 +496,7 @@ extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
         do {
             return try await makeRecordZoneChangeBatch(context: context, syncEngine: syncEngine)
         } catch {
-            cloudKitSyncLog.error("sync engine batch failed: \(error.localizedDescription, privacy: .public)")
+            cloudKitSyncLog.error("sync engine batch failed: \(error.localizedDescription, privacy: .private)")
             CloudKitSync.setLastError(error.localizedDescription)
             requestFollowUpSync()
             return nil
@@ -857,7 +865,24 @@ extension CloudKitRecordSyncManager {
         requestFollowUpSync()
     }
 
-    func handleAccountChange() throws {
+    func handleAccountChange(_ changeType: CKSyncEngine.Event.AccountChange.ChangeType) throws {
+        switch changeType {
+        case .signIn:
+            // An account appeared where the engine saw none before (e.g. iCloud
+            // became reachable again). Stored sync state belonging to a
+            // *different* account would surface as .switchAccounts instead, so
+            // the destructive wipe below would only throw away valid metadata
+            // and disable sync for nothing. Re-ensure the zone and let the
+            // follow-up sync continue.
+            setDidEnsureRecordZone(false)
+            return
+        case .signOut, .switchAccounts:
+            break
+        @unknown default:
+            // Unknown transitions get the conservative treatment below.
+            break
+        }
+
         cancelActiveOperations()
         endBackgroundTaskIfNeeded()
         setDidEnsureRecordZone(false)
@@ -1131,17 +1156,37 @@ extension CloudKitRecordSyncManager {
             }
         }
 
-        let hasUnexplainedPhysicalDeletes = physicalDeletedRecords.contains { deletion in
-            return deletion.recordName != CloudKitRecordName.zoneMetaName
-                && tombstonesByDeletedRecordName[deletion.recordName] == nil
-        }
+        let physicalDeletedRecordNamesWithoutTombstone = Set(
+            physicalDeletedRecords
+                .map(\.recordName)
+                .filter { $0 != CloudKitRecordName.zoneMetaName && tombstonesByDeletedRecordName[$0] == nil }
+        )
 
         return RemoteChangeSet(
             activeRecordsByType: activeRecordsByType,
             tombstonesByDeletedRecordName: tombstonesByDeletedRecordName,
-            hasUnexplainedPhysicalDeletes: hasUnexplainedPhysicalDeletes,
+            physicalDeletedRecordNamesWithoutTombstone: physicalDeletedRecordNamesWithoutTombstone,
             zoneResetGeneration: zoneResetGeneration
         )
+    }
+
+    /// A tombstone-less physical delete is only suspicious when local metadata
+    /// still believes the record is alive on the server — that means some other
+    /// client deleted it out-of-band and only a full re-fetch reconciles. The
+    /// two benign shapes — a peer purging an expired tombstone (metadata says
+    /// deleted) and a record this device never synced (no metadata) — used to
+    /// trigger a full zone re-fetch on every peer for nothing.
+    func hasUnexplainedPhysicalDeletes(_ changes: RemoteChangeSet) throws -> Bool {
+        let recordNames = changes.physicalDeletedRecordNamesWithoutTombstone
+        guard !recordNames.isEmpty else { return false }
+        var hasLiveMetadata = false
+        try AppDatabase.shared.dbWriter?.read { db in
+            hasLiveMetadata = try CloudKitRecordMetadata
+                .filter(keys: Array(recordNames))
+                .filter(Column(CloudKitRecordMetadata.CodingKeys.isDeleted) == false)
+                .fetchCount(db) > 0
+        }
+        return hasLiveMetadata
     }
 
     func fetchAccountStatus() async throws -> CKAccountStatus {
@@ -1600,7 +1645,13 @@ extension CloudKitRecordSyncManager {
     func applyAccumulatedFetchIfNeeded() throws {
         let (maybeAccumulator, pendingState) = takeFetchAccumulatorAndPendingState()
         guard let accumulator = maybeAccumulator else {
-            if let pendingState {
+            // Same guard as the post-apply drain below: with a full fetch
+            // already requested (e.g. the unexplained-deletes or asset-retry
+            // branch of an earlier call this pass), the batch behind this token
+            // was NOT applied. Persisting it and dying before resetForRequested
+            // FullFetchIfNeeded wipes the disk state would skip that batch
+            // forever — the reset rewrites the token anyway.
+            if let pendingState, !needsFullFetchAfterCurrentSyncIsRequested() {
                 try persistSyncEngineStateSerialization(pendingState)
             }
             return
@@ -1610,7 +1661,23 @@ extension CloudKitRecordSyncManager {
             physicalDeletedRecords: accumulator.physicalDeletedRecords
         )
 
-        if !accumulator.isFullSnapshot, remoteChanges.hasUnexplainedPhysicalDeletes {
+        let hasUnexplainedDeletes: Bool
+        if accumulator.isFullSnapshot {
+            hasUnexplainedDeletes = false
+        } else {
+            do {
+                hasUnexplainedDeletes = try hasUnexplainedPhysicalDeletes(remoteChanges)
+            } catch {
+                // Same window as a failed apply below: the accumulator is already
+                // consumed and the engine's in-memory token has moved past these
+                // records. Without dropping the engine they would never be
+                // re-delivered.
+                invalidateSyncEngineForRedelivery()
+                throw error
+            }
+        }
+
+        if hasUnexplainedDeletes {
             if let pendingState {
                 setPendingFetchStateSerialization(pendingState)
             }
@@ -2508,9 +2575,11 @@ extension CloudKitRecordSyncManager {
             : nil
         var deletedImageFiles: [(String, CacheImageType)] = []
         var didChangeDatabase = false
+        var didChangeStyles = false
         var didApplyRemoteUserContent = false
         var shouldRunOnboardingSetup = false
         var hasDeferredRemoteRecords = false
+        var hasAssetIncompleteImageRecords = false
         var shouldPruneMissingLocalRecords = prunesMissingLocalRecords
 
         do {
@@ -2541,6 +2610,29 @@ extension CloudKitRecordSyncManager {
                 }
                 let pendingDeletes = try pendingDeleteOutboxByRecordName(in: db)
                 let localTombstones = try CloudKitLocalTombstone.allByRecordName(in: db)
+                // A physical delete of a record we already track as deleted is a
+                // peer's expired-tombstone purge arriving. Close the lifecycle
+                // here so the metadata/tombstone rows don't linger for another
+                // retention period and make this device send its own purge for
+                // an already-deleted record. Runs AFTER the snapshots above so
+                // the LWW filtering below still sees the local tombstone, and
+                // skips records with an active record in this very batch — a
+                // same-batch recreate (stale or genuine) must go through the
+                // tombstone-vs-active arbitration, not lose its tombstone here.
+                let activeBatchRecordNames = activeSnapshotRecordNames(changes)
+                for recordName in changes.physicalDeletedRecordNamesWithoutTombstone
+                where !activeBatchRecordNames.contains(recordName) {
+                    guard let metadata = try CloudKitRecordMetadata.fetchOne(db, key: recordName),
+                          metadata.isDeleted else { continue }
+                    try CloudKitRecordMetadata.deleteOne(db, key: recordName)
+                    try CloudKitLocalTombstone.deleteOne(db, key: recordName)
+                    _ = try CloudKitOutboxEntry
+                        .filter(
+                            CloudKitOutboxEntry.Columns.recordName == recordName
+                            && CloudKitOutboxEntry.Columns.operation == CloudKitOutboxEntry.Operation.purge.rawValue
+                        )
+                        .deleteAll(db)
+                }
                 // Tombstone-beats-remote-active should fire on every fetch, not only
                 // pruning ones. activeRemoteRecords would otherwise filter out the
                 // stale active record (because of the local tombstone) without ever
@@ -2562,6 +2654,7 @@ extension CloudKitRecordSyncManager {
                     let didApply = try applyStyleRecord(record, in: db)
                     if didApply {
                         didChangeDatabase = true
+                        didChangeStyles = true
                         didApplyRemoteUserContent = true
                     }
                     try clearOutboxIfRemoteWins(record, in: db)
@@ -2627,6 +2720,19 @@ extension CloudKitRecordSyncManager {
                     if imageApply.isDeferred {
                         hasDeferredRemoteRecords = true
                     }
+                    // An incremental fetch delivered an image record without its
+                    // asset files (transient download/staging failure). The
+                    // engine's token has already moved past it, so without
+                    // intervention the image would stay missing on this device
+                    // until the record happens to change again remotely. Hold
+                    // the state token and request one full re-fetch as a retry.
+                    // On the full-snapshot pass itself (missingDependenciesAre
+                    // Orphans) accept the skip instead — a still-missing asset
+                    // there means it's gone server-side, and looping full
+                    // fetches would never converge.
+                    if imageApply.skippedForMissingAssets, !missingDependenciesAreOrphans {
+                        hasAssetIncompleteImageRecords = true
+                    }
                     if imageApply.didChangeDatabase {
                         didChangeDatabase = true
                         didApplyRemoteUserContent = true
@@ -2670,6 +2776,7 @@ extension CloudKitRecordSyncManager {
                     }
                     if decorationApply.didChangeDatabase {
                         didChangeDatabase = true
+                        didChangeStyles = true
                         didApplyRemoteUserContent = true
                     }
                     if !decorationApply.isDeferred {
@@ -2698,6 +2805,9 @@ extension CloudKitRecordSyncManager {
                     if deletion.didChangeDatabase {
                         didChangeDatabase = true
                         deletedImageFiles.append(contentsOf: deletion.deletedImageFiles)
+                        if tombstone.deletedRecordType == .style || tombstone.deletedRecordType == .decoration {
+                            didChangeStyles = true
+                        }
                     }
                     // Use the explicit tombstoneApplied flag so a tombstone that's
                     // already-applied (local row was missing) is still recorded as
@@ -2737,6 +2847,9 @@ extension CloudKitRecordSyncManager {
                         didChangeDatabase = true
                         deletedImageFiles.append(contentsOf: pruning.deletedImageFiles)
                     }
+                    if pruning.didChangeStyles {
+                        didChangeStyles = true
+                    }
                     if try Post.fetchCount(db) == 0 || PostStyle.fetchCount(db) == 0 {
                         shouldRunOnboardingSetup = true
                     }
@@ -2744,20 +2857,22 @@ extension CloudKitRecordSyncManager {
 
                 if didApplyRemoteUserContent {
                     try ensureSyncEnabled()
-                    didChangeDatabase = try OnboardingManager.shared.removeLocalOnlyOnboardingData(in: db) || didChangeDatabase
+                    let onboardingCleanup = try OnboardingManager.shared.removeLocalOnlyOnboardingData(in: db)
+                    didChangeDatabase = onboardingCleanup.didChangeDatabase || didChangeDatabase
+                    didChangeStyles = onboardingCleanup.didChangeStyles || didChangeStyles
                     if try Post.fetchCount(db) == 0 || PostStyle.fetchCount(db) == 0 {
                         shouldRunOnboardingSetup = true
                     }
                 }
 
                 try ensureSyncEnabled()
-                if hasDeferredRemoteRecords {
+                if hasDeferredRemoteRecords || hasAssetIncompleteImageRecords {
                     // The "needs full fetch" intent is in-memory only. If we also
                     // advanced the on-disk state token here, a kill before reset
                     // ForRequestedFullFetchIfNeeded would leave us past the deferred
                     // record permanently. Leave the token at its previous value so
                     // CKSyncEngine re-delivers everything on next launch.
-                    cloudKitSyncLog.info("deferred remote records until their dependencies arrive")
+                    cloudKitSyncLog.info("deferred remote records until their dependencies or assets arrive")
                     requestFullFetchAfterCurrentSync()
                 } else if let pendingStateSerialization {
                     try CloudKitSyncState.setSyncEngineStateSerialization(pendingStateSerialization, in: db)
@@ -2779,6 +2894,12 @@ extension CloudKitRecordSyncManager {
         if didChangeDatabase || shouldRunOnboardingSetup {
             OnboardingManager.shared.setupOnboardingDataIfNeeded()
             postCloudKitOriginatedUpdate(.DatabaseUpdated)
+        }
+        if didChangeStyles {
+            // Style menus (PostCell) listen to .DatabaseStyleUpdated only;
+            // without this a remotely renamed/deleted style stays stale in
+            // visible cells' menus until the next local style edit.
+            postCloudKitOriginatedUpdate(.DatabaseStyleUpdated)
         }
     }
 
@@ -2840,7 +2961,7 @@ extension CloudKitRecordSyncManager {
         Array(changes.tombstonesByDeletedRecordName.values)
     }
 
-    func pruneLocalRecordsMissingFromFullFetch(_ changes: RemoteChangeSet, in db: Database) throws -> (didChangeDatabase: Bool, deletedImageFiles: [(String, CacheImageType)]) {
+    func pruneLocalRecordsMissingFromFullFetch(_ changes: RemoteChangeSet, in db: Database) throws -> (didChangeDatabase: Bool, didChangeStyles: Bool, deletedImageFiles: [(String, CacheImageType)]) {
         let remoteRecordNames = remoteSnapshotRecordNames(changes)
         let pendingSaveRecordNames = try pendingSaveOutboxRecordNames(in: db)
         let knownRecordNames = Set(try CloudKitRecordMetadata
@@ -2848,6 +2969,7 @@ extension CloudKitRecordSyncManager {
             .fetchAll(db))
         let defaultStyleSyncId = try CloudKitSettingRecord.current(in: db).defaultStyleSyncId
         var didChangeDatabase = false
+        var didChangeStyles = false
         var deletedImageFiles: [(String, CacheImageType)] = []
         // Children of a graph kept alive by a pending save must survive the
         // per-type loops below, or the re-uploaded post/style comes back as an
@@ -2909,6 +3031,24 @@ extension CloudKitRecordSyncManager {
                         .updateAll(db, Column(Post.CodingKeys.modificationTime).set(to: graphModificationTime))
                 }
                 try CloudKitOutboxEntry.enqueueSave(recordType: .post, syncId: post.syncId, modificationTime: graphModificationTime, in: db)
+                // Only when the POST ITSELF is missing remotely is this a true
+                // graph re-creation (peer rebuilt without it / never had it) —
+                // then the re-upload must carry the children too, or peers
+                // adopt an empty shell. When the post is alive in the snapshot,
+                // a child missing there is a propagated deletion (possibly with
+                // an already-purged tombstone) and re-uploading it would
+                // resurrect a record the user deleted on another device.
+                if !remoteRecordNames.contains(post.cloudKitRecordName) {
+                    for text in texts where !remoteRecordNames.contains(text.cloudKitRecordName) {
+                        try enqueueCloudKitSaveIfNeeded(recordType: .text, syncId: text.syncId, modificationTime: text.modificationTime, in: db)
+                    }
+                    for image in images where !remoteRecordNames.contains(image.cloudKitRecordName) {
+                        try enqueueCloudKitSaveIfNeeded(recordType: .image, syncId: image.syncId, modificationTime: image.modificationTime, in: db)
+                    }
+                    for decoration in decorations where !remoteRecordNames.contains(decoration.cloudKitRecordName) {
+                        try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
+                    }
+                }
                 continue
             }
             guard shouldPrune(post.cloudKitRecordName) else { continue }
@@ -2916,6 +3056,9 @@ extension CloudKitRecordSyncManager {
             try PostText.deleteAll(db, ids: texts.compactMap(\.id))
             try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
             try Post.deleteAll(db, ids: [postId])
+            if !decorations.isEmpty {
+                didChangeStyles = true
+            }
             try OnboardingLocalRecord.unmark(recordType: .post, syncId: post.syncId, in: db)
             try OnboardingLocalRecord.unmark(recordType: .image, syncIds: images.map(\.syncId), in: db)
             try OnboardingLocalRecord.unmark(recordType: .text, syncIds: texts.map(\.syncId), in: db)
@@ -2946,6 +3089,15 @@ extension CloudKitRecordSyncManager {
                         .updateAll(db, Column(PostStyle.CodingKeys.modificationTime).set(to: graphModificationTime))
                 }
                 try CloudKitOutboxEntry.enqueueSave(recordType: .style, syncId: style.syncId, modificationTime: graphModificationTime, in: db)
+                // Same discriminator as the protected post graph above: only a
+                // style missing remotely is being re-created and needs its
+                // decorations carried along; a live remote style with a missing
+                // decoration means that decoration was deleted elsewhere.
+                if !remoteRecordNames.contains(style.cloudKitRecordName) {
+                    for decoration in decorations where !remoteRecordNames.contains(decoration.cloudKitRecordName) {
+                        try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
+                    }
+                }
                 continue
             }
             guard shouldPrune(style.cloudKitRecordName) else { continue }
@@ -2965,6 +3117,7 @@ extension CloudKitRecordSyncManager {
             try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
             try clearPrunedRecordState(graphRecordNames)
             didChangeDatabase = true
+            didChangeStyles = true
         }
 
         for image in try PostImage.fetchAll(db)
@@ -2993,6 +3146,7 @@ extension CloudKitRecordSyncManager {
             try OnboardingLocalRecord.unmark(recordType: .decoration, syncId: decoration.syncId, in: db)
             try clearPrunedRecordState([decoration.cloudKitRecordName])
             didChangeDatabase = true
+            didChangeStyles = true
         }
 
         if !remoteRecordNames.contains(CloudKitRecordName.settingsName),
@@ -3003,7 +3157,7 @@ extension CloudKitRecordSyncManager {
             try CloudKitRecordMetadata.deleteOne(db, key: CloudKitRecordName.settingsName)
         }
 
-        return (didChangeDatabase, deletedImageFiles)
+        return (didChangeDatabase, didChangeStyles, deletedImageFiles)
     }
 
     func activeRemoteRecords(

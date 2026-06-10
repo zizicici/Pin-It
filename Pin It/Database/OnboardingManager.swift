@@ -269,8 +269,9 @@ extension OnboardingManager {
     }
 
     @discardableResult
-    func removeLocalOnlyOnboardingData(in db: Database) throws -> Bool {
+    func removeLocalOnlyOnboardingData(in db: Database) throws -> (didChangeDatabase: Bool, didChangeStyles: Bool) {
         var didChangeDatabase = false
+        var didChangeStyles = false
 
         let markedRecords = try OnboardingLocalRecord.fetchAll(db)
         let markedPostSyncIds = Set(markedRecords.filter { $0.recordType == CloudKitRecordType.post.rawValue }.map(\.syncId))
@@ -343,10 +344,11 @@ extension OnboardingManager {
             )
             try OnboardingLocalRecord.unmark(recordType: .style, syncId: style.syncId, in: db)
             didChangeDatabase = true
+            didChangeStyles = true
         }
 
         try cleanupDanglingOnboardingMarkers(in: db)
-        return didChangeDatabase
+        return (didChangeDatabase, didChangeStyles)
     }
 }
 

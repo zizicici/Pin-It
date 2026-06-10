@@ -21,7 +21,12 @@ extension CloudKitRecordSyncManager {
     struct RemoteChangeSet {
         var activeRecordsByType: [CloudKitRecordType: [CKRecord]]
         var tombstonesByDeletedRecordName: [String: RemoteTombstone]
-        var hasUnexplainedPhysicalDeletes: Bool
+        /// Zone-level physical deletions that no tombstone record in the same
+        /// batch accounts for. Whether they are benign (a peer purging expired
+        /// tombstones, a record this device never synced) or suspicious (an
+        /// out-of-band delete that needs a full re-fetch) requires local
+        /// metadata, so the classification happens at apply time.
+        var physicalDeletedRecordNamesWithoutTombstone: Set<String>
         var zoneResetGeneration: String?
     }
 
