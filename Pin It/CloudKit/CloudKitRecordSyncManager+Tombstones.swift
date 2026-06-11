@@ -218,7 +218,7 @@ extension CloudKitRecordSyncManager {
             try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
             try PostStyle.deleteAll(db, ids: [styleId])
             // Adopt a fallback default locally but do NOT push it: every
-            // receiver resolves its own row-id-ordered fallback, and all of
+            // receiver resolves its own syncId-ordered fallback, and all of
             // them would stamp the same deletionTime — engineered same-ms
             // ties that diverge forever. The deleting device pushes the
             // authoritative replacement at deletionTime + 1.

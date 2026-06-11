@@ -327,7 +327,7 @@ class SettingsViewController: UIViewController {
                 entries = try CloudKitOutboxEntry.failedEntries(limit: 3, in: db)
             }
         } catch {
-            return error.localizedDescription
+            return nil
         }
 
         guard failedCount > 0 else { return nil }

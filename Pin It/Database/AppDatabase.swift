@@ -964,17 +964,32 @@ extension AppDatabase {
     /// See `updatePost(id:mutate:)` for why updates go through a mutation
     /// closure instead of a caller-provided record.
     func updateImage(id: Int64, mutate: (inout PostImage) -> Void) -> Bool {
+        return updateImageReturningReplacedProcessed(id: id, mutate: mutate).success
+    }
+
+    /// Returns the processed file that was actually replaced in the committed
+    /// row. Editor saves can then clean up the correct old file even if the
+    /// image changed remotely while the editor was open.
+    func updateImageReturningReplacedProcessed(
+        id: Int64,
+        mutate: (inout PostImage) -> Void
+    ) -> (success: Bool, replacedProcessed: String?) {
         var didChange = false
+        var replacedProcessed: String?
         do {
             _ = try dbWriter?.write{ db in
                 guard var image = try PostImage.fetchOne(db, id: id) else {
                     throw AppDatabaseError.missingImage(id)
                 }
+                let previousProcessed = image.processed
                 var mutated = image
                 mutate(&mutated)
                 let originalPostId = image.postId
                 try requirePost(postId: mutated.postId, in: db)
                 guard try image.updateChangesWithTimestamp(db, modify: { $0 = mutated }) else { return }
+                if previousProcessed != image.processed {
+                    replacedProcessed = previousProcessed
+                }
                 try promotePostGraphToUserContent(postId: originalPostId, in: db)
                 try enqueueCloudKitSaveIfNeeded(recordType: .image, syncId: image.syncId, modificationTime: image.modificationTime, in: db)
                 try touchPostForCloudKit(postId: originalPostId, modificationTime: image.modificationTime, in: db)
@@ -987,12 +1002,12 @@ extension AppDatabase {
         }
         catch {
             print(error)
-            return false
+            return (false, nil)
         }
         if didChange {
             DatabaseUpdateNotifier.shared.post(.DatabaseUpdated)
         }
-        return true
+        return (true, replacedProcessed)
     }
     
     func delete(image: PostImage) -> Bool {
@@ -1326,7 +1341,7 @@ extension AppDatabase {
                 if let storedStyle {
                     let tracksCloudKit = tracksLocalCloudKitChanges()
                     // deletionTime + 1: receivers applying the tombstone adopt
-                    // their own row-id-ordered fallbacks locally, stamped at
+                    // their own syncId-ordered fallbacks locally, stamped at
                     // deletionTime, WITHOUT pushing. Only this device — the
                     // deleter — pushes a replacement, and it must beat those
                     // local stamps or every device keeps its own divergent
@@ -1515,6 +1530,7 @@ private extension AppDatabase {
     /// modification time came from a clock-ahead peer, and the deliberate
     /// local delete would be undone on every device (the send path would even
     /// abort the cascade and restore the data on THIS device).
+    @discardableResult
     func enqueueCloudKitDeleteIfNeeded(
         recordType: CloudKitRecordType,
         syncId: String,
@@ -1522,8 +1538,8 @@ private extension AppDatabase {
         aggregateType: CloudKitAggregateType = .record,
         aggregateName: String? = nil,
         in db: Database
-    ) throws {
-        guard try !OnboardingLocalRecord.isMarked(recordType: recordType, syncId: syncId, in: db) else { return }
+    ) throws -> Bool {
+        guard try !OnboardingLocalRecord.isMarked(recordType: recordType, syncId: syncId, in: db) else { return false }
         if tracksLocalCloudKitChanges() {
             try CloudKitOutboxEntry.enqueueDelete(
                 recordType: recordType,
@@ -1533,6 +1549,7 @@ private extension AppDatabase {
                 aggregateName: aggregateName,
                 in: db
             )
+            return true
         } else if CloudKitSync.remoteDataMayExist {
             // Sync is off but a previous session synced this record. Stash a real
             // tombstone with the actual deletion time so the next re-enable's
@@ -1548,7 +1565,9 @@ private extension AppDatabase {
                 aggregateName: aggregateName,
                 in: db
             )
+            return true
         }
+        return false
     }
 
     /// A delete must beat the row(s) it deletes: their modification times may
@@ -1611,6 +1630,7 @@ private extension AppDatabase {
         for decoration in decorations {
             let deletionTime = try guardedDeletionTime(rowModificationTime: decoration.modificationTime, in: db)
             try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: deletionTime, in: db)
+            try touchStyleForCloudKit(styleId: decoration.styleId, modificationTime: deletionTime, in: db)
         }
         try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
         try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)

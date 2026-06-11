@@ -377,6 +377,21 @@ extension CloudKitOutboxEntry {
         try CloudKitRecordMetadata.markFailed(failedEntries, error: error, in: db)
     }
 
+    static func markFailed(matching entries: [CloudKitOutboxEntry], error: Error, in db: Database) throws {
+        try markFailed(ids: stillMatching(entries, in: db).compactMap(\.id), error: error, in: db)
+    }
+
+    static func hasEntries(excludingMatching entries: [CloudKitOutboxEntry], in db: Database) throws -> Bool {
+        let excludedIDs = Set(try stillMatching(entries, in: db).compactMap(\.id))
+        for entry in try CloudKitOutboxEntry.fetchAll(db) {
+            guard let id = entry.id else { return true }
+            if !excludedIDs.contains(id) {
+                return true
+            }
+        }
+        return false
+    }
+
     private static func detailedErrorDescription(_ error: Error) -> String {
         guard let cloudKitError = error as? CKError else {
             return error.localizedDescription

@@ -116,11 +116,10 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
         guard CloudKitSync.current == .enable else {
             throw CloudKitSyncDisabledError()
         }
-        beginBackgroundTaskIfNeeded()
         guard let syncRun = beginSync() else {
-            endBackgroundTaskIfIdle()
             throw CloudKitSyncInProgressError()
         }
+        beginBackgroundTaskIfNeeded()
 
         do {
             clearFollowUpSync(runID: syncRun)
@@ -211,11 +210,10 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
     }
 
     func clearCloudKitData() async throws {
-        beginBackgroundTaskIfNeeded()
         guard let syncRun = beginSync() else {
-            endBackgroundTaskIfIdle()
             throw CloudKitSyncInProgressError()
         }
+        beginBackgroundTaskIfNeeded()
 
         do {
             clearFollowUpSync(runID: syncRun)
@@ -297,7 +295,10 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
             endBackgroundTaskIfIdle()
             return
         }
-        guard let runID = beginSync() else { return }
+        guard let runID = beginSync() else {
+            return
+        }
+        beginBackgroundTaskIfNeeded()
 
         var consecutiveFailures = 0
         var rounds = 0
@@ -692,8 +693,11 @@ extension CloudKitRecordSyncManager {
             return false
         }
         isSyncing = false
+        wantsBackgroundTask = false
+        let task = backgroundTaskIdentifier
+        backgroundTaskIdentifier = .invalid
         stateLock.unlock()
-        endBackgroundTaskIfNeeded()
+        endBackgroundTask(task)
         return true
     }
 
@@ -706,8 +710,11 @@ extension CloudKitRecordSyncManager {
         let needsSync = needsFollowUpSync
         needsFollowUpSync = false
         isSyncing = false
+        wantsBackgroundTask = false
+        let task = backgroundTaskIdentifier
+        backgroundTaskIdentifier = .invalid
         stateLock.unlock()
-        endBackgroundTaskIfNeeded()
+        endBackgroundTask(task)
         return needsSync
     }
 
@@ -729,7 +736,8 @@ extension CloudKitRecordSyncManager {
 
     func beginBackgroundTaskOnMain() {
         stateLock.lock()
-        let shouldStartBackgroundTask = wantsBackgroundTask && backgroundTaskIdentifier == .invalid
+        let shouldStartBackgroundTask = wantsBackgroundTask
+            && backgroundTaskIdentifier == .invalid
         stateLock.unlock()
         guard shouldStartBackgroundTask else { return }
 
@@ -755,9 +763,17 @@ extension CloudKitRecordSyncManager {
         backgroundTaskIdentifier = .invalid
         stateLock.unlock()
 
+        endBackgroundTask(task)
+    }
+
+    func endBackgroundTask(_ task: UIBackgroundTaskIdentifier) {
         guard task != .invalid else { return }
-        DispatchQueue.main.async {
+        if Thread.isMainThread {
             UIApplication.shared.endBackgroundTask(task)
+        } else {
+            DispatchQueue.main.async {
+                UIApplication.shared.endBackgroundTask(task)
+            }
         }
     }
 
@@ -767,10 +783,15 @@ extension CloudKitRecordSyncManager {
     /// active run ends the task itself when it finishes.
     func endBackgroundTaskIfIdle() {
         stateLock.lock()
-        let syncing = isSyncing
+        guard !isSyncing else {
+            stateLock.unlock()
+            return
+        }
+        wantsBackgroundTask = false
+        let task = backgroundTaskIdentifier
+        backgroundTaskIdentifier = .invalid
         stateLock.unlock()
-        guard !syncing else { return }
-        endBackgroundTaskIfNeeded()
+        endBackgroundTask(task)
     }
 
     func setApplyingRemoteChanges(_ value: Bool) {
@@ -789,11 +810,15 @@ extension CloudKitRecordSyncManager {
     /// for the next trigger instead of being retried right now.
     func abortSyncRun(runID: UInt64) {
         stateLock.lock()
+        var task: UIBackgroundTaskIdentifier = .invalid
         if runID == syncRunID {
             isSyncing = false
+            wantsBackgroundTask = false
+            task = backgroundTaskIdentifier
+            backgroundTaskIdentifier = .invalid
         }
         stateLock.unlock()
-        endBackgroundTaskIfNeeded()
+        endBackgroundTask(task)
     }
 
     func zoneNeedsEnsure() -> Bool {
@@ -847,11 +872,15 @@ extension CloudKitRecordSyncManager {
     }
 
     func rebuildCloudKitDataAfterLocalReset() {
-        guard claimLocalResetRebuild() else { return }
+        guard claimLocalResetRebuild() else {
+            endBackgroundTaskIfIdle()
+            return
+        }
 
         Task {
             defer {
                 self.setLocalResetRebuildQueued(false)
+                self.endBackgroundTaskIfIdle()
             }
             while CloudKitSync.current == .enable {
                 // A manual rebuild (settings) may have completed the reset
@@ -1208,13 +1237,13 @@ extension CloudKitRecordSyncManager {
         let failedDeleteErrors = changes.failedRecordDeletes
             .filter { !isRecordNotFound($0.value) }
         let deletedRecordNames = Set(deletedRecordIDs.map(\.recordName))
-        var failedEntries: [(id: Int64, error: Error)] = []
+        var failedEntries: [(entry: CloudKitOutboxEntry, error: Error)] = []
         var clearedEntries: [CloudKitOutboxEntry] = []
         var oversizedSnapshotEntries: [CloudKitOutboxEntry] = []
         var oversizedSaveRecordNames: [String] = []
 
         for entry in try loadOutboxEntries() {
-            guard let entryID = entry.id,
+            guard entry.id != nil,
                   let operation = entry.cloudKitOperation else {
                 continue
             }
@@ -1227,7 +1256,7 @@ extension CloudKitRecordSyncManager {
                     requestFollowUpSync()
                 } else if let failure = failedSaveResults[entry.recordName],
                           failure.version >= entry.localVersion {
-                    failedEntries.append((entryID, failure.error))
+                    failedEntries.append((entry, failure.error))
                     if isLimitExceeded(failure.error) {
                         oversizedSnapshotEntries.append(entry)
                         oversizedSaveRecordNames.append(entry.recordName)
@@ -1237,7 +1266,7 @@ extension CloudKitRecordSyncManager {
                 if deletedRecordNames.contains(entry.recordName) {
                     clearedEntries.append(entry)
                 } else if let error = failedDeleteErrors[CloudKitRecordName.recordID(entry.recordName)] {
-                    failedEntries.append((entryID, error))
+                    failedEntries.append((entry, error))
                 }
             }
         }
@@ -1322,6 +1351,12 @@ extension CloudKitRecordSyncManager {
         }
 
         guard !batch.recordsToSave.isEmpty || !batch.recordIDsToDelete.isEmpty else {
+            let retiredEntries = !batch.skippedEntries.isEmpty
+                || !batch.abortedCascadeEntries.isEmpty
+            if (retiredEntries || !batch.failedEntries.isEmpty),
+               try hasOutboxEntries(excludingMatching: batch.failedEntries.map(\.entry)) {
+                requestFollowUpSync()
+            }
             return nil
         }
         return CKSyncEngine.RecordZoneChangeBatch(
@@ -1339,7 +1374,7 @@ extension CloudKitRecordSyncManager {
         recordsToSave: [CKRecord],
         recordIDsToDelete: [CKRecord.ID],
         skippedEntries: [CloudKitOutboxEntry],
-        failedEntries: [(id: Int64, error: Error)],
+        failedEntries: [(entry: CloudKitOutboxEntry, error: Error)],
         changesToRemove: [CKSyncEngine.PendingRecordZoneChange],
         abortedCascadeEntries: [CloudKitOutboxEntry]
     ) {
@@ -1348,7 +1383,7 @@ extension CloudKitRecordSyncManager {
         // Snapshot rows, not bare ids: the drop is conditioned on the row still
         // carrying this operation+localVersion (see dropOutbox(matching:)).
         var skippedEntries: [CloudKitOutboxEntry] = []
-        var failedEntries: [(id: Int64, error: Error)] = []
+        var failedEntries: [(entry: CloudKitOutboxEntry, error: Error)] = []
         var changesToRemove: [CKSyncEngine.PendingRecordZoneChange] = []
         var abortedCascadeEntries: [CloudKitOutboxEntry] = []
 
@@ -1366,7 +1401,7 @@ extension CloudKitRecordSyncManager {
         }
 
         for entry in entries {
-            guard let entryID = entry.id,
+            guard entry.id != nil,
                   let type = entry.cloudKitRecordType,
                   let operation = entry.cloudKitOperation else {
                 if entry.id != nil {
@@ -1456,7 +1491,7 @@ extension CloudKitRecordSyncManager {
                     }
                 }
             } catch {
-                failedEntries.append((entryID, error))
+                failedEntries.append((entry, error))
                 changesToRemove.append(contentsOf: pendingChanges)
             }
         }
@@ -2546,6 +2581,18 @@ extension CloudKitRecordSyncManager {
         return hasFailures
     }
 
+    func hasOutboxEntries(excludingMatching excludedEntries: [CloudKitOutboxEntry] = []) throws -> Bool {
+        var hasEntries = false
+        try AppDatabase.shared.dbWriter?.read { db in
+            if excludedEntries.isEmpty {
+                hasEntries = try CloudKitOutboxEntry.fetchCount(db) > 0
+            } else {
+                hasEntries = try CloudKitOutboxEntry.hasEntries(excludingMatching: excludedEntries, in: db)
+            }
+        }
+        return hasEntries
+    }
+
     func markRemoteDataMayExistBeforeSendingOutboxIfNeeded() throws {
         var hasOutbox = false
         try AppDatabase.shared.dbWriter?.read { db in
@@ -2645,10 +2692,10 @@ extension CloudKitRecordSyncManager {
         }
     }
 
-    func markOutboxFailures(_ failures: [(id: Int64, error: Error)]) throws {
+    func markOutboxFailures(_ failures: [(entry: CloudKitOutboxEntry, error: Error)]) throws {
         _ = try AppDatabase.shared.dbWriter?.write { db in
             for failure in failures {
-                try CloudKitOutboxEntry.markFailed(ids: [failure.id], error: failure.error, in: db)
+                try CloudKitOutboxEntry.markFailed(matching: [failure.entry], error: failure.error, in: db)
             }
         }
     }
@@ -3250,6 +3297,7 @@ extension CloudKitRecordSyncManager {
         var hasDeferredRemoteRecords = false
         var hasAssetIncompleteImageRecords = false
         var shouldPruneMissingLocalRecords = prunesMissingLocalRecords
+        var protectsRecentMarkerlessMissingRecords = false
 
         do {
             try AppDatabase.shared.dbWriter?.write { db in
@@ -3309,33 +3357,30 @@ extension CloudKitRecordSyncManager {
                     try CloudKitSyncState.clearZoneDiscontinuityProbe(in: db)
                 }
                 // A pruning fresh-engine fetch (re-enable on a device that
-                // synced before) against an EMPTY zone with no reset marker:
-                // within the tombstone retention window the only way a
-                // previously-synced zone is empty AND marker-less is an
-                // out-of-band wipe — e.g. the user deleted the app's iCloud
-                // data in Settings while sync was off. A deliberate
-                // clear/rebuild always leaves a marker, and a peer deleting
-                // the whole library leaves tombstones that outlive the window.
-                // Pruning would erase the entire local library to mirror the
-                // accident; keep local data and re-upload instead — the same
-                // verdict the discontinuity probe reaches for a marker-less
-                // zone. BEYOND the window the empty zone is ambiguous (a
-                // legitimate delete-everything plus expired-tombstone purges
-                // looks identical), so the stale device defers to the zone
-                // and prunes, as before.
+                // synced before) against an EMPTY marker-less zone is treated
+                // as an out-of-band wipe only inside the retention window.
+                // Against a NON-empty marker-less zone, keep pruning enabled
+                // but let the prune pass protect/re-upload only the specific
+                // recently-seen records missing from the snapshot. Using the
+                // whole library's newest metadata would resurrect unrelated
+                // old deletes after an offline reconciliation touched one row.
                 if shouldPruneMissingLocalRecords,
                    !probesZoneDiscontinuity,
                    changes.zoneResetGeneration == nil,
-                   remoteSnapshotRecordNames(changes).isEmpty,
                    try CloudKitRecordMetadata.fetchCount(db) > 0 {
-                    let newestMetadataUpdate = try Int64.fetchOne(
-                        db,
-                        sql: "SELECT MAX(updated_at) FROM cloudkit_record_metadata"
-                    ) ?? 0
-                    let now = try db.transactionDate.nanoSecondSince1970
-                    if now - newestMetadataUpdate < Self.tombstoneRetentionMilliseconds {
-                        shouldPruneMissingLocalRecords = false
-                        try CloudKitOutboxEntry.enqueueBootstrapSaves(in: db)
+                    if remoteSnapshotRecordNames(changes).isEmpty {
+                        let newestMetadataUpdate = try Int64.fetchOne(
+                            db,
+                            sql: "SELECT MAX(updated_at) FROM cloudkit_record_metadata"
+                        ) ?? 0
+                        let now = try db.transactionDate.nanoSecondSince1970
+                        if now - newestMetadataUpdate < Self.tombstoneRetentionMilliseconds {
+                            shouldPruneMissingLocalRecords = false
+                            try CloudKitOutboxEntry.enqueueBootstrapSaves(in: db)
+                            try enqueueDefaultStyleSettingIfNeeded(syncId: fallbackDefaultStyleSyncId, in: db)
+                        }
+                    } else {
+                        protectsRecentMarkerlessMissingRecords = true
                         try enqueueDefaultStyleSettingIfNeeded(syncId: fallbackDefaultStyleSyncId, in: db)
                     }
                 }
@@ -3472,8 +3517,10 @@ extension CloudKitRecordSyncManager {
                     }
                     if !textApply.isDeferred {
                         try clearOutboxIfRemoteWins(record, in: db)
-                        try markServerRecordMetadata(record, type: .text, in: db)
-                        try clearLocalTombstone(recordName: record.recordID.recordName, in: db)
+                        if !textApply.shouldSkipServerMetadata {
+                            try markServerRecordMetadata(record, type: .text, in: db)
+                            try clearLocalTombstone(recordName: record.recordID.recordName, in: db)
+                        }
                     }
                     deletedImageFiles.append(contentsOf: textApply.deletedImageFiles)
                 }
@@ -3527,16 +3574,18 @@ extension CloudKitRecordSyncManager {
                         // (e.g. an older offline delete) left in the outbox would
                         // otherwise be pushed and delete the newer server version.
                         try clearOutboxIfRemoteWins(record, in: db)
-                        try clearLocalTombstone(recordName: record.recordID.recordName, in: db)
-                        // But a record skipped for missing assets was NOT applied:
-                        // advancing its metadata would (a) claim a server version
-                        // the local row doesn't have, and (b) for a brand-new image
-                        // leave a metadata row with no local row behind, which a
-                        // later offline reconciliation would misread as an offline
-                        // delete and push a tombstone — deleting the photo on every
-                        // device.
-                        if !imageApply.skippedForMissingAssets {
-                            try markServerRecordMetadata(record, type: .image, in: db)
+                        if !imageApply.shouldSkipServerMetadata {
+                            try clearLocalTombstone(recordName: record.recordID.recordName, in: db)
+                            // But a record skipped for missing assets was NOT applied:
+                            // advancing its metadata would (a) claim a server version
+                            // the local row doesn't have, and (b) for a brand-new image
+                            // leave a metadata row with no local row behind, which a
+                            // later offline reconciliation would misread as an offline
+                            // delete and push a tombstone — deleting the photo on every
+                            // device.
+                            if !imageApply.skippedForMissingAssets {
+                                try markServerRecordMetadata(record, type: .image, in: db)
+                            }
                         }
                     }
                     deletedImageFiles.append(contentsOf: imageApply.deletedImageFiles)
@@ -3575,8 +3624,10 @@ extension CloudKitRecordSyncManager {
                     }
                     if !decorationApply.isDeferred {
                         try clearOutboxIfRemoteWins(record, in: db)
-                        try markServerRecordMetadata(record, type: .decoration, in: db)
-                        try clearLocalTombstone(recordName: record.recordID.recordName, in: db)
+                        if !decorationApply.shouldSkipServerMetadata {
+                            try markServerRecordMetadata(record, type: .decoration, in: db)
+                            try clearLocalTombstone(recordName: record.recordID.recordName, in: db)
+                        }
                     }
                 }
 
@@ -3643,7 +3694,11 @@ extension CloudKitRecordSyncManager {
                 }
 
                 if shouldPruneMissingLocalRecords {
-                    let pruning = try pruneLocalRecordsMissingFromFullFetch(changes, in: db)
+                    let pruning = try pruneLocalRecordsMissingFromFullFetch(
+                        changes,
+                        protectsRecentMarkerlessMissingRecords: protectsRecentMarkerlessMissingRecords,
+                        in: db
+                    )
                     if pruning.didChangeDatabase {
                         didChangeDatabase = true
                         deletedImageFiles.append(contentsOf: pruning.deletedImageFiles)
@@ -3770,13 +3825,19 @@ extension CloudKitRecordSyncManager {
         Array(changes.tombstonesByDeletedRecordName.values)
     }
 
-    func pruneLocalRecordsMissingFromFullFetch(_ changes: RemoteChangeSet, in db: Database) throws -> (didChangeDatabase: Bool, didChangeStyles: Bool, deletedImageFiles: [(String, CacheImageType)]) {
+    func pruneLocalRecordsMissingFromFullFetch(
+        _ changes: RemoteChangeSet,
+        protectsRecentMarkerlessMissingRecords: Bool = false,
+        in db: Database
+    ) throws -> (didChangeDatabase: Bool, didChangeStyles: Bool, deletedImageFiles: [(String, CacheImageType)]) {
         let remoteRecordNames = remoteSnapshotRecordNames(changes)
-        let pendingSaveRecordNames = try pendingSaveOutboxRecordNames(in: db)
-        let knownRecordNames = Set(try CloudKitRecordMetadata
-            .select(Column(CloudKitRecordMetadata.CodingKeys.recordName), as: String.self)
-            .fetchAll(db))
-        let defaultStyleSyncId = try CloudKitSettingRecord.current(in: db).defaultStyleSyncId
+        var pendingSaveRecordNames = try pendingSaveOutboxRecordNames(in: db)
+        let metadataByRecordName = Dictionary(
+            uniqueKeysWithValues: try CloudKitRecordMetadata.fetchAll(db).map { ($0.recordName, $0) }
+        )
+        let knownRecordNames = Set(metadataByRecordName.keys)
+        var defaultStyleSyncId = try CloudKitSettingRecord.current(in: db).defaultStyleSyncId
+        let pruneReferenceTime = try db.transactionDate.nanoSecondSince1970
         var didChangeDatabase = false
         var didChangeStyles = false
         var deletedImageFiles: [(String, CacheImageType)] = []
@@ -3790,10 +3851,22 @@ extension CloudKitRecordSyncManager {
         // off (or otherwise never reached CloudKit). Pruning those would silently lose
         // user data on the very first re-enable; let them stay until they get enqueued
         // through normal write paths.
+        func shouldProtectRecentMarkerlessMissingRecord(_ recordName: String) -> Bool {
+            guard protectsRecentMarkerlessMissingRecords,
+                  !remoteRecordNames.contains(recordName),
+                  !pendingSaveRecordNames.contains(recordName),
+                  let metadata = metadataByRecordName[recordName],
+                  !metadata.isDeleted else {
+                return false
+            }
+            return pruneReferenceTime - metadata.updatedAt < Self.tombstoneRetentionMilliseconds
+        }
+
         func shouldPrune(_ recordName: String) -> Bool {
             knownRecordNames.contains(recordName)
                 && !remoteRecordNames.contains(recordName)
                 && !pendingSaveRecordNames.contains(recordName)
+                && !shouldProtectRecentMarkerlessMissingRecord(recordName)
         }
 
         // Pruned rows must drop their sync bookkeeping too: a leftover metadata
@@ -3822,16 +3895,32 @@ extension CloudKitRecordSyncManager {
                 + images.map(\.cloudKitRecordName)
                 + texts.map(\.cloudKitRecordName)
                 + decorations.map(\.cloudKitRecordName)
-            if graphRecordNames.contains(where: { pendingSaveRecordNames.contains($0) }) {
-                protectedRecordNames.formUnion(graphRecordNames)
+            let recentlyProtectedRecordNames = Set(graphRecordNames.filter(shouldProtectRecentMarkerlessMissingRecord))
+            let hasPendingGraphSave = graphRecordNames.contains { pendingSaveRecordNames.contains($0) }
+            if hasPendingGraphSave || !recentlyProtectedRecordNames.isEmpty {
+                let postMissingRemotely = !remoteRecordNames.contains(post.cloudKitRecordName)
+                let recreatesMissingGraph = postMissingRemotely
+                var graphVersionRecordNames = Set([post.cloudKitRecordName])
+                if recreatesMissingGraph {
+                    protectedRecordNames.formUnion(graphRecordNames)
+                    graphVersionRecordNames.formUnion(graphRecordNames)
+                } else {
+                    protectedRecordNames.insert(post.cloudKitRecordName)
+                    let protectedChildRecordNames = graphRecordNames.filter {
+                        $0 != post.cloudKitRecordName
+                            && (pendingSaveRecordNames.contains($0) || recentlyProtectedRecordNames.contains($0))
+                    }
+                    protectedRecordNames.formUnion(protectedChildRecordNames)
+                    graphVersionRecordNames.formUnion(protectedChildRecordNames)
+                }
                 var graphModificationTime = post.modificationTime ?? 0
-                for image in images {
+                for image in images where graphVersionRecordNames.contains(image.cloudKitRecordName) {
                     graphModificationTime = max(graphModificationTime, image.modificationTime ?? 0)
                 }
-                for text in texts {
+                for text in texts where graphVersionRecordNames.contains(text.cloudKitRecordName) {
                     graphModificationTime = max(graphModificationTime, text.modificationTime ?? 0)
                 }
-                for decoration in decorations {
+                for decoration in decorations where graphVersionRecordNames.contains(decoration.cloudKitRecordName) {
                     graphModificationTime = max(graphModificationTime, decoration.modificationTime ?? 0)
                 }
                 if graphModificationTime > (post.modificationTime ?? 0) {
@@ -3844,10 +3933,8 @@ extension CloudKitRecordSyncManager {
                 // graph re-creation (peer rebuilt without it / never had it) —
                 // then the re-upload must carry the children too, or peers
                 // adopt an empty shell. When the post is alive in the snapshot,
-                // a child missing there is a propagated deletion (possibly with
-                // an already-purged tombstone) and re-uploading it would
-                // resurrect a record the user deleted on another device.
-                if !remoteRecordNames.contains(post.cloudKitRecordName) {
+                // re-upload only children with explicit local/preserved intent.
+                if recreatesMissingGraph {
                     for text in texts where !remoteRecordNames.contains(text.cloudKitRecordName) {
                         try enqueueCloudKitSaveIfNeeded(recordType: .text, syncId: text.syncId, modificationTime: text.modificationTime, in: db)
                     }
@@ -3855,6 +3942,16 @@ extension CloudKitRecordSyncManager {
                         try enqueueCloudKitSaveIfNeeded(recordType: .image, syncId: image.syncId, modificationTime: image.modificationTime, in: db)
                     }
                     for decoration in decorations where !remoteRecordNames.contains(decoration.cloudKitRecordName) {
+                        try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
+                    }
+                } else {
+                    for text in texts where recentlyProtectedRecordNames.contains(text.cloudKitRecordName) {
+                        try enqueueCloudKitSaveIfNeeded(recordType: .text, syncId: text.syncId, modificationTime: text.modificationTime, in: db)
+                    }
+                    for image in images where recentlyProtectedRecordNames.contains(image.cloudKitRecordName) {
+                        try enqueueCloudKitSaveIfNeeded(recordType: .image, syncId: image.syncId, modificationTime: image.modificationTime, in: db)
+                    }
+                    for decoration in decorations where recentlyProtectedRecordNames.contains(decoration.cloudKitRecordName) {
                         try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
                     }
                 }
@@ -3879,17 +3976,43 @@ extension CloudKitRecordSyncManager {
 
         // Styles before the per-type child loops so a protected style graph
         // exempts its decorations from the generic decoration prune.
-        for style in try PostStyle.fetchAll(db) {
+        let styles = try PostStyle.fetchAll(db).sorted { lhs, rhs in
+            if lhs.syncId == defaultStyleSyncId {
+                return true
+            }
+            if rhs.syncId == defaultStyleSyncId {
+                return false
+            }
+            return (lhs.id ?? Int64.max) < (rhs.id ?? Int64.max)
+        }
+        for style in styles {
             guard let styleId = style.id else { continue }
             let decorations = try PostDecoration
                 .filter(Column(PostDecoration.CodingKeys.styleId) == styleId)
                 .fetchAll(db)
             let graphRecordNames = [style.cloudKitRecordName] + decorations.map(\.cloudKitRecordName)
-            if graphRecordNames.contains(where: { pendingSaveRecordNames.contains($0) })
-                || (pendingSaveRecordNames.contains(CloudKitRecordName.settingsName) && defaultStyleSyncId == style.syncId) {
-                protectedRecordNames.formUnion(graphRecordNames)
+            let recentlyProtectedRecordNames = Set(graphRecordNames.filter(shouldProtectRecentMarkerlessMissingRecord))
+            let hasPendingGraphSave = graphRecordNames.contains { pendingSaveRecordNames.contains($0) }
+            let hasPendingDefaultSetting = pendingSaveRecordNames.contains(CloudKitRecordName.settingsName)
+                && defaultStyleSyncId == style.syncId
+            if hasPendingGraphSave || hasPendingDefaultSetting || !recentlyProtectedRecordNames.isEmpty {
+                let styleMissingRemotely = !remoteRecordNames.contains(style.cloudKitRecordName)
+                let recreatesMissingGraph = styleMissingRemotely
+                var graphVersionRecordNames = Set([style.cloudKitRecordName])
+                if recreatesMissingGraph {
+                    protectedRecordNames.formUnion(graphRecordNames)
+                    graphVersionRecordNames.formUnion(graphRecordNames)
+                } else {
+                    protectedRecordNames.insert(style.cloudKitRecordName)
+                    let protectedChildRecordNames = graphRecordNames.filter {
+                        $0 != style.cloudKitRecordName
+                            && (pendingSaveRecordNames.contains($0) || recentlyProtectedRecordNames.contains($0))
+                    }
+                    protectedRecordNames.formUnion(protectedChildRecordNames)
+                    graphVersionRecordNames.formUnion(protectedChildRecordNames)
+                }
                 var graphModificationTime = style.modificationTime ?? 0
-                for decoration in decorations {
+                for decoration in decorations where graphVersionRecordNames.contains(decoration.cloudKitRecordName) {
                     graphModificationTime = max(graphModificationTime, decoration.modificationTime ?? 0)
                 }
                 if graphModificationTime > (style.modificationTime ?? 0) {
@@ -3902,8 +4025,12 @@ extension CloudKitRecordSyncManager {
                 // style missing remotely is being re-created and needs its
                 // decorations carried along; a live remote style with a missing
                 // decoration means that decoration was deleted elsewhere.
-                if !remoteRecordNames.contains(style.cloudKitRecordName) {
+                if recreatesMissingGraph {
                     for decoration in decorations where !remoteRecordNames.contains(decoration.cloudKitRecordName) {
+                        try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
+                    }
+                } else {
+                    for decoration in decorations where recentlyProtectedRecordNames.contains(decoration.cloudKitRecordName) {
                         try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
                     }
                 }
@@ -3917,12 +4044,29 @@ extension CloudKitRecordSyncManager {
                 .fetchOne(db)
             try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
             try PostStyle.deleteAll(db, ids: [styleId])
-            _ = try DefaultStyle.replaceDeletedStyleIfNeeded(
+            let fallbackModificationTime = try db.transactionDate.nanoSecondSince1970
+            if try DefaultStyle.replaceDeletedStyleIfNeeded(
                 deletedStyle: style,
                 fallbackStyle: fallbackStyle,
-                modificationTime: try db.transactionDate.nanoSecondSince1970,
+                modificationTime: fallbackModificationTime,
                 in: db
-            )
+            ) {
+                try CloudKitOutboxEntry.enqueueSetting(modificationTime: fallbackModificationTime, in: db)
+                pendingSaveRecordNames.insert(CloudKitRecordName.settingsName)
+                defaultStyleSyncId = try CloudKitSettingRecord.current(in: db).defaultStyleSyncId
+                if let fallbackStyle,
+                   defaultStyleSyncId == fallbackStyle.syncId,
+                   try !OnboardingLocalRecord.isMarked(recordType: .style, syncId: fallbackStyle.syncId, in: db) {
+                    try CloudKitOutboxEntry.enqueueSave(
+                        recordType: .style,
+                        syncId: fallbackStyle.syncId,
+                        modificationTime: fallbackStyle.modificationTime,
+                        in: db
+                    )
+                    pendingSaveRecordNames.insert(fallbackStyle.cloudKitRecordName)
+                    protectedRecordNames.insert(fallbackStyle.cloudKitRecordName)
+                }
+            }
             try OnboardingLocalRecord.unmark(recordType: .style, syncId: style.syncId, in: db)
             try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
             try clearPrunedRecordState(graphRecordNames)
@@ -3959,12 +4103,20 @@ extension CloudKitRecordSyncManager {
             didChangeStyles = true
         }
 
-        if !remoteRecordNames.contains(CloudKitRecordName.settingsName),
-           !pendingSaveRecordNames.contains(CloudKitRecordName.settingsName) {
-            if try DefaultStyle.clearCloudKitStateForMissingRemoteSetting(in: db) {
-                didChangeDatabase = true
+        if !remoteRecordNames.contains(CloudKitRecordName.settingsName) {
+            if shouldProtectRecentMarkerlessMissingRecord(CloudKitRecordName.settingsName) {
+                let setting = try CloudKitSettingRecord.current(in: db)
+                let modificationTime = setting.defaultStyleModificationTime > 0
+                    ? setting.defaultStyleModificationTime
+                    : pruneReferenceTime
+                try CloudKitOutboxEntry.enqueueSetting(modificationTime: modificationTime, in: db)
+                pendingSaveRecordNames.insert(CloudKitRecordName.settingsName)
+            } else if !pendingSaveRecordNames.contains(CloudKitRecordName.settingsName) {
+                if try DefaultStyle.clearCloudKitStateForMissingRemoteSetting(in: db) {
+                    didChangeDatabase = true
+                }
+                try CloudKitRecordMetadata.deleteOne(db, key: CloudKitRecordName.settingsName)
             }
-            try CloudKitRecordMetadata.deleteOne(db, key: CloudKitRecordName.settingsName)
         }
 
         return (didChangeDatabase, didChangeStyles, deletedImageFiles)
@@ -4051,10 +4203,10 @@ extension CloudKitRecordSyncManager {
                     // orphan conversion below: delete at the child's own time,
                     // so the entry survives clearOutboxIfRemoteWins and
                     // propagates (a lower time would be erased in-loop and
-                    // never reach the server). The apply loop still marks the
-                    // record's metadata alive — a later reconciliation then
-                    // pushes a redundant tombstone, which is harmless against
-                    // the already-tombstoned server record.
+                    // never reach the server). The apply loop preserves the
+                    // local tombstone metadata for this judged-loser remote
+                    // record so a later reconciliation does not reinterpret it
+                    // as a live row missing locally.
                     return .deleted(remoteModificationTime)
                 }
                 // Incremental fetch, parent already gone here: defer until
@@ -4279,13 +4431,13 @@ extension CloudKitRecordSyncManager {
         localTombstones: [String: CloudKitLocalTombstone],
         missingDependenciesAreOrphans: Bool,
         in db: Database
-    ) throws -> (didChangeDatabase: Bool, isDeferred: Bool, deletedImageFiles: [(String, CacheImageType)]) {
+    ) throws -> (didChangeDatabase: Bool, isDeferred: Bool, deletedImageFiles: [(String, CacheImageType)], shouldSkipServerMetadata: Bool) {
         guard let syncId = stringValue(Field.syncId, in: record),
               let postSyncId = stringValue(Field.postSyncId, in: record),
               let content = stringValue(Field.content, in: record),
               let order = int64Value(Field.order, in: record) else {
             cloudKitSyncLog.info("text import skipped: missing fields for \(record.recordID.recordName, privacy: .private)")
-            return (false, false, [])
+            return (false, false, [], false)
         }
         let remoteModificationTime = modificationTime(of: record)
         let postId: Int64
@@ -4302,28 +4454,28 @@ extension CloudKitRecordSyncManager {
         case .available(let id):
             postId = id
         case .deleted(let deletionTime):
-            try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: syncId, deletionTime: deletionTime, in: db)
-            return (false, false, [])
+            let deleteIntent = try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: syncId, deletionTime: deletionTime, in: db)
+            return (false, false, [], deleteIntent.shouldSkipServerMetadata)
         case .missing:
-            return (false, true, [])
+            return (false, true, [], false)
         }
         let existing = try PostText
             .filter(Column(PostText.CodingKeys.syncId) == syncId)
             .fetchOne(db)
-        guard existing == nil || remoteModificationTime > (existing?.modificationTime ?? 0) else { return (false, false, []) }
+        guard existing == nil || remoteModificationTime > (existing?.modificationTime ?? 0) else { return (false, false, [], false) }
 
         let images = try PostImage
             .filter(Column(PostImage.CodingKeys.postId) == postId)
             .fetchAll(db)
         if let latestImageModificationTime = images.map({ $0.modificationTime ?? 0 }).max(),
            latestImageModificationTime > remoteModificationTime {
-            try enqueueCloudKitDeleteIfNeeded(
+            let deleteIntent = try enqueueCloudKitDeleteIfNeeded(
                 recordType: .text,
                 syncId: syncId,
                 deletionTime: latestImageModificationTime,
                 in: db
             )
-            return (false, false, [])
+            return (false, false, [], deleteIntent.shouldSkipServerMetadata)
         }
         for image in images {
             try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, deletionTime: remoteModificationTime, in: db)
@@ -4341,7 +4493,7 @@ extension CloudKitRecordSyncManager {
         text.creationTime = int64Value(Field.creationTime, in: record) ?? existing?.creationTime
         text.modificationTime = remoteModificationTime
         try text.save(db)
-        return (true, false, imageFiles(for: images))
+        return (true, false, imageFiles(for: images), false)
     }
 
     func applyImageRecord(
@@ -4353,7 +4505,7 @@ extension CloudKitRecordSyncManager {
         missingDependenciesAreOrphans: Bool,
         stagedAssets: StagedImageAssets?,
         in db: Database
-    ) throws -> (didChangeDatabase: Bool, isDeferred: Bool, deletedImageFiles: [(String, CacheImageType)], skippedForMissingAssets: Bool) {
+    ) throws -> (didChangeDatabase: Bool, isDeferred: Bool, deletedImageFiles: [(String, CacheImageType)], skippedForMissingAssets: Bool, shouldSkipServerMetadata: Bool) {
         guard let syncId = stringValue(Field.syncId, in: record),
               let postSyncId = stringValue(Field.postSyncId, in: record),
               let orientation = int64Value(Field.orientation, in: record),
@@ -4363,7 +4515,7 @@ extension CloudKitRecordSyncManager {
               let maxY = int64Value(Field.maxY, in: record),
               let order = int64Value(Field.order, in: record) else {
             cloudKitSyncLog.info("image import skipped: missing fields for \(record.recordID.recordName, privacy: .private)")
-            return (false, false, [], false)
+            return (false, false, [], false, false)
         }
         let remoteModificationTime = modificationTime(of: record)
         let postId: Int64
@@ -4380,23 +4532,23 @@ extension CloudKitRecordSyncManager {
         case .available(let id):
             postId = id
         case .deleted(let deletionTime):
-            try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: syncId, deletionTime: deletionTime, in: db)
-            return (false, false, [], false)
+            let deleteIntent = try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: syncId, deletionTime: deletionTime, in: db)
+            return (false, false, [], false, deleteIntent.shouldSkipServerMetadata)
         case .missing:
-            return (false, true, [], false)
+            return (false, true, [], false, false)
         }
         let existing = try PostImage
             .filter(Column(PostImage.CodingKeys.syncId) == syncId)
             .fetchOne(db)
         if let existing, remoteModificationTime <= (existing.modificationTime ?? 0) {
-            guard remoteModificationTime == (existing.modificationTime ?? 0) else { return (false, false, [], false) }
+            guard remoteModificationTime == (existing.modificationTime ?? 0) else { return (false, false, [], false, false) }
             let restore = try restoreMissingImageFiles(for: existing, stagedAssets: stagedAssets, in: db)
             // A heal attempt that still lacks its asset (download/staging
             // failed) arms the same full-fetch retry as the strictly-newer
             // path — an unchanged record is never re-delivered incrementally,
             // so without it the lost cache file stays broken until some
             // device happens to edit the image.
-            return (restore.didChange, false, [], restore.stillMissingAssets)
+            return (restore.didChange, false, [], restore.stillMissingAssets, false)
         }
 
         let texts = try PostText
@@ -4404,13 +4556,13 @@ extension CloudKitRecordSyncManager {
             .fetchAll(db)
         if let latestTextModificationTime = texts.map({ $0.modificationTime ?? 0 }).max(),
            latestTextModificationTime > remoteModificationTime {
-            try enqueueCloudKitDeleteIfNeeded(
+            let deleteIntent = try enqueueCloudKitDeleteIfNeeded(
                 recordType: .image,
                 syncId: syncId,
                 deletionTime: latestTextModificationTime,
                 in: db
             )
-            return (false, false, [], false)
+            return (false, false, [], false, deleteIntent.shouldSkipServerMetadata)
         }
 
         let remoteOriginalFileName = stringValue(Field.originalFileName, in: record)
@@ -4428,7 +4580,7 @@ extension CloudKitRecordSyncManager {
             || (needsProcessedAsset && stagedAssets?.processedName == nil) {
             cloudKitSyncLog.info("image import skipped: assets incomplete for \(record.recordID.recordName, privacy: .private)")
             CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.imageAssetMissing"))
-            return (false, false, [], true)
+            return (false, false, [], true, false)
         }
 
         for text in texts {
@@ -4439,7 +4591,7 @@ extension CloudKitRecordSyncManager {
 
         guard let originalName = stagedAssets?.originalName ?? remoteOriginalFileName ?? existing?.original,
               let processedName = stagedAssets?.processedName ?? remoteProcessedFileName ?? existing?.processed else {
-            return (false, false, [], false)
+            return (false, false, [], false, false)
         }
 
         var image = PostImage(
@@ -4466,7 +4618,7 @@ extension CloudKitRecordSyncManager {
         if let existing, existing.processed != processedName {
             deletedImageFiles.append((existing.processed, .processed))
         }
-        return (true, false, deletedImageFiles, false)
+        return (true, false, deletedImageFiles, false, false)
     }
 
     /// Remote and local are at the same version, so the asset content matches
@@ -4526,11 +4678,11 @@ extension CloudKitRecordSyncManager {
         localTombstones: [String: CloudKitLocalTombstone],
         missingDependenciesAreOrphans: Bool,
         in db: Database
-    ) throws -> (didChangeDatabase: Bool, isDeferred: Bool) {
+    ) throws -> (didChangeDatabase: Bool, isDeferred: Bool, shouldSkipServerMetadata: Bool) {
         guard let syncId = stringValue(Field.syncId, in: record),
               let postSyncId = stringValue(Field.postSyncId, in: record),
               let styleSyncId = stringValue(Field.styleSyncId, in: record) else {
-            return (false, false)
+            return (false, false, false)
         }
         let remoteModificationTime = modificationTime(of: record)
         let postState = dependencyState(
@@ -4561,28 +4713,28 @@ extension CloudKitRecordSyncManager {
             postId = resolvedPostId
             styleId = resolvedStyleId
         case (.deleted(let deletionTime), _), (_, .deleted(let deletionTime)):
-            try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: syncId, deletionTime: deletionTime, in: db)
-            return (false, false)
+            let deleteIntent = try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: syncId, deletionTime: deletionTime, in: db)
+            return (false, false, deleteIntent.shouldSkipServerMetadata)
         case (.missing, _), (_, .missing):
-            return (false, true)
+            return (false, true, false)
         }
         let existing = try PostDecoration
             .filter(Column(PostDecoration.CodingKeys.syncId) == syncId)
             .fetchOne(db)
-        guard existing == nil || remoteModificationTime > (existing?.modificationTime ?? 0) else { return (false, false) }
+        guard existing == nil || remoteModificationTime > (existing?.modificationTime ?? 0) else { return (false, false, false) }
 
         let conflictingDecorations = try PostDecoration
             .filter(Column(PostDecoration.CodingKeys.postId) == postId && Column(PostDecoration.CodingKeys.syncId) != syncId)
             .fetchAll(db)
         if let latestDecorationModificationTime = conflictingDecorations.map({ $0.modificationTime ?? 0 }).max(),
            latestDecorationModificationTime > remoteModificationTime {
-            try enqueueCloudKitDeleteIfNeeded(
+            let deleteIntent = try enqueueCloudKitDeleteIfNeeded(
                 recordType: .decoration,
                 syncId: syncId,
                 deletionTime: latestDecorationModificationTime,
                 in: db
             )
-            return (false, false)
+            return (false, false, deleteIntent.shouldSkipServerMetadata)
         }
         for decoration in conflictingDecorations {
             try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: remoteModificationTime, in: db)
@@ -4596,7 +4748,7 @@ extension CloudKitRecordSyncManager {
         decoration.creationTime = int64Value(Field.creationTime, in: record) ?? existing?.creationTime
         decoration.modificationTime = remoteModificationTime
         try decoration.save(db)
-        return (true, false)
+        return (true, false, false)
     }
 
     func applySettingsRecord(
@@ -4645,6 +4797,19 @@ extension CloudKitRecordSyncManager {
         }
     }
 
+    enum CloudKitDeleteIntentResult {
+        case enqueued
+        case suppressedByOnboarding
+
+        var shouldSkipServerMetadata: Bool {
+            switch self {
+            case .enqueued, .suppressedByOnboarding:
+                return true
+            }
+        }
+    }
+
+    @discardableResult
     func enqueueCloudKitDeleteIfNeeded(
         recordType: CloudKitRecordType,
         syncId: String,
@@ -4652,8 +4817,10 @@ extension CloudKitRecordSyncManager {
         aggregateType: CloudKitAggregateType = .record,
         aggregateName: String? = nil,
         in db: Database
-    ) throws {
-        guard try !OnboardingLocalRecord.isMarked(recordType: recordType, syncId: syncId, in: db) else { return }
+    ) throws -> CloudKitDeleteIntentResult {
+        guard try !OnboardingLocalRecord.isMarked(recordType: recordType, syncId: syncId, in: db) else {
+            return .suppressedByOnboarding
+        }
         try CloudKitOutboxEntry.enqueueDelete(
             recordType: recordType,
             syncId: syncId,
@@ -4662,6 +4829,7 @@ extension CloudKitRecordSyncManager {
             aggregateName: aggregateName,
             in: db
         )
+        return .enqueued
     }
 
     func enqueueCloudKitSaveIfNeeded(recordType: CloudKitRecordType, syncId: String, modificationTime: Int64?, in db: Database) throws {

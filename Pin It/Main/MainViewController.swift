@@ -172,7 +172,7 @@ class MainViewController: UIViewController {
     }
     
     func addAction(text: String) {
-        let editorViewController = EditorViewController(postDetail: Post.Detail(post: Post.placeholder(), images: [], texts: [PostText(postId: -1, content: text, order: 0)])) { detail in
+        let editorViewController = EditorViewController(postDetail: Post.Detail(post: Post.placeholder(), images: [], texts: [PostText(postId: -1, content: text, order: 0)])) { detail, _, _, _ in
             if let postText = detail.texts.first {
                 let post = DataManager.shared.createPost(content: postText.content, actionLink: "", expirationTime: detail.post.expirationTime, styleId: nil)
                 if let style = detail.style, let styleId = style.id, let postId = post?.id {
@@ -748,34 +748,43 @@ extension MainViewController {
 
 extension MainViewController {
     func edit(post: Post.Detail) {
-        let editorViewController = EditorViewController(postDetail: post) { [weak self] detail in
+        let editorViewController = EditorViewController(postDetail: post) { [weak self] detail, styleDidChange, imageDidChange, textDidChange in
             // Apply only the fields the editor can change, against fresh rows;
             // copying whole stale snapshots would revert concurrent CloudKit
             // edits to untouched columns and re-push them with a newer version.
             var didFailAnyUpdate = false
-            for text in detail.texts {
-                guard let textId = text.id else { continue }
-                if !DataManager.shared.updateText(id: textId, mutate: { stored in
-                    stored.content = text.content
-                }) {
-                    didFailAnyUpdate = true
+            if textDidChange {
+                for text in detail.texts {
+                    guard let textId = text.id else { continue }
+                    if !DataManager.shared.updateText(id: textId, mutate: { stored in
+                        stored.content = text.content
+                    }) {
+                        didFailAnyUpdate = true
+                    }
                 }
             }
-            for image in detail.images {
-                guard let imageId = image.id else { continue }
-                if !DataManager.shared.updateImage(id: imageId, mutate: { stored in
-                    stored.processed = image.processed
-                    stored.orientation = image.orientation
-                    stored.minX = image.minX
-                    stored.minY = image.minY
-                    stored.maxX = image.maxX
-                    stored.maxY = image.maxY
-                }) {
-                    didFailAnyUpdate = true
+            if imageDidChange {
+                for image in detail.images {
+                    guard let imageId = image.id else { continue }
+                    let updateResult = DataManager.shared.updateImageReturningReplacedProcessed(id: imageId, mutate: { stored in
+                        stored.processed = image.processed
+                        stored.orientation = image.orientation
+                        stored.minX = image.minX
+                        stored.minY = image.minY
+                        stored.maxX = image.maxX
+                        stored.maxY = image.maxY
+                    })
+                    if updateResult.success {
+                        if let replacedProcessed = updateResult.replacedProcessed {
+                            _ = ImageCacheManager.shared.deleteImage(fileName: replacedProcessed, type: .processed)
+                        }
+                    } else {
+                        didFailAnyUpdate = true
+                    }
                 }
             }
-            if let style = detail.style {
-                if !DataManager.shared.update(post: detail.post, styleId: style.id) {
+            if styleDidChange {
+                if !DataManager.shared.update(post: detail.post, styleId: detail.style?.id) {
                     didFailAnyUpdate = true
                 }
             }
@@ -1069,14 +1078,14 @@ extension MainViewController: CropViewControllerDelegate {
         
         let resizedImage = image.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3)
         
-        if let postImage = currentPostImage, let imageId = postImage.id {
+        if let imageId = currentPostImage?.id {
             // Store the replacement before touching the old file: deleting first
             // would leave the row pointing at a missing file if the store fails
             // (blank cell, and a permanently failing CloudKit upload for this
             // image). Orphans from the failure paths are swept by the cache
             // cleanup on next launch.
             if let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
-                let didUpdate = DataManager.shared.updateImage(id: imageId) { stored in
+                let updateResult = DataManager.shared.updateImageReturningReplacedProcessed(id: imageId) { stored in
                     stored.processed = processed
                     stored.orientation = Int64(angle)
                     stored.minX = Int64(cropRect.minX)
@@ -1084,9 +1093,9 @@ extension MainViewController: CropViewControllerDelegate {
                     stored.maxX = Int64(cropRect.maxX)
                     stored.maxY = Int64(cropRect.maxY)
                 }
-                if didUpdate {
-                    if postImage.processed != processed {
-                        _ = ImageCacheManager.shared.deleteImage(fileName: postImage.processed, type: .processed)
+                if updateResult.success {
+                    if let replacedProcessed = updateResult.replacedProcessed {
+                        _ = ImageCacheManager.shared.deleteImage(fileName: replacedProcessed, type: .processed)
                     }
                 } else {
                     _ = ImageCacheManager.shared.deleteImage(fileName: processed, type: .processed)

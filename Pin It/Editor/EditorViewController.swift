@@ -18,7 +18,7 @@ class EditorViewController: UIViewController {
         var orientation: Int
         var image: UIImage
     }
-    
+
     private var detail: Post.Detail!
     
     private var tableView: UITableView!
@@ -75,7 +75,11 @@ class EditorViewController: UIViewController {
         }
     }
     
-    private var editorClosure: ((Post.Detail) -> ())?
+    private var originalStyleId: Int64?
+    private var didSelectStyle = false
+    private var imageDidChange = false
+    private var textDidChange = false
+    private var editorClosure: ((Post.Detail, Bool, Bool, Bool) -> ())?
     
     enum Section: Int, Hashable {
         case text
@@ -175,9 +179,10 @@ class EditorViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
     
-    convenience init(postDetail: Post.Detail, editorClosure: @escaping (Post.Detail) -> ()) {
+    convenience init(postDetail: Post.Detail, editorClosure: @escaping (Post.Detail, Bool, Bool, Bool) -> ()) {
         self.init()
         self.detail = postDetail
+        self.originalStyleId = postDetail.style?.id
         self.style = detail.style
         self.editorClosure = editorClosure
         
@@ -254,6 +259,7 @@ class EditorViewController: UIViewController {
                     cell.tintColor = .systemRed
                     cell.update(text: content, placeholder: String(localized: "editor.text.placeholder"))
                     cell.textDidChanged = { [weak self] text in
+                        self?.textDidChange = true
                         self?.text = text
                     }
                     self.commentCell = cell
@@ -282,11 +288,11 @@ class EditorViewController: UIViewController {
                 if let cell = cell as? OptionCell<PostStyle> {
                     cell.update(with: style)
                     let noneAction = UIAction(title: PostStyle.noneTitle, state: style == nil ? .on : .off) { [weak self] _ in
-                        self?.style = nil
+                        self?.selectStyle(nil)
                     }
                     let actions = DataManager.shared.fetchAllStyles().map { target in
                         let action = UIAction(title: target.title, subtitle: target.subtitle, state: style == target ? .on : .off) { [weak self] _ in
-                            self?.style = target
+                            self?.selectStyle(target)
                         }
                         return action
                     }
@@ -376,11 +382,13 @@ class EditorViewController: UIViewController {
         dismiss(animated: ConsideringUser.animated) { [weak self] in
             guard let self = self else { return }
             self.saveToDetail()
-            self.editorClosure?(self.detail)
+            let styleDidChange = self.didSelectStyle || self.originalStyleId != self.detail.style?.id
+            self.editorClosure?(self.detail, styleDidChange, self.imageDidChange, self.textDidChange)
         }
     }
-    
+
     private func saveToDetail() {
+        imageDidChange = false
         saveImageInfoToDetail()
         detail.style = style
     }
@@ -393,26 +401,40 @@ class EditorViewController: UIViewController {
         let resizedImage = image.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3)
         
         if var postImage = detail.images.first {
+            let orientation = Int64(imageInfo.orientation)
+            let minX = Int64(cropRect.minX)
+            let minY = Int64(cropRect.minY)
+            let maxX = Int64(cropRect.maxX)
+            let maxY = Int64(cropRect.maxY)
+            guard postImage.orientation != orientation
+                || postImage.minX != minX
+                || postImage.minY != minY
+                || postImage.maxX != maxX
+                || postImage.maxY != maxY else {
+                return
+            }
             // Store the replacement before touching the old file: deleting
-            // first would leave the row pointing at a missing file if the
-            // store fails (blank cell, and a permanently failing CloudKit
-            // upload for this image). Same pattern as the crop path in
-            // MainViewController.
+            // first would leave the row pointing at a missing file if the DB
+            // update fails. The caller deletes the actual replaced file only
+            // after the row update commits; a failed edit keeps the replacement
+            // available for save-as-new conflict recovery.
             if let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
-                let previousProcessed = postImage.processed
                 postImage.processed = processed
-                postImage.orientation = Int64(imageInfo.orientation)
-                postImage.minX = Int64(cropRect.minX)
-                postImage.minY = Int64(cropRect.minY)
-                postImage.maxX = Int64(cropRect.maxX)
-                postImage.maxY = Int64(cropRect.maxY)
+                postImage.orientation = orientation
+                postImage.minX = minX
+                postImage.minY = minY
+                postImage.maxX = maxX
+                postImage.maxY = maxY
 
                 detail.images[0] = postImage
-                if previousProcessed != processed {
-                    _ = ImageCacheManager.shared.deleteImage(fileName: previousProcessed, type: .processed)
-                }
+                imageDidChange = true
             }
         }
+    }
+
+    private func selectStyle(_ style: PostStyle?) {
+        didSelectStyle = true
+        self.style = style
     }
     
     @objc

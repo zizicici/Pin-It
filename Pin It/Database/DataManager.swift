@@ -214,6 +214,13 @@ final class DataManager {
     public func updateImage(id: Int64, mutate: (inout PostImage) -> Void) -> Bool {
         return AppDatabase.shared.updateImage(id: id, mutate: mutate)
     }
+
+    public func updateImageReturningReplacedProcessed(
+        id: Int64,
+        mutate: (inout PostImage) -> Void
+    ) -> (success: Bool, replacedProcessed: String?) {
+        return AppDatabase.shared.updateImageReturningReplacedProcessed(id: id, mutate: mutate)
+    }
     
     public func delete(post: Post) -> Bool {
         guard let id = post.id, let detail = fetchPostDetail(for: id) else { return false }
