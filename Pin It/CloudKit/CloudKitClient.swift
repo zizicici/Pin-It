@@ -11,6 +11,7 @@ protocol CloudKitDatabaseClient {
     var database: CKDatabase { get }
 
     func accountStatus() async throws -> CKAccountStatus
+    func userRecordID() async throws -> CKRecord.ID
     func add(_ operation: CKDatabaseOperation)
 }
 
@@ -32,6 +33,18 @@ final class LiveCloudKitDatabaseClient: CloudKitDatabaseClient {
                     continuation.resume(throwing: error)
                 } else {
                     continuation.resume(returning: status)
+                }
+            }
+        }
+    }
+
+    func userRecordID() async throws -> CKRecord.ID {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CKRecord.ID, Error>) in
+            container.fetchUserRecordID { recordID, error in
+                if let recordID {
+                    continuation.resume(returning: recordID)
+                } else {
+                    continuation.resume(throwing: error ?? CKError(.internalError))
                 }
             }
         }

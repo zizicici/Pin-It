@@ -194,6 +194,8 @@ extension CloudKitOutboxEntry {
                 recordType: recordType,
                 recordName: entry.recordName,
                 deletionTime: entry.modificationTime,
+                aggregateType: CloudKitAggregateType(rawValue: entry.aggregateType),
+                aggregateName: entry.aggregateName == entry.recordName ? nil : entry.aggregateName,
                 in: db
             )
         }
@@ -223,24 +225,44 @@ extension CloudKitOutboxEntry {
         )
     }
 
-    static func enqueueDelete(recordType: CloudKitRecordType, syncId: String, deletionTime: Int64? = nil, in db: Database) throws {
+    static func enqueueDelete(
+        recordType: CloudKitRecordType,
+        syncId: String,
+        deletionTime: Int64? = nil,
+        aggregateType: CloudKitAggregateType = .record,
+        aggregateName: String? = nil,
+        in db: Database
+    ) throws {
         try enqueueDelete(
             recordType: recordType,
             recordName: CloudKitRecordName.make(recordType, syncId: syncId),
             deletionTime: deletionTime,
+            aggregateType: aggregateType,
+            aggregateName: aggregateName,
             in: db
         )
     }
 
-    static func enqueueDelete(recordType: CloudKitRecordType, recordName: String, deletionTime: Int64? = nil, in db: Database) throws {
+    /// `aggregateType`/`aggregateName` mark a delete as part of a post/style
+    /// cascade (the parent's record name). Cascade members are arbitrated as
+    /// ONE graph-level intent on both the apply and the send path — a lone
+    /// child delete keeps the default per-record `.record` semantics.
+    static func enqueueDelete(
+        recordType: CloudKitRecordType,
+        recordName: String,
+        deletionTime: Int64? = nil,
+        aggregateType: CloudKitAggregateType = .record,
+        aggregateName: String? = nil,
+        in db: Database
+    ) throws {
         try enqueue(
             CloudKitOutboxEntry(
                 recordType: recordType,
                 recordName: recordName,
                 operation: .delete,
                 modificationTime: deletionTime ?? db.transactionDate.nanoSecondSince1970,
-                aggregateType: .record,
-                aggregateName: recordName,
+                aggregateType: aggregateType,
+                aggregateName: aggregateName ?? recordName,
                 localVersion: deletionTime ?? db.transactionDate.nanoSecondSince1970,
                 timestamp: db.transactionDate.nanoSecondSince1970
             ),
@@ -413,12 +435,14 @@ extension CloudKitOutboxEntry {
             // store one when remoteDataMayExist). Fall back to lastSyncedVersion+1
             // — conservative: server-equal-or-newer wins via serverStateWins, so a
             // remote edit made after our last sync isn't tombstoned.
-            let deletionTime = tombstonesByRecordName[metadata.recordName]?.deletionTime
-                ?? (metadata.lastSyncedVersion + 1)
+            let tombstone = tombstonesByRecordName[metadata.recordName]
+            let deletionTime = tombstone?.deletionTime ?? (metadata.lastSyncedVersion + 1)
             try CloudKitOutboxEntry.enqueueDelete(
                 recordType: recordType,
                 recordName: metadata.recordName,
                 deletionTime: deletionTime,
+                aggregateType: tombstone?.cascadeAggregateType ?? .record,
+                aggregateName: tombstone?.aggregateName,
                 in: db
             )
         }
@@ -511,6 +535,16 @@ extension CloudKitOutboxEntry {
 
 }
 
+/// Why zone continuity was lost — decides the keep-vs-prune default for a
+/// marker-less but populated zone in the discontinuity probe.
+enum ZoneDiscontinuityCause: Int {
+    /// zoneNotFound / a zone-deletion event: the zone may have been recreated
+    /// (and repopulated by a peer) since this device last saw it.
+    case zoneLost = 1
+    /// The change token expired against a zone whose identity is intact.
+    case tokenExpired = 2
+}
+
 struct CloudKitSyncState: Codable, FetchableRecord, MutablePersistableRecord, TableRecord {
     static let databaseTableName = "cloudkit_sync_state"
 
@@ -523,6 +557,8 @@ struct CloudKitSyncState: Codable, FetchableRecord, MutablePersistableRecord, Ta
         static let preserveLocalOnNextFullFetch = "preserve_local_on_next_full_fetch"
         static let zoneGeneration = "zone_generation"
         static let pendingZoneDiscontinuityProbe = "pending_zone_discontinuity_probe"
+        static let accountUserRecordName = "account_user_record_name"
+        static let pendingFullFetchRecovery = "pending_full_fetch_recovery"
     }
 
     enum Columns {
@@ -543,6 +579,10 @@ struct CloudKitLocalTombstone: Codable, FetchableRecord, MutablePersistableRecor
     var deletedRecordType: String
     var deletionTime: Int64
     var updatedAt: Int64
+    /// Set when this delete is part of a post/style cascade: the aggregate
+    /// type and the PARENT's record name. Nil for individual deletes.
+    var aggregateType: String?
+    var aggregateName: String?
 
     enum Columns {
         static let recordName = Column(CodingKeys.recordName)
@@ -554,22 +594,44 @@ struct CloudKitLocalTombstone: Codable, FetchableRecord, MutablePersistableRecor
         case deletedRecordType = "deleted_record_type"
         case deletionTime = "deletion_time"
         case updatedAt = "updated_at"
+        case aggregateType = "aggregate_type"
+        case aggregateName = "aggregate_name"
     }
 }
 
 extension CloudKitLocalTombstone {
-    init(recordType: CloudKitRecordType, recordName: String, deletionTime: Int64, updatedAt: Int64) {
+    init(
+        recordType: CloudKitRecordType,
+        recordName: String,
+        deletionTime: Int64,
+        updatedAt: Int64,
+        aggregateType: CloudKitAggregateType? = nil,
+        aggregateName: String? = nil
+    ) {
         self.recordName = recordName
         self.deletedRecordType = recordType.rawValue
         self.deletionTime = deletionTime
         self.updatedAt = updatedAt
+        self.aggregateType = aggregateType.flatMap { $0 == .record || $0 == .setting ? nil : $0.rawValue }
+        self.aggregateName = self.aggregateType == nil ? nil : aggregateName
     }
 
     var cloudKitRecordType: CloudKitRecordType? {
         CloudKitRecordType(rawValue: deletedRecordType)
     }
 
-    static func store(recordType: CloudKitRecordType, recordName: String, deletionTime: Int64, in db: Database) throws {
+    var cascadeAggregateType: CloudKitAggregateType? {
+        aggregateType.flatMap(CloudKitAggregateType.init(rawValue:))
+    }
+
+    static func store(
+        recordType: CloudKitRecordType,
+        recordName: String,
+        deletionTime: Int64,
+        aggregateType: CloudKitAggregateType? = nil,
+        aggregateName: String? = nil,
+        in db: Database
+    ) throws {
         if let existing = try CloudKitLocalTombstone.fetchOne(db, key: recordName),
            existing.deletionTime >= deletionTime {
             return
@@ -579,7 +641,9 @@ extension CloudKitLocalTombstone {
             recordType: recordType,
             recordName: recordName,
             deletionTime: deletionTime,
-            updatedAt: try db.transactionDate.nanoSecondSince1970
+            updatedAt: try db.transactionDate.nanoSecondSince1970,
+            aggregateType: aggregateType,
+            aggregateName: aggregateName
         )
         try tombstone.save(db)
     }
@@ -590,13 +654,24 @@ extension CloudKitLocalTombstone {
     }
 }
 
+struct CloudKitSyncStateDecodingError: Error {
+    var underlying: Error
+}
+
 extension CloudKitSyncState {
     static func syncEngineStateSerialization(in db: Database) throws -> CKSyncEngine.State.Serialization? {
         guard let state = try CloudKitSyncState.fetchOne(db, key: Key.syncEngineState),
               let data = state.value else {
             return nil
         }
-        return try JSONDecoder().decode(CKSyncEngine.State.Serialization.self, from: data)
+        do {
+            return try JSONDecoder().decode(CKSyncEngine.State.Serialization.self, from: data)
+        } catch {
+            // Distinguished from DB errors so the caller can self-heal:
+            // a corrupt/undecodable stored state would otherwise fail every
+            // engine construction forever, permanently wedging sync.
+            throw CloudKitSyncStateDecodingError(underlying: error)
+        }
     }
 
     static func setSyncEngineStateSerialization(_ serialization: CKSyncEngine.State.Serialization?, in db: Database) throws {
@@ -650,12 +725,43 @@ extension CloudKitSyncState {
         try deleteValue(forKey: Key.zoneGeneration, in: db)
     }
 
+    /// The CloudKit user identity (the container user record's name) the local
+    /// sync bookkeeping belongs to. Deliberately survives the disable cleanup:
+    /// it is the only way to detect an iCloud account switch that happened
+    /// while sync was off, where no stored engine state remains for a fresh
+    /// CKSyncEngine to surface `.switchAccounts` from.
+    static func accountUserRecordName(in db: Database) throws -> String? {
+        guard let state = try CloudKitSyncState.fetchOne(db, key: Key.accountUserRecordName),
+              let data = state.value else {
+            return nil
+        }
+        return String(data: data, encoding: .utf8)
+    }
+
+    static func setAccountUserRecordName(_ recordName: String, in db: Database) throws {
+        var state = CloudKitSyncState(key: Key.accountUserRecordName, value: recordName.data(using: .utf8))
+        try state.save(db)
+    }
+
+    static func clearAccountUserRecordName(in db: Database) throws {
+        try deleteValue(forKey: Key.accountUserRecordName, in: db)
+    }
+
     /// Set when the zone disappeared (deleted by a peer, zoneNotFound, expired
     /// change token). The next full fetch decides keep-vs-prune by comparing the
     /// fetched reset marker against the stored zone generation, and clears this
-    /// flag atomically inside the apply transaction.
-    static func markZoneDiscontinuityProbe(in db: Database) throws {
-        try setIntegerValue(1, forKey: Key.pendingZoneDiscontinuityProbe, in: db)
+    /// flag atomically inside the apply transaction. The stored value records
+    /// WHY continuity was lost — a marker-less but populated zone is only safe
+    /// to prune against when the cause proves zone identity was kept
+    /// (`tokenExpired`); after a `zoneLost` the zone may have been recreated
+    /// and repopulated by a single peer, so absent records must merge, not die.
+    static func markZoneDiscontinuityProbe(cause: ZoneDiscontinuityCause, in db: Database) throws {
+        // A zoneLost probe must not be downgraded by a later tokenExpired
+        // arming (the recreated zone invalidates old tokens, so both arrive).
+        if let existing = try zoneDiscontinuityProbeCause(in: db), existing == .zoneLost {
+            return
+        }
+        try setIntegerValue(Int64(cause.rawValue), forKey: Key.pendingZoneDiscontinuityProbe, in: db)
     }
 
     static func clearZoneDiscontinuityProbe(in db: Database) throws {
@@ -664,6 +770,33 @@ extension CloudKitSyncState {
 
     static func isZoneDiscontinuityProbePending(in db: Database) throws -> Bool {
         (try integerValue(forKey: Key.pendingZoneDiscontinuityProbe, in: db) ?? 0) != 0
+    }
+
+    static func zoneDiscontinuityProbeCause(in db: Database) throws -> ZoneDiscontinuityCause? {
+        guard let value = try integerValue(forKey: Key.pendingZoneDiscontinuityProbe, in: db), value != 0 else {
+            return nil
+        }
+        // Legacy probes stored 1, which maps to zoneLost — the conservative
+        // (keep + merge) branch.
+        return ZoneDiscontinuityCause(rawValue: Int(value)) ?? .zoneLost
+    }
+
+    /// Set when a losing cascade delete was aborted mid-send: its outbox
+    /// entries, local tombstones and metadata were dropped, and the surviving
+    /// family must be restored from the server by a full re-fetch. Durable so
+    /// a crash between the abort transaction and the re-fetch can't lose the
+    /// restore intent; consumed inside the engine-state reset that starts the
+    /// re-fetch.
+    static func markPendingFullFetchRecovery(in db: Database) throws {
+        try setIntegerValue(1, forKey: Key.pendingFullFetchRecovery, in: db)
+    }
+
+    static func clearPendingFullFetchRecovery(in db: Database) throws {
+        try deleteValue(forKey: Key.pendingFullFetchRecovery, in: db)
+    }
+
+    static func isPendingFullFetchRecovery(in db: Database) throws -> Bool {
+        (try integerValue(forKey: Key.pendingFullFetchRecovery, in: db) ?? 0) != 0
     }
 
     static func preserveLocalRecordsForNextFullFetch(in db: Database) throws {

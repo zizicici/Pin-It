@@ -748,39 +748,106 @@ extension MainViewController {
 
 extension MainViewController {
     func edit(post: Post.Detail) {
-        let editorViewController = EditorViewController(postDetail: post) { detail in
+        let editorViewController = EditorViewController(postDetail: post) { [weak self] detail in
             // Apply only the fields the editor can change, against fresh rows;
             // copying whole stale snapshots would revert concurrent CloudKit
             // edits to untouched columns and re-push them with a newer version.
+            var didFailAnyUpdate = false
             for text in detail.texts {
                 guard let textId = text.id else { continue }
-                _ = DataManager.shared.updateText(id: textId) { stored in
+                if !DataManager.shared.updateText(id: textId, mutate: { stored in
                     stored.content = text.content
+                }) {
+                    didFailAnyUpdate = true
                 }
             }
             for image in detail.images {
                 guard let imageId = image.id else { continue }
-                _ = DataManager.shared.updateImage(id: imageId) { stored in
+                if !DataManager.shared.updateImage(id: imageId, mutate: { stored in
                     stored.processed = image.processed
                     stored.orientation = image.orientation
                     stored.minX = image.minX
                     stored.minY = image.minY
                     stored.maxX = image.maxX
                     stored.maxY = image.maxY
+                }) {
+                    didFailAnyUpdate = true
                 }
             }
             if let style = detail.style {
-                _ = DataManager.shared.update(post: detail.post, styleId: style.id)
-            }
-            if let postId = detail.post.id {
-                _ = DataManager.shared.updatePost(id: postId) { stored in
-                    stored.expirationTime = detail.post.expirationTime
-                    stored.actionLink = detail.post.actionLink
+                if !DataManager.shared.update(post: detail.post, styleId: style.id) {
+                    didFailAnyUpdate = true
                 }
             }
+            if let postId = detail.post.id {
+                if !DataManager.shared.updatePost(id: postId, mutate: { stored in
+                    stored.expirationTime = detail.post.expirationTime
+                    stored.actionLink = detail.post.actionLink
+                }) {
+                    didFailAnyUpdate = true
+                }
+            }
+            if didFailAnyUpdate {
+                self?.presentEditConflictAlertIfPostDeleted(for: detail)
+            }
         }
-        
+
         navigationController?.present(UINavigationController(rootViewController: editorViewController), animated: ConsideringUser.animated)
+    }
+
+    /// The post was deleted on another device while the editor was open
+    /// (deletion-wins): the saves above silently hit missing rows and the
+    /// whole edit session would vanish without a word. Surface it, and offer
+    /// to re-create the content as a NEW post where it is still recoverable
+    /// (text is in memory; image files may already be gone with the deleted
+    /// rows).
+    func presentEditConflictAlertIfPostDeleted(for detail: Post.Detail) {
+        guard let postId = detail.post.id,
+              DataManager.shared.fetchPostDetail(for: [postId]).isEmpty else {
+            // The rows still exist — the failures were not a remote deletion.
+            return
+        }
+        let alertController = UIAlertController(
+            title: String(localized: "pin.editConflict.alert.title"),
+            message: String(localized: "pin.editConflict.alert.message"),
+            preferredStyle: .alert
+        )
+        var styleId: Int64?
+        if let editedStyleId = detail.style?.id, DataManager.shared.fetchStyle(by: editedStyleId) != nil {
+            styleId = editedStyleId
+        }
+        let textContent = detail.texts.map(\.content).joined(separator: "\n")
+        let firstImage = detail.images.first
+        let imageFilesAvailable = firstImage.map { image in
+            ImageCacheManager.shared.getURL(name: image.original, type: .original) != nil
+                && ImageCacheManager.shared.getURL(name: image.processed, type: .processed) != nil
+        } ?? false
+        if !textContent.isEmpty {
+            alertController.addAction(UIAlertAction(title: String(localized: "pin.editConflict.alert.saveAsNew"), style: .default) { _ in
+                _ = DataManager.shared.createPost(
+                    content: textContent,
+                    actionLink: detail.post.actionLink,
+                    isPinned: false,
+                    expirationTime: detail.post.expirationTime,
+                    styleId: styleId
+                )
+            })
+        } else if let firstImage, imageFilesAvailable {
+            alertController.addAction(UIAlertAction(title: String(localized: "pin.editConflict.alert.saveAsNew"), style: .default) { _ in
+                _ = DataManager.shared.createPost(
+                    original: firstImage.original,
+                    processed: firstImage.processed,
+                    rect: firstImage.rect,
+                    orientation: Int(firstImage.orientation),
+                    actionLink: detail.post.actionLink,
+                    isPinned: false,
+                    expirationTime: detail.post.expirationTime,
+                    styleId: styleId
+                )
+            })
+        }
+        alertController.addAction(UIAlertAction(title: String(localized: "pin.editConflict.alert.discard"), style: .cancel))
+        present(alertController, animated: ConsideringUser.animated)
     }
     
     func deleteAction(for post: Post.Detail) {

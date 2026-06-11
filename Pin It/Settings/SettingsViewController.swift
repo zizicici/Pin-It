@@ -442,6 +442,10 @@ class SettingsViewController: UIViewController {
                 return cell
             case .general(let item):
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                // The busy branches (rebuild/clear/reset) disable interaction;
+                // the shared reuse pool must reset it, or recycled cells stay
+                // permanently dead on unrelated rows.
+                cell.isUserInteractionEnabled = true
                 cell.accessoryType = .disclosureIndicator
                 var content = UIListContentConfiguration.valueCell()
                 content.text = identifier.title
@@ -451,6 +455,10 @@ class SettingsViewController: UIViewController {
                 return cell
             case .automatic(let item):
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                // The busy branches (rebuild/clear/reset) disable interaction;
+                // the shared reuse pool must reset it, or recycled cells stay
+                // permanently dead on unrelated rows.
+                cell.isUserInteractionEnabled = true
                 cell.accessoryType = .disclosureIndicator
                 var content = UIListContentConfiguration.valueCell()
                 content.text = identifier.title
@@ -464,6 +472,10 @@ class SettingsViewController: UIViewController {
                 return cell
             case .action(let item):
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                // The busy branches (rebuild/clear/reset) disable interaction;
+                // the shared reuse pool must reset it, or recycled cells stay
+                // permanently dead on unrelated rows.
+                cell.isUserInteractionEnabled = true
                 cell.accessoryType = .disclosureIndicator
                 var content = UIListContentConfiguration.valueCell()
                 content.text = identifier.title
@@ -473,6 +485,10 @@ class SettingsViewController: UIViewController {
                 return cell
             case .advanced(let item):
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                // The busy branches (rebuild/clear/reset) disable interaction;
+                // the shared reuse pool must reset it, or recycled cells stay
+                // permanently dead on unrelated rows.
+                cell.isUserInteractionEnabled = true
                 cell.accessoryType = .disclosureIndicator
                 var content = UIListContentConfiguration.valueCell()
                 content.text = identifier.title
@@ -482,6 +498,10 @@ class SettingsViewController: UIViewController {
                 return cell
             case .defaultStyle(let style):
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                // The busy branches (rebuild/clear/reset) disable interaction;
+                // the shared reuse pool must reset it, or recycled cells stay
+                // permanently dead on unrelated rows.
+                cell.isUserInteractionEnabled = true
                 cell.accessoryType = .disclosureIndicator
                 var content = UIListContentConfiguration.valueCell()
                 content.text = identifier.title
@@ -491,6 +511,10 @@ class SettingsViewController: UIViewController {
                 return cell
             case .style:
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                // The busy branches (rebuild/clear/reset) disable interaction;
+                // the shared reuse pool must reset it, or recycled cells stay
+                // permanently dead on unrelated rows.
+                cell.isUserInteractionEnabled = true
                 cell.accessoryType = .disclosureIndicator
                 var content = UIListContentConfiguration.valueCell()
                 content.text = identifier.title
@@ -500,6 +524,10 @@ class SettingsViewController: UIViewController {
                 return cell
             case .addStyle:
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                // The busy branches (rebuild/clear/reset) disable interaction;
+                // the shared reuse pool must reset it, or recycled cells stay
+                // permanently dead on unrelated rows.
+                cell.isUserInteractionEnabled = true
                 cell.accessoryType = .none
                 var content = UIListContentConfiguration.subtitleCell()
                 content.text = identifier.title
@@ -509,6 +537,10 @@ class SettingsViewController: UIViewController {
                 return cell
             case .shortcuts(let item):
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                // The busy branches (rebuild/clear/reset) disable interaction;
+                // the shared reuse pool must reset it, or recycled cells stay
+                // permanently dead on unrelated rows.
+                cell.isUserInteractionEnabled = true
                 cell.accessoryType = .disclosureIndicator
                 var content = UIListContentConfiguration.subtitleCell()
                 content.text = identifier.title
@@ -519,6 +551,10 @@ class SettingsViewController: UIViewController {
                 return cell
             case .rebuildCloudKitSync:
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                // The busy branches (rebuild/clear/reset) disable interaction;
+                // the shared reuse pool must reset it, or recycled cells stay
+                // permanently dead on unrelated rows.
+                cell.isUserInteractionEnabled = true
                 cell.accessoryType = .none
                 var content = UIListContentConfiguration.subtitleCell()
                 content.text = identifier.title
@@ -530,6 +566,10 @@ class SettingsViewController: UIViewController {
                 return cell
             case .clearCloudKitData:
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                // The busy branches (rebuild/clear/reset) disable interaction;
+                // the shared reuse pool must reset it, or recycled cells stay
+                // permanently dead on unrelated rows.
+                cell.isUserInteractionEnabled = true
                 cell.accessoryType = .none
                 var content = UIListContentConfiguration.subtitleCell()
                 content.text = identifier.title
@@ -541,6 +581,10 @@ class SettingsViewController: UIViewController {
                 return cell
             case .reset:
                 let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
+                // The busy branches (rebuild/clear/reset) disable interaction;
+                // the shared reuse pool must reset it, or recycled cells stay
+                // permanently dead on unrelated rows.
+                cell.isUserInteractionEnabled = true
                 cell.accessoryType = .none
                 var content = UIListContentConfiguration.subtitleCell()
                 content.text = identifier.title
@@ -751,7 +795,7 @@ extension SettingsViewController: StyleEditorDelegate {
         if let styleId = style.id {
             // Update: the editor form covers every payload field, so copy them
             // all onto the fresh row; identity and sync metadata stay untouched.
-            _ = DataManager.shared.updateStyle(id: styleId) { stored in
+            let updated = DataManager.shared.updateStyle(id: styleId) { stored in
                 stored.name = style.name
                 stored.lockBackgroundColor = style.lockBackgroundColor
                 stored.lockTextColor = style.lockTextColor
@@ -766,10 +810,44 @@ extension SettingsViewController: StyleEditorDelegate {
                 stored.imageDisplayMode = style.imageDisplayMode
                 stored.controlAlpha = style.controlAlpha
             }
+            if !updated, DataManager.shared.fetchStyle(by: styleId) == nil {
+                // The delegate fires BEFORE the editor dismisses itself;
+                // presenting while the editor modal is still up would be
+                // silently refused by UIKit. Dismiss first, then present.
+                if presentedViewController != nil {
+                    dismiss(animated: ConsideringUser.animated) { [weak self] in
+                        self?.presentStyleEditConflictAlert(for: style)
+                    }
+                } else {
+                    presentStyleEditConflictAlert(for: style)
+                }
+            }
         } else {
             // Create
             _ = DataManager.shared.add(style: style)
         }
+    }
+
+    /// The style was deleted on another device while the editor was open
+    /// (deletion-wins): the save above silently hit a missing row and the
+    /// whole edit session would vanish without a word. Every edited field is
+    /// still in memory — offer to re-create it as a NEW style.
+    private func presentStyleEditConflictAlert(for style: PostStyle) {
+        let alertController = UIAlertController(
+            title: String(localized: "pin.editConflict.alert.title"),
+            message: String(localized: "pin.editConflict.alert.message"),
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: String(localized: "pin.editConflict.alert.saveAsNew"), style: .default) { _ in
+            var newStyle = style
+            newStyle.id = nil
+            newStyle.syncId = UUID().uuidString
+            newStyle.creationTime = nil
+            newStyle.modificationTime = nil
+            _ = DataManager.shared.add(style: newStyle)
+        })
+        alertController.addAction(UIAlertAction(title: String(localized: "pin.editConflict.alert.discard"), style: .cancel))
+        present(alertController, animated: ConsideringUser.animated)
     }
 }
 

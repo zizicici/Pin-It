@@ -541,6 +541,17 @@ final class AppDatabase {
             )
         }
 
+        migrator.registerMigration("cloudkit____tombstone____cascade") { db in
+            // Cascade tags: a tombstone created by deleting a whole post/style
+            // records which graph it belonged to (and the parent's record
+            // name), so delete-vs-edit conflicts are arbitrated per graph
+            // instead of per record. Nullable; nil means an individual delete.
+            try db.alter(table: "cloudkit_tombstone") { table in
+                table.add(column: "aggregate_type", .text)
+                table.add(column: "aggregate_name", .text)
+            }
+        }
+
         return migrator
     }
 
@@ -818,14 +829,16 @@ extension AppDatabase {
                 let decorations = try PostDecoration
                     .filter(Column(PostDecoration.CodingKeys.postId) == postId)
                     .fetchAll(db)
+                let cascadeName = storedPost.map { CloudKitRecordName.make(.post, syncId: $0.syncId) }
+                let cascadeType: CloudKitAggregateType = cascadeName == nil ? .record : .postGraph
                 for image in images {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
                 }
                 for text in texts {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
                 }
                 for decoration in decorations {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
                 }
                 try PostImage.deleteAll(db, ids: images.compactMap(\.id))
                 try PostText.deleteAll(db, ids: texts.compactMap(\.id))
@@ -862,10 +875,13 @@ extension AppDatabase {
                 var deletedTexts: [PostText] = []
                 var deletedDecorations: [PostDecoration] = []
                 for postId in ids {
+                    var cascadeName: String?
                     if let storedPost = try Post.fetchOne(db, id: postId) {
                         try enqueueCloudKitDeleteIfNeeded(recordType: .post, syncId: storedPost.syncId, in: db)
                         deletedPosts.append(storedPost)
+                        cascadeName = CloudKitRecordName.make(.post, syncId: storedPost.syncId)
                     }
+                    let cascadeType: CloudKitAggregateType = cascadeName == nil ? .record : .postGraph
                     let images = try PostImage
                         .filter(Column(PostImage.CodingKeys.postId) == postId)
                         .fetchAll(db)
@@ -876,13 +892,13 @@ extension AppDatabase {
                         .filter(Column(PostDecoration.CodingKeys.postId) == postId)
                         .fetchAll(db)
                     for image in images {
-                        try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, in: db)
+                        try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
                     }
                     for text in texts {
-                        try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, in: db)
+                        try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
                     }
                     for decoration in decorations {
-                        try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, in: db)
+                        try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
                     }
                     deletedImages.append(contentsOf: images)
                     deletedTexts.append(contentsOf: texts)
@@ -1253,8 +1269,10 @@ extension AppDatabase {
                     .filter(Column(PostDecoration.CodingKeys.styleId) == styleId)
                     .fetchAll(db)
                 let decorationDeletionTime = try db.transactionDate.nanoSecondSince1970
+                let cascadeName = storedStyle.map { CloudKitRecordName.make(.style, syncId: $0.syncId) }
+                let cascadeType: CloudKitAggregateType = cascadeName == nil ? .record : .styleGraph
                 for decoration in decorations {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
                     // Cascading a decoration delete changes the post graph, same
                     // as delete(decoration:) — keep the aggregate version in step.
                     try touchPostForCloudKit(postId: decoration.postId, modificationTime: decorationDeletionTime, in: db)
@@ -1442,10 +1460,22 @@ private extension AppDatabase {
         }
     }
 
-    func enqueueCloudKitDeleteIfNeeded(recordType: CloudKitRecordType, syncId: String, in db: Database) throws {
+    func enqueueCloudKitDeleteIfNeeded(
+        recordType: CloudKitRecordType,
+        syncId: String,
+        aggregateType: CloudKitAggregateType = .record,
+        aggregateName: String? = nil,
+        in db: Database
+    ) throws {
         guard try !OnboardingLocalRecord.isMarked(recordType: recordType, syncId: syncId, in: db) else { return }
         if tracksLocalCloudKitChanges() {
-            try CloudKitOutboxEntry.enqueueDelete(recordType: recordType, syncId: syncId, in: db)
+            try CloudKitOutboxEntry.enqueueDelete(
+                recordType: recordType,
+                syncId: syncId,
+                aggregateType: aggregateType,
+                aggregateName: aggregateName,
+                in: db
+            )
         } else if CloudKitSync.remoteDataMayExist {
             // Sync is off but a previous session synced this record. Stash a real
             // tombstone with the actual deletion time so the next re-enable's
@@ -1457,6 +1487,8 @@ private extension AppDatabase {
                 recordType: recordType,
                 recordName: recordName,
                 deletionTime: try db.transactionDate.nanoSecondSince1970,
+                aggregateType: aggregateType,
+                aggregateName: aggregateName,
                 in: db
             )
         }

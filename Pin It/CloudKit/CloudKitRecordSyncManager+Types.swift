@@ -11,6 +11,22 @@ extension CloudKitRecordSyncManager {
         var deletedRecordType: CloudKitRecordType
         var deletedRecordName: String
         var deletionTime: Int64
+        /// Record name of the post/style whose cascade this tombstone belongs
+        /// to (parsed from `postSyncId`/`styleSyncId` on the tombstone record).
+        /// Nil for individual deletes and for tombstones written by app
+        /// versions that predate cascade tagging.
+        var cascadeParentRecordName: String?
+
+        var cascadeAggregateType: CloudKitAggregateType? {
+            guard let cascadeParentRecordName else { return nil }
+            if CloudKitRecordName.syncId(from: cascadeParentRecordName, type: .post) != nil {
+                return .postGraph
+            }
+            if CloudKitRecordName.syncId(from: cascadeParentRecordName, type: .style) != nil {
+                return .styleGraph
+            }
+            return nil
+        }
     }
 
     struct PhysicalDeletedRecord {

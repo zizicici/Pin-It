@@ -67,10 +67,28 @@ extension CloudKitRecordSyncManager {
         let deletedRecordType = stringValue(Field.deletedRecordType, in: record)
             .flatMap(CloudKitRecordType.init(rawValue:))
             ?? type
+        // Cascade tag: payload fields are nilled on every tombstone, so a
+        // surviving postSyncId/styleSyncId can only be the cascade parent
+        // reference written by makeDeletedRecord. Posts/styles are cascade
+        // roots, never members.
+        var cascadeParentRecordName: String?
+        switch deletedRecordType {
+        case .text, .image:
+            cascadeParentRecordName = stringValue(Field.postSyncId, in: record)
+                .map { CloudKitRecordName.make(.post, syncId: $0) }
+        case .decoration:
+            cascadeParentRecordName = stringValue(Field.postSyncId, in: record)
+                .map { CloudKitRecordName.make(.post, syncId: $0) }
+                ?? stringValue(Field.styleSyncId, in: record)
+                .map { CloudKitRecordName.make(.style, syncId: $0) }
+        case .post, .style, .setting:
+            cascadeParentRecordName = nil
+        }
         return RemoteTombstone(
             deletedRecordType: deletedRecordType,
             deletedRecordName: deletedRecordName,
-            deletionTime: int64Value(Field.deletionTime, in: record) ?? modificationTime(of: record)
+            deletionTime: int64Value(Field.deletionTime, in: record) ?? modificationTime(of: record),
+            cascadeParentRecordName: cascadeParentRecordName
         )
     }
 
