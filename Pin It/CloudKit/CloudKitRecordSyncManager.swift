@@ -284,7 +284,10 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
 
     private func sync() async {
         guard CloudKitSync.current == .enable else {
-            endBackgroundTaskIfNeeded()
+            // IfIdle, not Needed: clearCloudKitData runs while sync is
+            // DISABLED and holds the shared background task — a stray sync
+            // trigger landing here must not strip its keep-alive mid-clear.
+            endBackgroundTaskIfIdle()
             return
         }
         guard !CloudKitSync.pendingRemoteReset else {
@@ -780,10 +783,14 @@ extension CloudKitRecordSyncManager {
     /// The background task is one shared slot, not per-run. Paths that merely
     /// bounced off an active run (a failed exclusive beginSync, the
     /// queue-a-rebuild branch) must not strip THAT run's grace time — the
-    /// active run ends the task itself when it finishes.
+    /// active run ends the task itself when it finishes. A queued local-reset
+    /// rebuild counts as active too: between its 500 ms retries nothing is
+    /// syncing, but stripping the task there would let the app suspend with
+    /// the rebuild still pending (its defer clears the flag, then re-enters
+    /// here to end the task for real).
     func endBackgroundTaskIfIdle() {
         stateLock.lock()
-        guard !isSyncing else {
+        guard !isSyncing, !isLocalResetRebuildQueued else {
             stateLock.unlock()
             return
         }
@@ -2759,7 +2766,12 @@ extension CloudKitRecordSyncManager {
             guard let type = CloudKitRecordType(rawValue: record.recordType) else { continue }
             if isDeletedRecord(record),
                let tombstone = makeRemoteTombstone(from: record, type: type) {
-                // Newest-deletion-wins on duplicates, same as makeRemoteChangeSet.
+                // Newest-deletion-wins on duplicates. Tie direction differs
+                // from makeRemoteChangeSet (`>` there lets the later arrival
+                // win; `>=` here keeps the first seen) — unobservable either
+                // way: tombstones live in-place under the deleted record's
+                // own recordName, so one result set never carries two
+                // tombstones for the same record.
                 if let existing = tombstonesByDeletedRecordName[tombstone.deletedRecordName],
                    existing.deletionTime >= tombstone.deletionTime {
                     continue
@@ -3869,6 +3881,22 @@ extension CloudKitRecordSyncManager {
                 && !shouldProtectRecentMarkerlessMissingRecord(recordName)
         }
 
+        // Graph-loop re-uploads must register in the in-memory set too, not
+        // just the outbox: the style loop below consults
+        // pendingSaveRecordNames, and a decoration enqueued by the post loop
+        // would otherwise be invisible to its style's protection check — the
+        // style prune's cascade would delete the row whose save is pending.
+        func enqueueGraphMemberSave(
+            recordType: CloudKitRecordType,
+            syncId: String,
+            recordName: String,
+            modificationTime: Int64?
+        ) throws {
+            if try enqueueCloudKitSaveIfNeeded(recordType: recordType, syncId: syncId, modificationTime: modificationTime, in: db) {
+                pendingSaveRecordNames.insert(recordName)
+            }
+        }
+
         // Pruned rows must drop their sync bookkeeping too: a leftover metadata
         // row keeps remoteDataMayExist stuck on, and makes a later re-enable
         // reconciliation mistake the pruned record for an offline delete —
@@ -3929,6 +3957,7 @@ extension CloudKitRecordSyncManager {
                         .updateAll(db, Column(Post.CodingKeys.modificationTime).set(to: graphModificationTime))
                 }
                 try CloudKitOutboxEntry.enqueueSave(recordType: .post, syncId: post.syncId, modificationTime: graphModificationTime, in: db)
+                pendingSaveRecordNames.insert(post.cloudKitRecordName)
                 // Only when the POST ITSELF is missing remotely is this a true
                 // graph re-creation (peer rebuilt without it / never had it) —
                 // then the re-upload must carry the children too, or peers
@@ -3936,23 +3965,23 @@ extension CloudKitRecordSyncManager {
                 // re-upload only children with explicit local/preserved intent.
                 if recreatesMissingGraph {
                     for text in texts where !remoteRecordNames.contains(text.cloudKitRecordName) {
-                        try enqueueCloudKitSaveIfNeeded(recordType: .text, syncId: text.syncId, modificationTime: text.modificationTime, in: db)
+                        try enqueueGraphMemberSave(recordType: .text, syncId: text.syncId, recordName: text.cloudKitRecordName, modificationTime: text.modificationTime)
                     }
                     for image in images where !remoteRecordNames.contains(image.cloudKitRecordName) {
-                        try enqueueCloudKitSaveIfNeeded(recordType: .image, syncId: image.syncId, modificationTime: image.modificationTime, in: db)
+                        try enqueueGraphMemberSave(recordType: .image, syncId: image.syncId, recordName: image.cloudKitRecordName, modificationTime: image.modificationTime)
                     }
                     for decoration in decorations where !remoteRecordNames.contains(decoration.cloudKitRecordName) {
-                        try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
+                        try enqueueGraphMemberSave(recordType: .decoration, syncId: decoration.syncId, recordName: decoration.cloudKitRecordName, modificationTime: decoration.modificationTime)
                     }
                 } else {
                     for text in texts where recentlyProtectedRecordNames.contains(text.cloudKitRecordName) {
-                        try enqueueCloudKitSaveIfNeeded(recordType: .text, syncId: text.syncId, modificationTime: text.modificationTime, in: db)
+                        try enqueueGraphMemberSave(recordType: .text, syncId: text.syncId, recordName: text.cloudKitRecordName, modificationTime: text.modificationTime)
                     }
                     for image in images where recentlyProtectedRecordNames.contains(image.cloudKitRecordName) {
-                        try enqueueCloudKitSaveIfNeeded(recordType: .image, syncId: image.syncId, modificationTime: image.modificationTime, in: db)
+                        try enqueueGraphMemberSave(recordType: .image, syncId: image.syncId, recordName: image.cloudKitRecordName, modificationTime: image.modificationTime)
                     }
                     for decoration in decorations where recentlyProtectedRecordNames.contains(decoration.cloudKitRecordName) {
-                        try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
+                        try enqueueGraphMemberSave(recordType: .decoration, syncId: decoration.syncId, recordName: decoration.cloudKitRecordName, modificationTime: decoration.modificationTime)
                     }
                 }
                 continue
@@ -3995,8 +4024,14 @@ extension CloudKitRecordSyncManager {
             let hasPendingGraphSave = graphRecordNames.contains { pendingSaveRecordNames.contains($0) }
             let hasPendingDefaultSetting = pendingSaveRecordNames.contains(CloudKitRecordName.settingsName)
                 && defaultStyleSyncId == style.syncId
-            if hasPendingGraphSave || hasPendingDefaultSetting || !recentlyProtectedRecordNames.isEmpty {
-                let styleMissingRemotely = !remoteRecordNames.contains(style.cloudKitRecordName)
+            let styleMissingRemotely = !remoteRecordNames.contains(style.cloudKitRecordName)
+            // A graph member an earlier loop chose to keep (e.g. a decoration
+            // alive in the snapshot whose recreated post graph was protected
+            // above) must drag a missing style into the protective branch too:
+            // pruning the style would cascade-delete the kept decoration.
+            let hasProtectedGraphMember = styleMissingRemotely
+                && graphRecordNames.contains { protectedRecordNames.contains($0) }
+            if hasPendingGraphSave || hasPendingDefaultSetting || hasProtectedGraphMember || !recentlyProtectedRecordNames.isEmpty {
                 let recreatesMissingGraph = styleMissingRemotely
                 var graphVersionRecordNames = Set([style.cloudKitRecordName])
                 if recreatesMissingGraph {
@@ -4021,17 +4056,18 @@ extension CloudKitRecordSyncManager {
                         .updateAll(db, Column(PostStyle.CodingKeys.modificationTime).set(to: graphModificationTime))
                 }
                 try CloudKitOutboxEntry.enqueueSave(recordType: .style, syncId: style.syncId, modificationTime: graphModificationTime, in: db)
+                pendingSaveRecordNames.insert(style.cloudKitRecordName)
                 // Same discriminator as the protected post graph above: only a
                 // style missing remotely is being re-created and needs its
                 // decorations carried along; a live remote style with a missing
                 // decoration means that decoration was deleted elsewhere.
                 if recreatesMissingGraph {
                     for decoration in decorations where !remoteRecordNames.contains(decoration.cloudKitRecordName) {
-                        try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
+                        try enqueueGraphMemberSave(recordType: .decoration, syncId: decoration.syncId, recordName: decoration.cloudKitRecordName, modificationTime: decoration.modificationTime)
                     }
                 } else {
                     for decoration in decorations where recentlyProtectedRecordNames.contains(decoration.cloudKitRecordName) {
-                        try enqueueCloudKitSaveIfNeeded(recordType: .decoration, syncId: decoration.syncId, modificationTime: decoration.modificationTime, in: db)
+                        try enqueueGraphMemberSave(recordType: .decoration, syncId: decoration.syncId, recordName: decoration.cloudKitRecordName, modificationTime: decoration.modificationTime)
                     }
                 }
                 continue
@@ -4832,9 +4868,11 @@ extension CloudKitRecordSyncManager {
         return .enqueued
     }
 
-    func enqueueCloudKitSaveIfNeeded(recordType: CloudKitRecordType, syncId: String, modificationTime: Int64?, in db: Database) throws {
-        guard try !OnboardingLocalRecord.isMarked(recordType: recordType, syncId: syncId, in: db) else { return }
+    @discardableResult
+    func enqueueCloudKitSaveIfNeeded(recordType: CloudKitRecordType, syncId: String, modificationTime: Int64?, in db: Database) throws -> Bool {
+        guard try !OnboardingLocalRecord.isMarked(recordType: recordType, syncId: syncId, in: db) else { return false }
         try CloudKitOutboxEntry.enqueueSave(recordType: recordType, syncId: syncId, modificationTime: modificationTime, in: db)
+        return true
     }
 
     func enqueuePostGraphSaveIfNeeded(postId: Int64, modificationTime: Int64?, in db: Database) throws {

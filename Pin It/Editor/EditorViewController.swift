@@ -76,10 +76,12 @@ class EditorViewController: UIViewController {
     }
     
     private var originalStyleId: Int64?
+    private var originalExpirationTime: Int64?
+    private var originalActionLink: String = ""
     private var didSelectStyle = false
     private var imageDidChange = false
     private var textDidChange = false
-    private var editorClosure: ((Post.Detail, Bool, Bool, Bool) -> ())?
+    private var editorClosure: ((Post.Detail, Bool, Bool, Bool, Bool) -> ())?
     
     enum Section: Int, Hashable {
         case text
@@ -179,10 +181,12 @@ class EditorViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
     
-    convenience init(postDetail: Post.Detail, editorClosure: @escaping (Post.Detail, Bool, Bool, Bool) -> ()) {
+    convenience init(postDetail: Post.Detail, editorClosure: @escaping (Post.Detail, Bool, Bool, Bool, Bool) -> ()) {
         self.init()
         self.detail = postDetail
         self.originalStyleId = postDetail.style?.id
+        self.originalExpirationTime = postDetail.post.expirationTime
+        self.originalActionLink = postDetail.post.actionLink
         self.style = detail.style
         self.editorClosure = editorClosure
         
@@ -383,7 +387,12 @@ class EditorViewController: UIViewController {
             guard let self = self else { return }
             self.saveToDetail()
             let styleDidChange = self.didSelectStyle || self.originalStyleId != self.detail.style?.id
-            self.editorClosure?(self.detail, styleDidChange, self.imageDidChange, self.textDidChange)
+            // Net diff, not touched-flags: toggling expiration on and back off
+            // (or retyping the same link) must not write the stale snapshot
+            // back over a concurrent remote edit of these fields.
+            let postFieldsDidChange = self.originalExpirationTime != self.detail.post.expirationTime
+                || self.originalActionLink != self.detail.post.actionLink
+            self.editorClosure?(self.detail, styleDidChange, self.imageDidChange, self.textDidChange, postFieldsDidChange)
         }
     }
 
@@ -395,40 +404,36 @@ class EditorViewController: UIViewController {
     
     private func saveImageInfoToDetail() {
         guard let imageInfo = imageInfo else { return }
-        let image = imageInfo.image
+        guard var postImage = detail.images.first else { return }
         let cropRect = imageInfo.rect
-        
-        let resizedImage = image.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3)
-        
-        if var postImage = detail.images.first {
-            let orientation = Int64(imageInfo.orientation)
-            let minX = Int64(cropRect.minX)
-            let minY = Int64(cropRect.minY)
-            let maxX = Int64(cropRect.maxX)
-            let maxY = Int64(cropRect.maxY)
-            guard postImage.orientation != orientation
-                || postImage.minX != minX
-                || postImage.minY != minY
-                || postImage.maxX != maxX
-                || postImage.maxY != maxY else {
-                return
-            }
-            // Store the replacement before touching the old file: deleting
-            // first would leave the row pointing at a missing file if the DB
-            // update fails. The caller deletes the actual replaced file only
-            // after the row update commits; a failed edit keeps the replacement
-            // available for save-as-new conflict recovery.
-            if let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
-                postImage.processed = processed
-                postImage.orientation = orientation
-                postImage.minX = minX
-                postImage.minY = minY
-                postImage.maxX = maxX
-                postImage.maxY = maxY
+        let orientation = Int64(imageInfo.orientation)
+        let minX = Int64(cropRect.minX)
+        let minY = Int64(cropRect.minY)
+        let maxX = Int64(cropRect.maxX)
+        let maxY = Int64(cropRect.maxY)
+        guard postImage.orientation != orientation
+            || postImage.minX != minX
+            || postImage.minY != minY
+            || postImage.maxX != maxX
+            || postImage.maxY != maxY else {
+            return
+        }
+        let resizedImage = imageInfo.image.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3)
+        // Store the replacement before touching the old file: deleting
+        // first would leave the row pointing at a missing file if the DB
+        // update fails. The caller deletes the actual replaced file only
+        // after the row update commits; a failed edit keeps the replacement
+        // available for save-as-new conflict recovery.
+        if let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
+            postImage.processed = processed
+            postImage.orientation = orientation
+            postImage.minX = minX
+            postImage.minY = minY
+            postImage.maxX = maxX
+            postImage.maxY = maxY
 
-                detail.images[0] = postImage
-                imageDidChange = true
-            }
+            detail.images[0] = postImage
+            imageDidChange = true
         }
     }
 

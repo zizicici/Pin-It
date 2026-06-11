@@ -172,9 +172,9 @@ class MainViewController: UIViewController {
     }
     
     func addAction(text: String) {
-        let editorViewController = EditorViewController(postDetail: Post.Detail(post: Post.placeholder(), images: [], texts: [PostText(postId: -1, content: text, order: 0)])) { detail, _, _, _ in
+        let editorViewController = EditorViewController(postDetail: Post.Detail(post: Post.placeholder(), images: [], texts: [PostText(postId: -1, content: text, order: 0)])) { detail, _, _, _, _ in
             if let postText = detail.texts.first {
-                let post = DataManager.shared.createPost(content: postText.content, actionLink: "", expirationTime: detail.post.expirationTime, styleId: nil)
+                let post = DataManager.shared.createPost(content: postText.content, actionLink: detail.post.actionLink, expirationTime: detail.post.expirationTime, styleId: nil)
                 if let style = detail.style, let styleId = style.id, let postId = post?.id {
                     let decoration = PostDecoration(styleId: styleId, postId: postId)
                     _ = DataManager.shared.add(decoration: decoration)
@@ -748,7 +748,7 @@ extension MainViewController {
 
 extension MainViewController {
     func edit(post: Post.Detail) {
-        let editorViewController = EditorViewController(postDetail: post) { [weak self] detail, styleDidChange, imageDidChange, textDidChange in
+        let editorViewController = EditorViewController(postDetail: post) { [weak self] detail, styleDidChange, imageDidChange, textDidChange, postFieldsDidChange in
             // Apply only the fields the editor can change, against fresh rows;
             // copying whole stale snapshots would revert concurrent CloudKit
             // edits to untouched columns and re-push them with a newer version.
@@ -788,7 +788,7 @@ extension MainViewController {
                     didFailAnyUpdate = true
                 }
             }
-            if let postId = detail.post.id {
+            if postFieldsDidChange, let postId = detail.post.id {
                 if !DataManager.shared.updatePost(id: postId, mutate: { stored in
                     stored.expirationTime = detail.post.expirationTime
                     stored.actionLink = detail.post.actionLink
