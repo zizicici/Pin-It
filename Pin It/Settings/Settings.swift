@@ -111,6 +111,19 @@ extension CloudKitSync: UserDefaultSettable {
             // change" alert even though sync is running again.
             userDefaults.removeObject(forKey: UserDefaults.Settings.CloudKitSyncDisabledByAccountChange.rawValue)
         }
+        if value == .disable {
+            // Set BEFORE sync is durably disabled: the actual cleanup runs a
+            // main-queue hop later (.cloudKitSyncDidChange → AppDelegate →
+            // disableSyncAndClearLocalState). A kill between the disable write
+            // and that hop would otherwise leave the stored engine state behind
+            // with no flag — and the next re-enable would silently skip offline
+            // reconciliation. Two deliberate costs: a kill after the flag but
+            // before the disable write yields one spurious cleanup pass, and a
+            // fast disable→enable toggle (cleanup never ran) makes the next
+            // sync pay a cleanup-and-reconcile pass — which is also the only
+            // thing that ships edits made while sync was briefly off.
+            setPendingDisableCleanup(true)
+        }
         userDefaults.set(value.rawValue, forKey: getKey())
         DispatchQueue.main.async {
             NotificationCenter.default.post(name: .SettingsUpdate, object: nil)

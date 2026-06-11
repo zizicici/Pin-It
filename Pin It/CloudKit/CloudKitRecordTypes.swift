@@ -323,6 +323,32 @@ extension CloudKitOutboxEntry {
         try CloudKitOutboxEntry.deleteAll(db, ids: ids)
     }
 
+    /// Clear/drop gated on the row still carrying the snapshot's
+    /// operation + localVersion. `enqueue` upserts by record name and reuses
+    /// the row id, so between a caller's snapshot and its write the same id
+    /// can come to hold a NEWER intent (e.g. the save it batched became the
+    /// user's delete during the server round trip) — removing by id alone
+    /// would discard that intent with nothing left to re-enqueue it.
+    static func clear(matching entries: [CloudKitOutboxEntry], in db: Database) throws {
+        try clear(ids: stillMatching(entries, in: db).compactMap(\.id), in: db)
+    }
+
+    static func drop(matching entries: [CloudKitOutboxEntry], in db: Database) throws {
+        try drop(ids: stillMatching(entries, in: db).compactMap(\.id), in: db)
+    }
+
+    private static func stillMatching(_ entries: [CloudKitOutboxEntry], in db: Database) throws -> [CloudKitOutboxEntry] {
+        var matching: [CloudKitOutboxEntry] = []
+        for entry in entries {
+            guard let id = entry.id,
+                  let current = try CloudKitOutboxEntry.fetchOne(db, id: id),
+                  current.operation == entry.operation,
+                  current.localVersion == entry.localVersion else { continue }
+            matching.append(current)
+        }
+        return matching
+    }
+
     static func clear(recordName: String, in db: Database) throws {
         _ = try CloudKitOutboxEntry
             .filter(Columns.recordName == recordName)

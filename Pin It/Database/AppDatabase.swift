@@ -700,12 +700,17 @@ extension AppDatabase {
                 let texts = try PostText
                     .filter(Column(PostText.CodingKeys.postId) == postId)
                     .fetchAll(db)
-                let modificationTime = try db.transactionDate.nanoSecondSince1970
+                // The replacement must beat every old body row, or a peer's
+                // exclusivity arbitration (newest body type wins) would delete
+                // the replacement and resurrect the old bodies when an old
+                // row's time came from a clock-ahead device.
+                let maxBodyModificationTime = (images.map { $0.modificationTime ?? 0 } + texts.map { $0.modificationTime ?? 0 }).max()
+                let replacementTime = try guardedDeletionTime(rowModificationTime: maxBodyModificationTime, in: db)
                 for image in images {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, deletionTime: replacementTime, in: db)
                 }
                 for text in texts {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, deletionTime: replacementTime, in: db)
                 }
                 try PostImage.deleteAll(db, ids: images.compactMap(\.id))
                 try PostText.deleteAll(db, ids: texts.compactMap(\.id))
@@ -714,9 +719,10 @@ extension AppDatabase {
                 try promotePostGraphToUserContent(postId: postId, in: db)
 
                 var text = PostText(postId: postId, content: content, order: 0)
+                text.modificationTime = replacementTime
                 try text.save(db)
                 try enqueueCloudKitSaveIfNeeded(recordType: .text, syncId: text.syncId, modificationTime: text.modificationTime, in: db)
-                try touchPostForCloudKit(postId: postId, modificationTime: max(text.modificationTime ?? 0, modificationTime), in: db)
+                try touchPostForCloudKit(postId: postId, modificationTime: replacementTime, in: db)
                 deletedImages = images
             }
         } catch {
@@ -744,12 +750,14 @@ extension AppDatabase {
                 let texts = try PostText
                     .filter(Column(PostText.CodingKeys.postId) == postId)
                     .fetchAll(db)
-                let modificationTime = try db.transactionDate.nanoSecondSince1970
+                // Same regression guard as replacePostBodyWithText.
+                let maxBodyModificationTime = (images.map { $0.modificationTime ?? 0 } + texts.map { $0.modificationTime ?? 0 }).max()
+                let replacementTime = try guardedDeletionTime(rowModificationTime: maxBodyModificationTime, in: db)
                 for image in images {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, deletionTime: replacementTime, in: db)
                 }
                 for text in texts {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, deletionTime: replacementTime, in: db)
                 }
                 try PostImage.deleteAll(db, ids: images.compactMap(\.id))
                 try PostText.deleteAll(db, ids: texts.compactMap(\.id))
@@ -768,9 +776,10 @@ extension AppDatabase {
                     maxY: Int64(rect.maxY),
                     order: 0
                 )
+                image.modificationTime = replacementTime
                 try image.save(db)
                 try enqueueCloudKitSaveIfNeeded(recordType: .image, syncId: image.syncId, modificationTime: image.modificationTime, in: db)
-                try touchPostForCloudKit(postId: postId, modificationTime: max(image.modificationTime ?? 0, modificationTime), in: db)
+                try touchPostForCloudKit(postId: postId, modificationTime: replacementTime, in: db)
                 deletedImages = images
             }
         } catch {
@@ -817,9 +826,6 @@ extension AppDatabase {
         do {
             _ = try dbWriter?.write{ db in
                 let storedPost = try Post.fetchOne(db, id: postId)
-                if let storedPost {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .post, syncId: storedPost.syncId, in: db)
-                }
                 let images = try PostImage
                     .filter(Column(PostImage.CodingKeys.postId) == postId)
                     .fetchAll(db)
@@ -829,16 +835,30 @@ extension AppDatabase {
                 let decorations = try PostDecoration
                     .filter(Column(PostDecoration.CodingKeys.postId) == postId)
                     .fetchAll(db)
+                var graphModificationTime = storedPost?.modificationTime ?? 0
+                for image in images {
+                    graphModificationTime = max(graphModificationTime, image.modificationTime ?? 0)
+                }
+                for text in texts {
+                    graphModificationTime = max(graphModificationTime, text.modificationTime ?? 0)
+                }
+                for decoration in decorations {
+                    graphModificationTime = max(graphModificationTime, decoration.modificationTime ?? 0)
+                }
+                let deletionTime = try guardedDeletionTime(rowModificationTime: graphModificationTime, in: db)
+                if let storedPost {
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .post, syncId: storedPost.syncId, deletionTime: deletionTime, in: db)
+                }
                 let cascadeName = storedPost.map { CloudKitRecordName.make(.post, syncId: $0.syncId) }
                 let cascadeType: CloudKitAggregateType = cascadeName == nil ? .record : .postGraph
                 for image in images {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, deletionTime: deletionTime, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
                 }
                 for text in texts {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, deletionTime: deletionTime, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
                 }
                 for decoration in decorations {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: deletionTime, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
                 }
                 try PostImage.deleteAll(db, ids: images.compactMap(\.id))
                 try PostText.deleteAll(db, ids: texts.compactMap(\.id))
@@ -875,13 +895,7 @@ extension AppDatabase {
                 var deletedTexts: [PostText] = []
                 var deletedDecorations: [PostDecoration] = []
                 for postId in ids {
-                    var cascadeName: String?
-                    if let storedPost = try Post.fetchOne(db, id: postId) {
-                        try enqueueCloudKitDeleteIfNeeded(recordType: .post, syncId: storedPost.syncId, in: db)
-                        deletedPosts.append(storedPost)
-                        cascadeName = CloudKitRecordName.make(.post, syncId: storedPost.syncId)
-                    }
-                    let cascadeType: CloudKitAggregateType = cascadeName == nil ? .record : .postGraph
+                    let storedPost = try Post.fetchOne(db, id: postId)
                     let images = try PostImage
                         .filter(Column(PostImage.CodingKeys.postId) == postId)
                         .fetchAll(db)
@@ -891,14 +905,32 @@ extension AppDatabase {
                     let decorations = try PostDecoration
                         .filter(Column(PostDecoration.CodingKeys.postId) == postId)
                         .fetchAll(db)
+                    var graphModificationTime = storedPost?.modificationTime ?? 0
                     for image in images {
-                        try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
+                        graphModificationTime = max(graphModificationTime, image.modificationTime ?? 0)
                     }
                     for text in texts {
-                        try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
+                        graphModificationTime = max(graphModificationTime, text.modificationTime ?? 0)
                     }
                     for decoration in decorations {
-                        try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
+                        graphModificationTime = max(graphModificationTime, decoration.modificationTime ?? 0)
+                    }
+                    let deletionTime = try guardedDeletionTime(rowModificationTime: graphModificationTime, in: db)
+                    var cascadeName: String?
+                    if let storedPost {
+                        try enqueueCloudKitDeleteIfNeeded(recordType: .post, syncId: storedPost.syncId, deletionTime: deletionTime, in: db)
+                        deletedPosts.append(storedPost)
+                        cascadeName = CloudKitRecordName.make(.post, syncId: storedPost.syncId)
+                    }
+                    let cascadeType: CloudKitAggregateType = cascadeName == nil ? .record : .postGraph
+                    for image in images {
+                        try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, deletionTime: deletionTime, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
+                    }
+                    for text in texts {
+                        try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, deletionTime: deletionTime, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
+                    }
+                    for decoration in decorations {
+                        try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: deletionTime, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
                     }
                     deletedImages.append(contentsOf: images)
                     deletedTexts.append(contentsOf: texts)
@@ -970,9 +1002,9 @@ extension AppDatabase {
         do {
             _ = try dbWriter?.write{ db in
                 if let storedImage = try PostImage.fetchOne(db, id: imageId) {
-                    let modificationTime = try db.transactionDate.nanoSecondSince1970
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: storedImage.syncId, in: db)
-                    try touchPostForCloudKit(postId: storedImage.postId, modificationTime: modificationTime, in: db)
+                    let deletionTime = try guardedDeletionTime(rowModificationTime: storedImage.modificationTime, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: storedImage.syncId, deletionTime: deletionTime, in: db)
+                    try touchPostForCloudKit(postId: storedImage.postId, modificationTime: deletionTime, in: db)
                     try OnboardingLocalRecord.unmark(recordType: .image, syncId: storedImage.syncId, in: db)
                     try PostImage.deleteAll(db, ids: [imageId])
                 } else {
@@ -998,12 +1030,14 @@ extension AppDatabase {
                 let storedImages = try PostImage
                     .filter(ids: imageIds)
                     .fetchAll(db)
-                let modificationTime = try db.transactionDate.nanoSecondSince1970
+                var touchTimeByPostId: [Int64: Int64] = [:]
                 for image in storedImages {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, in: db)
+                    let deletionTime = try guardedDeletionTime(rowModificationTime: image.modificationTime, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, deletionTime: deletionTime, in: db)
+                    touchTimeByPostId[image.postId] = max(touchTimeByPostId[image.postId] ?? 0, deletionTime)
                 }
-                for postId in Set(storedImages.map(\.postId)) {
-                    try touchPostForCloudKit(postId: postId, modificationTime: modificationTime, in: db)
+                for (postId, touchTime) in touchTimeByPostId {
+                    try touchPostForCloudKit(postId: postId, modificationTime: touchTime, in: db)
                 }
                 try PostImage.deleteAll(db, ids: imageIds)
                 try OnboardingLocalRecord.unmark(recordType: .image, syncIds: storedImages.map(\.syncId), in: db)
@@ -1060,9 +1094,9 @@ extension AppDatabase {
         do {
             _ = try dbWriter?.write{ db in
                 if let storedText = try PostText.fetchOne(db, id: textId) {
-                    let modificationTime = try db.transactionDate.nanoSecondSince1970
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: storedText.syncId, in: db)
-                    try touchPostForCloudKit(postId: storedText.postId, modificationTime: modificationTime, in: db)
+                    let deletionTime = try guardedDeletionTime(rowModificationTime: storedText.modificationTime, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: storedText.syncId, deletionTime: deletionTime, in: db)
+                    try touchPostForCloudKit(postId: storedText.postId, modificationTime: deletionTime, in: db)
                     try OnboardingLocalRecord.unmark(recordType: .text, syncId: storedText.syncId, in: db)
                     try PostText.deleteAll(db, ids: [textId])
                 } else {
@@ -1088,12 +1122,14 @@ extension AppDatabase {
                 let storedTexts = try PostText
                     .filter(ids: textIds)
                     .fetchAll(db)
-                let modificationTime = try db.transactionDate.nanoSecondSince1970
+                var touchTimeByPostId: [Int64: Int64] = [:]
                 for text in storedTexts {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, in: db)
+                    let deletionTime = try guardedDeletionTime(rowModificationTime: text.modificationTime, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, deletionTime: deletionTime, in: db)
+                    touchTimeByPostId[text.postId] = max(touchTimeByPostId[text.postId] ?? 0, deletionTime)
                 }
-                for postId in Set(storedTexts.map(\.postId)) {
-                    try touchPostForCloudKit(postId: postId, modificationTime: modificationTime, in: db)
+                for (postId, touchTime) in touchTimeByPostId {
+                    try touchPostForCloudKit(postId: postId, modificationTime: touchTime, in: db)
                 }
                 try PostText.deleteAll(db, ids: textIds)
                 try OnboardingLocalRecord.unmark(recordType: .text, syncIds: storedTexts.map(\.syncId), in: db)
@@ -1258,39 +1294,52 @@ extension AppDatabase {
         do {
             _ = try dbWriter?.write{ db in
                 let storedStyle = try PostStyle.fetchOne(db, id: styleId)
+                // Ordered by syncId, not row id: every device must resolve the
+                // SAME fallback for the same library, or the receivers' local
+                // adoptions (stamped at the tombstone's deletionTime) diverge
+                // whenever the deleter's authoritative push is lost.
                 let fallbackStyle = try PostStyle
                     .filter(PostStyle.Columns.id != styleId)
-                    .order(PostStyle.Columns.id.asc)
+                    .order(Column(PostStyle.CodingKeys.syncId).asc)
                     .fetchOne(db)
-                if let storedStyle {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .style, syncId: storedStyle.syncId, in: db)
-                }
                 let decorations = try PostDecoration
                     .filter(Column(PostDecoration.CodingKeys.styleId) == styleId)
                     .fetchAll(db)
-                let decorationDeletionTime = try db.transactionDate.nanoSecondSince1970
+                var graphModificationTime = storedStyle?.modificationTime ?? 0
+                for decoration in decorations {
+                    graphModificationTime = max(graphModificationTime, decoration.modificationTime ?? 0)
+                }
+                let deletionTime = try guardedDeletionTime(rowModificationTime: graphModificationTime, in: db)
+                if let storedStyle {
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .style, syncId: storedStyle.syncId, deletionTime: deletionTime, in: db)
+                }
                 let cascadeName = storedStyle.map { CloudKitRecordName.make(.style, syncId: $0.syncId) }
                 let cascadeType: CloudKitAggregateType = cascadeName == nil ? .record : .styleGraph
                 for decoration in decorations {
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: deletionTime, aggregateType: cascadeType, aggregateName: cascadeName, in: db)
                     // Cascading a decoration delete changes the post graph, same
                     // as delete(decoration:) — keep the aggregate version in step.
-                    try touchPostForCloudKit(postId: decoration.postId, modificationTime: decorationDeletionTime, in: db)
+                    try touchPostForCloudKit(postId: decoration.postId, modificationTime: deletionTime, in: db)
                 }
                 try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
                 try PostStyle.deleteAll(db, ids: [styleId])
                 if let storedStyle {
-                    let deletionTime = try db.transactionDate.nanoSecondSince1970
                     let tracksCloudKit = tracksLocalCloudKitChanges()
+                    // deletionTime + 1: receivers applying the tombstone adopt
+                    // their own row-id-ordered fallbacks locally, stamped at
+                    // deletionTime, WITHOUT pushing. Only this device — the
+                    // deleter — pushes a replacement, and it must beat those
+                    // local stamps or every device keeps its own divergent
+                    // fallback forever (the apply guard is strictly newer).
                     if try DefaultStyle.replaceDeletedStyleIfNeeded(
                         deletedStyle: storedStyle,
                         fallbackStyle: fallbackStyle,
-                        modificationTime: deletionTime,
+                        modificationTime: deletionTime + 1,
                         updatesCloudKitSetting: tracksCloudKit,
                         in: db
                     ), tracksCloudKit {
                         try CloudKitOutboxEntry.enqueueSetting(
-                            modificationTime: deletionTime,
+                            modificationTime: deletionTime + 1,
                             in: db
                         )
                     }
@@ -1390,10 +1439,10 @@ extension AppDatabase {
         do {
             _ = try dbWriter?.write{ db in
                 if let storedDecoration = try PostDecoration.fetchOne(db, id: decorationId) {
-                    let modificationTime = try db.transactionDate.nanoSecondSince1970
-                    try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: storedDecoration.syncId, in: db)
-                    try touchPostForCloudKit(postId: storedDecoration.postId, modificationTime: modificationTime, in: db)
-                    try touchStyleForCloudKit(styleId: storedDecoration.styleId, modificationTime: modificationTime, in: db)
+                    let deletionTime = try guardedDeletionTime(rowModificationTime: storedDecoration.modificationTime, in: db)
+                    try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: storedDecoration.syncId, deletionTime: deletionTime, in: db)
+                    try touchPostForCloudKit(postId: storedDecoration.postId, modificationTime: deletionTime, in: db)
+                    try touchStyleForCloudKit(styleId: storedDecoration.styleId, modificationTime: deletionTime, in: db)
                     try OnboardingLocalRecord.unmark(recordType: .decoration, syncId: storedDecoration.syncId, in: db)
                     try PostDecoration.deleteAll(db, ids: [decorationId])
                 } else {
@@ -1460,9 +1509,16 @@ private extension AppDatabase {
         }
     }
 
+    /// `deletionTime` must carry the same regression guard the save path gets
+    /// from `nextModificationTime` — `guardedDeletionTime` below. The raw
+    /// transaction clock loses the LWW arbitration whenever the row's
+    /// modification time came from a clock-ahead peer, and the deliberate
+    /// local delete would be undone on every device (the send path would even
+    /// abort the cascade and restore the data on THIS device).
     func enqueueCloudKitDeleteIfNeeded(
         recordType: CloudKitRecordType,
         syncId: String,
+        deletionTime: Int64? = nil,
         aggregateType: CloudKitAggregateType = .record,
         aggregateName: String? = nil,
         in db: Database
@@ -1472,6 +1528,7 @@ private extension AppDatabase {
             try CloudKitOutboxEntry.enqueueDelete(
                 recordType: recordType,
                 syncId: syncId,
+                deletionTime: deletionTime,
                 aggregateType: aggregateType,
                 aggregateName: aggregateName,
                 in: db
@@ -1486,12 +1543,23 @@ private extension AppDatabase {
             try CloudKitLocalTombstone.store(
                 recordType: recordType,
                 recordName: recordName,
-                deletionTime: try db.transactionDate.nanoSecondSince1970,
+                deletionTime: deletionTime ?? db.transactionDate.nanoSecondSince1970,
                 aggregateType: aggregateType,
                 aggregateName: aggregateName,
                 in: db
             )
         }
+    }
+
+    /// A delete must beat the row(s) it deletes: their modification times may
+    /// come from a clock-ahead peer, so the transaction clock alone can lose
+    /// against the very data the user just deleted. Cascades pass the whole
+    /// graph's maximum so every member carries one winning timestamp.
+    /// Note: a concurrent edit on another clock-behind device anchors its
+    /// save to the same `row + 1` (nextModificationTime), manufacturing a tie
+    /// — which resolves to the delete. Deletes win ties by design.
+    func guardedDeletionTime(rowModificationTime: Int64?, in db: Database) throws -> Int64 {
+        max(try db.transactionDate.nanoSecondSince1970, (rowModificationTime ?? 0) + 1)
     }
 
     func enqueueCloudKitSaveIfNeeded(recordType: CloudKitRecordType, syncId: String, modificationTime: Int64?, in db: Database) throws {
@@ -1541,7 +1609,8 @@ private extension AppDatabase {
         }
         let decorations = try request.fetchAll(db)
         for decoration in decorations {
-            try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, in: db)
+            let deletionTime = try guardedDeletionTime(rowModificationTime: decoration.modificationTime, in: db)
+            try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: deletionTime, in: db)
         }
         try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
         try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
@@ -1589,6 +1658,10 @@ extension AppDatabase {
                 try CloudKitSyncState.clearBootstrapSuppression(in: db)
                 try CloudKitSyncState.clearLocalRecordPreservation(in: db)
                 try CloudKitSyncState.clearZoneDiscontinuityProbe(in: db)
+                // A pre-reset cascade-abort recovery intent has nothing left to
+                // restore; leaving it would force a pointless engine-state
+                // reset and full re-download right after the rebuild.
+                try CloudKitSyncState.clearPendingFullFetchRecovery(in: db)
                 try CloudKitSettingRecord.deleteAll(db)
                 try db.execute(
                     sql: """

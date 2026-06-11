@@ -199,24 +199,35 @@ extension CloudKitRecordSyncManager {
                 try CloudKitOutboxEntry.enqueueSave(recordType: .style, syncId: style.syncId, modificationTime: graphModificationTime, in: db)
                 return TombstoneApplyOutcome(didChangeDatabase: didClearPendingDefaultStyle, deletedImageFiles: [], tombstoneApplied: false)
             }
+            // syncId order — deterministic across devices; see delete(style:).
             let fallbackStyle = try PostStyle
                 .filter(PostStyle.Columns.id != styleId)
-                .order(PostStyle.Columns.id.asc)
+                .order(Column(PostStyle.CodingKeys.syncId).asc)
                 .fetchOne(db)
             for decoration in decorations {
                 try CloudKitLocalTombstone.store(recordType: .decoration, recordName: decoration.cloudKitRecordName, deletionTime: tombstone.deletionTime, aggregateType: .styleGraph, aggregateName: tombstone.deletedRecordName, in: db)
                 try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: tombstone.deletionTime, aggregateType: .styleGraph, aggregateName: tombstone.deletedRecordName, in: db)
+                // Mirror the deleter (delete(style:) touches every affected
+                // post) and the decoration-tombstone styleGraph path: the post
+                // survives a style cascade and its appearance changed. Without
+                // this the bump's existence depended on whether the
+                // decoration's own tombstone happened to be iterated before or
+                // after this style tombstone within one batch.
+                try bumpPostGraphForAppliedChildDelete(postId: decoration.postId, modificationTime: tombstone.deletionTime, in: db)
             }
             try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
             try PostStyle.deleteAll(db, ids: [styleId])
-            if try DefaultStyle.replaceDeletedStyleIfNeeded(
+            // Adopt a fallback default locally but do NOT push it: every
+            // receiver resolves its own row-id-ordered fallback, and all of
+            // them would stamp the same deletionTime — engineered same-ms
+            // ties that diverge forever. The deleting device pushes the
+            // authoritative replacement at deletionTime + 1.
+            _ = try DefaultStyle.replaceDeletedStyleIfNeeded(
                 deletedStyle: style,
                 fallbackStyle: fallbackStyle,
                 modificationTime: tombstone.deletionTime,
                 in: db
-            ) {
-                try CloudKitOutboxEntry.enqueueSetting(modificationTime: tombstone.deletionTime, in: db)
-            }
+            )
             try OnboardingLocalRecord.unmark(recordType: .style, syncId: style.syncId, in: db)
             try OnboardingLocalRecord.unmark(recordType: .decoration, syncIds: decorations.map(\.syncId), in: db)
             return TombstoneApplyOutcome(didChangeDatabase: true, deletedImageFiles: [], tombstoneApplied: true)
@@ -230,14 +241,8 @@ extension CloudKitRecordSyncManager {
             let parentStyle = try PostStyle.fetchOne(db, id: decoration.styleId)
             let arbitration: CascadeArbitration
             var diesWithStyleCascade = false
-            if let cascadeParent = tombstone.cascadeParentRecordName ?? legacyCascadeParent(
-                for: tombstone,
-                localParentRecordNames: [
-                    parentPost.map { CloudKitRecordName.make(.post, syncId: $0.syncId) },
-                    parentStyle.map { CloudKitRecordName.make(.style, syncId: $0.syncId) }
-                ].compactMap { $0 },
-                batchTombstones: batchTombstones
-            ) {
+            // Tag-only, same rationale as arbitratePostCascade.
+            if let cascadeParent = tombstone.cascadeParentRecordName {
                 if CloudKitRecordName.syncId(from: cascadeParent, type: .style) != nil {
                     diesWithStyleCascade = true
                     var styleGraphTime: Int64?
@@ -330,11 +335,13 @@ extension CloudKitRecordSyncManager {
         in db: Database
     ) throws -> CascadeArbitration {
         let localParentName = parentPost.map { CloudKitRecordName.make(.post, syncId: $0.syncId) }
-        guard let cascadeParent = tombstone.cascadeParentRecordName ?? legacyCascadeParent(
-            for: tombstone,
-            localParentRecordNames: [localParentName].compactMap { $0 },
-            batchTombstones: batchTombstones
-        ), CloudKitRecordName.syncId(from: cascadeParent, type: .post) != nil else {
+        // Tag-only: an untagged tombstone IS an individual delete (the wire
+        // format has carried cascade tags since before any release), and
+        // heuristics like same-deletionTime batch matching would promote a
+        // same-millisecond individual sibling delete into the cascade and
+        // wrongly rescue it.
+        guard let cascadeParent = tombstone.cascadeParentRecordName,
+              CloudKitRecordName.syncId(from: cascadeParent, type: .post) != nil else {
             return .notACascade
         }
         var graphTime: Int64?
@@ -392,23 +399,6 @@ extension CloudKitRecordSyncManager {
         // newer than the cascade's deletionTime.
         let effectiveEvidenceTime = max(evidenceTime ?? 0, childDeletionTime)
         return effectiveEvidenceTime >= parentGraphModificationTime ? .cascadeWins : .parentSurvives
-    }
-
-    /// Legacy cascade detection for tombstones written before cascade tagging:
-    /// cascade members share their delete transaction's date, so a same-batch
-    /// parent tombstone with the exact same deletionTime identifies the group.
-    private func legacyCascadeParent(
-        for tombstone: RemoteTombstone,
-        localParentRecordNames: [String],
-        batchTombstones: [String: RemoteTombstone]
-    ) -> String? {
-        for parentName in localParentRecordNames {
-            if let parentTombstone = batchTombstones[parentName],
-               parentTombstone.deletionTime == tombstone.deletionTime {
-                return parentName
-            }
-        }
-        return nil
     }
 
     func postGraphModificationTime(postId: Int64, post: Post, in db: Database) throws -> Int64 {

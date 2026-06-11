@@ -395,6 +395,15 @@ class SettingsViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .StoreInfoLoaded, object: nil)
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // The failed-outbox summary only refreshes on .SettingsUpdate /
+        // .DatabaseUpdated; a sync pass whose error text is unchanged posts
+        // neither (setLastError dedupes), so the counts can be stale when the
+        // page comes back on screen.
+        refreshCloudKitFailedOutboxSummary()
+    }
+
     override var preferredStatusBarStyle: UIStatusBarStyle {
         return .lightContent
     }
@@ -465,6 +474,11 @@ class SettingsViewController: UIViewController {
                 content.textProperties.color = .label
                 if case .cloudKitSync = item, isChangingCloudKitSync {
                     content.secondaryText = String(localized: "settings.cloudKitSync.checking")
+                    // Same busy treatment as the rebuild/clear/reset rows: the
+                    // account check is a network round trip, and a tap during
+                    // it re-presents the alert whose confirm then silently
+                    // no-ops on the isChangingCloudKitSync guard.
+                    cell.isUserInteractionEnabled = false
                 } else {
                     content.secondaryText = item.value
                 }

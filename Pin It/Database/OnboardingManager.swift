@@ -331,17 +331,25 @@ extension OnboardingManager {
                 .fetchCount(db)
             guard decorationCount == 0 else { continue }
 
+            // syncId order — deterministic across devices; see delete(style:).
             let fallbackStyle = try PostStyle
                 .filter(PostStyle.Columns.id != styleId)
-                .order(PostStyle.Columns.id.asc)
+                .order(Column(PostStyle.CodingKeys.syncId).asc)
                 .fetchOne(db)
             try PostStyle.deleteAll(db, ids: [styleId])
-            _ = try DefaultStyle.replaceDeletedStyleIfNeeded(
+            let replacementTime = try db.transactionDate.nanoSecondSince1970
+            if try DefaultStyle.replaceDeletedStyleIfNeeded(
                 deletedStyle: style,
                 fallbackStyle: fallbackStyle,
-                modificationTime: try db.transactionDate.nanoSecondSince1970,
+                modificationTime: replacementTime,
                 in: db
-            )
+            ), CloudKitSync.current == .enable || CloudKitSync.pendingRemoteReset {
+                // The replace advanced the setting's LWW stamp; without a
+                // matching push the fresh local stamp would silently outrank
+                // (and forever block) a peer's older explicit default-style
+                // record that arrives later. Keep stamp and wire in step.
+                try CloudKitOutboxEntry.enqueueSetting(modificationTime: replacementTime, in: db)
+            }
             try OnboardingLocalRecord.unmark(recordType: .style, syncId: style.syncId, in: db)
             didChangeDatabase = true
             didChangeStyles = true

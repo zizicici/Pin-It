@@ -15412,97 +15412,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; when off, changes stay on this device."
+            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步默认关闭。开启后，Pin It 会通过你的私人 CloudKit 数据库同步便签和样式；关闭时，改动只保存在这台设备。"
+            "value" : "CloudKit 同步默认关闭。开启后，Pin It 会通过你的私人 CloudKit 数据库同步便签和样式；关闭期间的改动（包括删除）会在下次开启时同步。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步預設關閉。開啓後，Pin It 會透過你的私人 CloudKit 資料庫同步便籤和樣式；關閉時，改動只保存在這台裝置。"
+            "value" : "CloudKit 同步預設關閉。開啓後，Pin It 會透過你的私人 CloudKit 資料庫同步便籤和樣式；關閉期間的改動（包括刪除）會在下次開啓時同步。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步預設關閉。開啓後，Pin It 會透過你的私人 CloudKit 資料庫同步便籤和樣式；關閉時，改動只保存在這部裝置。"
+            "value" : "CloudKit 同步預設關閉。開啓後，Pin It 會透過你的私人 CloudKit 資料庫同步便籤和樣式；關閉期間的改動（包括刪除）會在下次開啓時同步。"
           }
         }
       }
@@ -16412,97 +16412,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+            "value" : "CloudKit Sync will stop. Changes you make while it is off (including deletions) stay on this device and will sync to CloudKit when you turn it back on."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+            "value" : "CloudKit Sync will stop. Changes you make while it is off (including deletions) stay on this device and will sync to CloudKit when you turn it back on."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+            "value" : "CloudKit Sync will stop. Changes you make while it is off (including deletions) stay on this device and will sync to CloudKit when you turn it back on."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+            "value" : "CloudKit Sync will stop. Changes you make while it is off (including deletions) stay on this device and will sync to CloudKit when you turn it back on."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+            "value" : "CloudKit Sync will stop. Changes you make while it is off (including deletions) stay on this device and will sync to CloudKit when you turn it back on."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+            "value" : "CloudKit Sync will stop. Changes you make while it is off (including deletions) stay on this device and will sync to CloudKit when you turn it back on."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+            "value" : "CloudKit Sync will stop. Changes you make while it is off (including deletions) stay on this device and will sync to CloudKit when you turn it back on."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+            "value" : "CloudKit Sync will stop. Changes you make while it is off (including deletions) stay on this device and will sync to CloudKit when you turn it back on."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+            "value" : "CloudKit Sync will stop. Changes you make while it is off (including deletions) stay on this device and will sync to CloudKit when you turn it back on."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+            "value" : "CloudKit Sync will stop. Changes you make while it is off (including deletions) stay on this device and will sync to CloudKit when you turn it back on."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+            "value" : "CloudKit Sync will stop. Changes you make while it is off (including deletions) stay on this device and will sync to CloudKit when you turn it back on."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+            "value" : "CloudKit Sync will stop. Changes you make while it is off (including deletions) stay on this device and will sync to CloudKit when you turn it back on."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync will stop. Changes you make while it is off stay on this device and will not be queued for CloudKit."
+            "value" : "CloudKit Sync will stop. Changes you make while it is off (including deletions) stay on this device and will sync to CloudKit when you turn it back on."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步将停止。关闭期间的改动只保存在这台设备，不会加入 CloudKit 同步队列。"
+            "value" : "CloudKit 同步将停止。关闭期间的改动（包括删除）暂时只保存在这台设备，重新开启后会同步到 CloudKit。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步將停止。關閉期間的改動只保存在這台裝置，不會加入 CloudKit 同步佇列。"
+            "value" : "CloudKit 同步將停止。關閉期間的改動（包括刪除）暫時只保存在這台裝置，重新開啓後會同步到 CloudKit。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步將停止。關閉期間的改動只保存在這部裝置，不會加入 CloudKit 同步佇列。"
+            "value" : "CloudKit 同步將停止。關閉期間的改動（包括刪除）暫時只保存在這部裝置，重新開啓後會同步到 CloudKit。"
           }
         }
       }

@@ -118,7 +118,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
         }
         beginBackgroundTaskIfNeeded()
         guard let syncRun = beginSync() else {
-            endBackgroundTaskIfNeeded()
+            endBackgroundTaskIfIdle()
             throw CloudKitSyncInProgressError()
         }
 
@@ -156,7 +156,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
             let engine = try syncEngineInstance(expectedGeneration: syncGeneration)
             try syncEnginePendingChangesFromOutbox(engine)
             try markRemoteDataMayExistBeforeSendingOutboxIfNeeded()
-            try await sendChangesAndCleanupUploadAssets(engine)
+            try await sendChangesAndCleanupUploadAssets(engine, generation: syncGeneration)
             try ensureEngineGeneration(syncGeneration)
             try syncEnginePendingChangesFromOutbox(engine)
             let hasOutboxFailures = try hasOutboxFailures()
@@ -213,7 +213,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
     func clearCloudKitData() async throws {
         beginBackgroundTaskIfNeeded()
         guard let syncRun = beginSync() else {
-            endBackgroundTaskIfNeeded()
+            endBackgroundTaskIfIdle()
             throw CloudKitSyncInProgressError()
         }
 
@@ -243,7 +243,13 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
             CloudKitSync.setPendingRemoteReset(false)
             CloudKitSync.clearRemoteDataMayExist()
             CloudKitSync.setLastError(nil)
-            _ = finishExclusiveSync(runID: syncRun)
+            // Same follow-up contract as rebuildCloudKitData: a sync request
+            // that bounced off this exclusive run (e.g. the user re-enabled
+            // sync mid-clear) must not be silently dropped.
+            let needsSync = finishExclusiveSync(runID: syncRun)
+            if needsSync {
+                syncIfEnabled()
+            }
         } catch {
             CloudKitSync.setLastError(error.localizedDescription)
             _ = finishExclusiveSync(runID: syncRun)
@@ -285,7 +291,10 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
         }
         guard !CloudKitSync.pendingRemoteReset else {
             rebuildCloudKitDataAfterLocalReset()
-            endBackgroundTaskIfNeeded()
+            // IfIdle: a manual rebuild may be mid-flight holding the shared
+            // background task — stripping it here would suspend the app in
+            // the middle of its zone delete + re-upload.
+            endBackgroundTaskIfIdle()
             return
         }
         guard let runID = beginSync() else { return }
@@ -482,7 +491,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
         try syncEnginePendingChangesFromOutbox(engine)
         try ensureSyncEnabled()
         try markRemoteDataMayExistBeforeSendingOutboxIfNeeded()
-        try await sendChangesAndCleanupUploadAssets(engine)
+        try await sendChangesAndCleanupUploadAssets(engine, generation: syncGeneration)
         try ensureEngineGeneration(syncGeneration)
         try syncEnginePendingChangesFromOutbox(engine)
 
@@ -490,7 +499,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
             try syncEnginePendingChangesFromOutbox(engine)
             try ensureSyncEnabled()
             try markRemoteDataMayExistBeforeSendingOutboxIfNeeded()
-            try await sendChangesAndCleanupUploadAssets(engine)
+            try await sendChangesAndCleanupUploadAssets(engine, generation: syncGeneration)
             try ensureEngineGeneration(syncGeneration)
             try syncEnginePendingChangesFromOutbox(engine)
         }
@@ -516,14 +525,20 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
 
 extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
     func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
-        guard isCurrentSyncEngine(syncEngine) else { return }
+        // Generation captured atomically with the identity gate: every
+        // generation-guarded write below (the state-token persists in
+        // particular) must be scoped to the engine THIS event came from.
+        // Re-reading the current generation at write time would self-validate
+        // after a reset that completed in between — and re-persist the very
+        // token the reset just wiped.
+        guard let eventGeneration = engineGenerationIfCurrent(syncEngine) else { return }
         do {
             switch event {
             case .stateUpdate(let stateUpdate):
                 if shouldDeferStateUpdates() {
-                    setPendingFetchStateSerialization(stateUpdate.stateSerialization)
+                    setPendingFetchStateSerialization(stateUpdate.stateSerialization, generation: eventGeneration)
                 } else {
-                    try persistSyncEngineStateSerialization(stateUpdate.stateSerialization)
+                    try persistSyncEngineStateSerialization(stateUpdate.stateSerialization, expectedGeneration: eventGeneration)
                 }
             case .accountChange(let accountChange):
                 try handleAccountChange(accountChange.changeType)
@@ -531,7 +546,7 @@ extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
             case .fetchedDatabaseChanges(let changes):
                 try handleFetchedDatabaseChanges(changes)
             case .fetchedRecordZoneChanges(let changes):
-                try handleFetchedRecordZoneChanges(changes)
+                try handleFetchedRecordZoneChanges(changes, generation: eventGeneration)
             case .sentDatabaseChanges(let changes):
                 try handleSentDatabaseChanges(changes, syncEngine: syncEngine)
             case .sentRecordZoneChanges(let changes):
@@ -555,6 +570,11 @@ extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
             @unknown default:
                 break
             }
+        } catch is CloudKitEngineSupersededError {
+            // A reset/disable superseded this engine mid-event. Whoever bumped
+            // the generation owns the recovery; surfacing the bare error would
+            // pin a meaningless footer message.
+            requestFollowUpSync()
         } catch {
             cloudKitSyncLog.error("sync engine event failed: \(error.localizedDescription, privacy: .private)")
             CloudKitSync.setLastError(error.localizedDescription)
@@ -588,11 +608,18 @@ extension CloudKitRecordSyncManager {
         stateLock.lock()
         defer { stateLock.unlock() }
 
-        if isApplyingRemoteChanges {
-            needsFollowUpSync = true
+        // Checked FIRST: the manager's own post-apply .DatabaseUpdated echo
+        // routinely lands while isApplyingRemoteChanges is still raised (the
+        // flag drops only after the late-state drain). Classifying the echo
+        // as a concurrent local edit would buy a wasted follow-up round after
+        // nearly every apply. Real local edits never arrive inside the
+        // posting window — they come through DatabaseUpdateNotifier on a
+        // separate main-queue tick.
+        if isPostingCloudKitOriginatedUpdate {
             return false
         }
-        if isPostingCloudKitOriginatedUpdate {
+        if isApplyingRemoteChanges {
+            needsFollowUpSync = true
             return false
         }
         return true
@@ -732,6 +759,18 @@ extension CloudKitRecordSyncManager {
         DispatchQueue.main.async {
             UIApplication.shared.endBackgroundTask(task)
         }
+    }
+
+    /// The background task is one shared slot, not per-run. Paths that merely
+    /// bounced off an active run (a failed exclusive beginSync, the
+    /// queue-a-rebuild branch) must not strip THAT run's grace time — the
+    /// active run ends the task itself when it finishes.
+    func endBackgroundTaskIfIdle() {
+        stateLock.lock()
+        let syncing = isSyncing
+        stateLock.unlock()
+        guard !syncing else { return }
+        endBackgroundTaskIfNeeded()
     }
 
     func setApplyingRemoteChanges(_ value: Bool) {
@@ -1113,8 +1152,8 @@ extension CloudKitRecordSyncManager {
         return true
     }
 
-    func handleFetchedRecordZoneChanges(_ changes: CKSyncEngine.Event.FetchedRecordZoneChanges) throws {
-        appendFetchedRecordZoneChanges(changes)
+    func handleFetchedRecordZoneChanges(_ changes: CKSyncEngine.Event.FetchedRecordZoneChanges, generation: UInt64) throws {
+        appendFetchedRecordZoneChanges(changes, generation: generation)
     }
 
     func handleSentDatabaseChanges(
@@ -1170,7 +1209,8 @@ extension CloudKitRecordSyncManager {
             .filter { !isRecordNotFound($0.value) }
         let deletedRecordNames = Set(deletedRecordIDs.map(\.recordName))
         var failedEntries: [(id: Int64, error: Error)] = []
-        var clearedEntryIDs: [Int64] = []
+        var clearedEntries: [CloudKitOutboxEntry] = []
+        var oversizedSnapshotEntries: [CloudKitOutboxEntry] = []
         var oversizedSaveRecordNames: [String] = []
 
         for entry in try loadOutboxEntries() {
@@ -1182,19 +1222,20 @@ extension CloudKitRecordSyncManager {
             case .save, .delete:
                 if let savedVersion = savedRecordVersions[entry.recordName],
                    savedVersion >= entry.localVersion {
-                    clearedEntryIDs.append(entryID)
+                    clearedEntries.append(entry)
                 } else if savedRecordVersions[entry.recordName] != nil {
                     requestFollowUpSync()
                 } else if let failure = failedSaveResults[entry.recordName],
                           failure.version >= entry.localVersion {
                     failedEntries.append((entryID, failure.error))
                     if isLimitExceeded(failure.error) {
+                        oversizedSnapshotEntries.append(entry)
                         oversizedSaveRecordNames.append(entry.recordName)
                     }
                 }
             case .purge:
                 if deletedRecordNames.contains(entry.recordName) {
-                    clearedEntryIDs.append(entryID)
+                    clearedEntries.append(entry)
                 } else if let error = failedDeleteErrors[CloudKitRecordName.recordID(entry.recordName)] {
                     failedEntries.append((entryID, error))
                 }
@@ -1209,7 +1250,7 @@ extension CloudKitRecordSyncManager {
         let oversizedEntries = failedEntries.filter { isLimitExceeded($0.error) }
         if !oversizedEntries.isEmpty {
             failedEntries.removeAll { isLimitExceeded($0.error) }
-            try dropOutbox(ids: oversizedEntries.map(\.id))
+            try dropOutbox(matching: oversizedSnapshotEntries)
             syncEngine.state.remove(pendingRecordZoneChanges: oversizedSaveRecordNames.map {
                 .saveRecord(CloudKitRecordName.recordID($0))
             })
@@ -1239,7 +1280,7 @@ extension CloudKitRecordSyncManager {
             requestFollowUpSync()
         }
         try markOutboxFailures(failedEntries)
-        try clearOutbox(ids: clearedEntryIDs)
+        try clearOutbox(matching: clearedEntries)
         cleanupUploadAssetFiles(for: Array(Set(savedRecordVersions.keys).union(failedSaveResults.keys)))
     }
 
@@ -1271,7 +1312,7 @@ extension CloudKitRecordSyncManager {
             syncEngine.state.remove(pendingRecordZoneChanges: batch.changesToRemove)
         }
         try markOutboxFailures(batch.failedEntries)
-        try dropOutbox(ids: batch.skippedEntryIDs)
+        try dropOutbox(matching: batch.skippedEntries)
         if !batch.abortedCascadeEntries.isEmpty {
             let withdrawn = try abortLosingCascadeDeletes(batch.abortedCascadeEntries)
             let withdrawnChanges = withdrawn.flatMap { pendingRecordZoneChanges(for: $0) }
@@ -1297,14 +1338,16 @@ extension CloudKitRecordSyncManager {
     ) throws -> (
         recordsToSave: [CKRecord],
         recordIDsToDelete: [CKRecord.ID],
-        skippedEntryIDs: [Int64],
+        skippedEntries: [CloudKitOutboxEntry],
         failedEntries: [(id: Int64, error: Error)],
         changesToRemove: [CKSyncEngine.PendingRecordZoneChange],
         abortedCascadeEntries: [CloudKitOutboxEntry]
     ) {
         var recordsToSave: [CKRecord] = []
         var recordIDsToDelete: [CKRecord.ID] = []
-        var skippedEntryIDs: [Int64] = []
+        // Snapshot rows, not bare ids: the drop is conditioned on the row still
+        // carrying this operation+localVersion (see dropOutbox(matching:)).
+        var skippedEntries: [CloudKitOutboxEntry] = []
         var failedEntries: [(id: Int64, error: Error)] = []
         var changesToRemove: [CKSyncEngine.PendingRecordZoneChange] = []
         var abortedCascadeEntries: [CloudKitOutboxEntry] = []
@@ -1326,8 +1369,8 @@ extension CloudKitRecordSyncManager {
             guard let entryID = entry.id,
                   let type = entry.cloudKitRecordType,
                   let operation = entry.cloudKitOperation else {
-                if let id = entry.id {
-                    skippedEntryIDs.append(id)
+                if entry.id != nil {
+                    skippedEntries.append(entry)
                 }
                 continue
             }
@@ -1346,6 +1389,20 @@ extension CloudKitRecordSyncManager {
                     changesToRemove.append(contentsOf: pendingChanges)
                     continue
                 }
+                if operation == .delete,
+                   let serverTombstone = serverRecordState.tombstonesByDeletedRecordName[entry.recordName],
+                   serverTombstone.deletionTime >= entry.modificationTime {
+                    // Already tombstoned at an equal-or-newer time (a peer's
+                    // delete landed between our fetch and this send). Uploading
+                    // ours would REGRESS the wire deletionTime — a third
+                    // device's offline edit between the two times would then
+                    // wrongly win and resurrect the record everywhere. The
+                    // newer tombstone reaches this device through the normal
+                    // fetch; just retire the entry.
+                    skippedEntries.append(entry)
+                    changesToRemove.append(contentsOf: pendingChanges)
+                    continue
+                }
                 if serverStateWins(entry: entry, operation: operation, against: serverRecordState) {
                     if operation == .purge {
                         // A purge only garbage-collects a server TOMBSTONE; any
@@ -1356,7 +1413,7 @@ extension CloudKitRecordSyncManager {
                         // local metadata still says deleted), and the active
                         // record reaches this device through the normal fetch
                         // anyway, flipping that metadata when it applies.
-                        skippedEntryIDs.append(entryID)
+                        skippedEntries.append(entry)
                         changesToRemove.append(contentsOf: pendingChanges)
                         continue
                     }
@@ -1377,7 +1434,7 @@ extension CloudKitRecordSyncManager {
                     ) {
                         recordsToSave.append(record)
                     } else {
-                        skippedEntryIDs.append(entryID)
+                        skippedEntries.append(entry)
                         changesToRemove.append(saveChange)
                     }
                 case .delete:
@@ -1407,7 +1464,7 @@ extension CloudKitRecordSyncManager {
         return (
             recordsToSave: recordsToSave,
             recordIDsToDelete: recordIDsToDelete,
-            skippedEntryIDs: skippedEntryIDs,
+            skippedEntries: skippedEntries,
             failedEntries: failedEntries,
             changesToRemove: changesToRemove,
             abortedCascadeEntries: abortedCascadeEntries
@@ -1543,6 +1600,68 @@ extension CloudKitRecordSyncManager {
                 .fetchCount(db) > 0
         }
         return hasLiveMetadata
+    }
+
+    /// Companion to `hasUnexplainedPhysicalDeletes`: before the recovery
+    /// full-fetch resets the engine state, give every affected record that is
+    /// still alive locally an outbox save. The recovery fetch prunes records
+    /// missing from the snapshot, and a record lost to a purge-vs-resurrection
+    /// race is exactly that — present locally, marked synced in metadata,
+    /// absent from the server — so without this protection the locally-newest
+    /// copy would be pruned instead of restored.
+    func enqueueRecoverySavesForUnexplainedPhysicalDeletes(_ changes: RemoteChangeSet) throws {
+        let recordNames = changes.physicalDeletedRecordNamesWithoutTombstone
+        guard !recordNames.isEmpty else { return }
+        _ = try AppDatabase.shared.dbWriter?.write { db in
+            let now = try db.transactionDate.nanoSecondSince1970
+            for recordName in recordNames {
+                guard let metadata = try CloudKitRecordMetadata.fetchOne(db, key: recordName),
+                      !metadata.isDeleted,
+                      let recordType = CloudKitRecordType(rawValue: metadata.recordType),
+                      let syncId = CloudKitRecordName.syncId(from: recordName, type: recordType) else {
+                    continue
+                }
+                // Staleness discriminator: protection is only legitimate when
+                // this device's view of the record (metadata.updatedAt) is
+                // younger than the tombstone retention window. Within it, a
+                // legitimate delete's tombstone CANNOT have been purged yet —
+                // so a tombstone-less physical delete really is the purge
+                // race. Beyond it, a peer's delete + 30-day purge may have
+                // completed entirely inside this device's blind spot, and
+                // re-uploading would resurrect a deliberately deleted record
+                // on every device; let the recovery prune take it instead.
+                guard now - metadata.updatedAt < Self.tombstoneRetentionMilliseconds else { continue }
+                let modificationTime: Int64?
+                switch recordType {
+                case .post:
+                    modificationTime = try Post
+                        .filter(Column(Post.CodingKeys.syncId) == syncId)
+                        .fetchOne(db)?.modificationTime
+                case .text:
+                    modificationTime = try PostText
+                        .filter(Column(PostText.CodingKeys.syncId) == syncId)
+                        .fetchOne(db)?.modificationTime
+                case .image:
+                    modificationTime = try PostImage
+                        .filter(Column(PostImage.CodingKeys.syncId) == syncId)
+                        .fetchOne(db)?.modificationTime
+                case .style:
+                    modificationTime = try PostStyle
+                        .filter(Column(PostStyle.CodingKeys.syncId) == syncId)
+                        .fetchOne(db)?.modificationTime
+                case .decoration:
+                    modificationTime = try PostDecoration
+                        .filter(Column(PostDecoration.CodingKeys.syncId) == syncId)
+                        .fetchOne(db)?.modificationTime
+                case .setting:
+                    modificationTime = nil
+                }
+                // No local row: nothing to restore — the recovery fetch's
+                // prune cleans the dangling metadata.
+                guard let modificationTime else { continue }
+                try enqueueCloudKitSaveIfNeeded(recordType: recordType, syncId: syncId, modificationTime: modificationTime, in: db)
+            }
+        }
     }
 
     func fetchAccountStatus() async throws -> CKAccountStatus {
@@ -1785,6 +1904,17 @@ extension CloudKitRecordSyncManager {
         return syncEngine === engine
     }
 
+    /// The current generation, but only while `engine` is still the live
+    /// instance — both read under one lock acquisition, so callers get a
+    /// generation that provably belongs to the engine they are handling an
+    /// event for.
+    func engineGenerationIfCurrent(_ engine: CKSyncEngine) -> UInt64? {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        guard syncEngine === engine else { return nil }
+        return engineGeneration
+    }
+
     func hasActiveSyncEngine() -> Bool {
         stateLock.lock()
         defer { stateLock.unlock() }
@@ -1876,15 +2006,20 @@ extension CloudKitRecordSyncManager {
         return mode
     }
 
-    func persistSyncEngineStateSerialization(_ serialization: CKSyncEngine.State.Serialization) throws {
-        let generation = currentEngineGeneration()
+    /// `expectedGeneration` must be captured when the serialization was
+    /// HANDED OVER (event entry / accumulator take), never re-read at call
+    /// time: a reset that completed in between would otherwise self-validate
+    /// — the fresh read returns the post-bump generation — and the stale
+    /// token would overwrite the state that reset just wiped, cancelling the
+    /// full re-fetch it queued.
+    func persistSyncEngineStateSerialization(_ serialization: CKSyncEngine.State.Serialization, expectedGeneration: UInt64) throws {
         _ = try AppDatabase.shared.dbWriter?.write { db in
             // Re-checked on the writer queue: a disable/account-change cleanup
             // that bumped the generation between the caller's engine gate and
             // this write must win — re-persisting a stale token would
             // resurrect state the cleanup just deleted and make the next
             // re-enable skip offline reconciliation.
-            guard generation == self.currentEngineGeneration() else { return }
+            guard expectedGeneration == self.currentEngineGeneration() else { return }
             try CloudKitSyncState.setSyncEngineStateSerialization(serialization, in: db)
         }
     }
@@ -2006,7 +2141,13 @@ extension CloudKitRecordSyncManager {
         stateLock.unlock()
     }
 
-    func appendFetchedRecordZoneChanges(_ changes: CKSyncEngine.Event.FetchedRecordZoneChanges) {
+    /// Generation-gated like the state-token writes: a stale event resuming
+    /// after a reset must not repopulate (or re-create) the accumulator the
+    /// reset just cleared — the next take would stamp the dead lineage's
+    /// records with the NEW generation and sail them through the apply
+    /// transaction's generation check. Dropped records re-deliver from the
+    /// last persisted token.
+    func appendFetchedRecordZoneChanges(_ changes: CKSyncEngine.Event.FetchedRecordZoneChanges, generation: UInt64) {
         let changedRecords = changes.modifications
             .map(\.record)
             .filter { $0.recordID.zoneID == CloudKitRecordName.zoneID }
@@ -2020,6 +2161,10 @@ extension CloudKitRecordSyncManager {
             }
 
         stateLock.lock()
+        guard generation == engineGeneration else {
+            stateLock.unlock()
+            return
+        }
         if fetchAccumulator == nil {
             fetchAccumulator = FetchAccumulator(isFullSnapshot: false, prunesMissingLocalRecords: false)
         }
@@ -2032,8 +2177,12 @@ extension CloudKitRecordSyncManager {
     /// Splitting them lets a `.stateUpdate` event sneak in between the two takes,
     /// flip out of accumulator-mode and persist its newer state to disk while we
     /// still hold the older value in memory — which would then overwrite it.
-    func takeFetchAccumulatorAndPendingState() -> (FetchAccumulator?, CKSyncEngine.State.Serialization?) {
+    /// Also returns the generation at take time: the apply transaction and the
+    /// post-apply token persists are valid only for THIS lineage, and must be
+    /// re-checked against it (not against a fresh read) on the writer queue.
+    func takeFetchAccumulatorAndPendingState() -> (FetchAccumulator?, CKSyncEngine.State.Serialization?, UInt64) {
         stateLock.lock()
+        let generation = engineGeneration
         let accumulator = fetchAccumulator
         let serialization = pendingFetchStateSerialization
         fetchAccumulator = nil
@@ -2048,7 +2197,7 @@ extension CloudKitRecordSyncManager {
             isApplyingRemoteChanges = true
         }
         stateLock.unlock()
-        return (accumulator, serialization)
+        return (accumulator, serialization, generation)
     }
 
     /// Defer .stateUpdate writes for the entire fetch lifecycle: accumulation, the
@@ -2065,14 +2214,26 @@ extension CloudKitRecordSyncManager {
             || needsFullFetchAfterCurrentSync
     }
 
-    func setPendingFetchStateSerialization(_ serialization: CKSyncEngine.State.Serialization) {
+    /// Generation-gated: a stale event handler resuming after a reset must not
+    /// repopulate the slot the reset just cleared — the next round's take
+    /// would persist the dead engine's token over the new lineage.
+    func setPendingFetchStateSerialization(_ serialization: CKSyncEngine.State.Serialization, generation: UInt64) {
         stateLock.lock()
-        pendingFetchStateSerialization = serialization
+        if generation == engineGeneration {
+            pendingFetchStateSerialization = serialization
+        }
         stateLock.unlock()
     }
 
-    func takePendingFetchStateSerialization() -> CKSyncEngine.State.Serialization? {
+    /// Generation-gated like the setter: a stale caller draining after a reset
+    /// must not consume (and then discard at its pinned persist) a token the
+    /// NEW lineage deferred — that would cost the new lineage its own advance.
+    func takePendingFetchStateSerialization(generation: UInt64) -> CKSyncEngine.State.Serialization? {
         stateLock.lock()
+        guard generation == engineGeneration else {
+            stateLock.unlock()
+            return nil
+        }
         let serialization = pendingFetchStateSerialization
         pendingFetchStateSerialization = nil
         stateLock.unlock()
@@ -2080,7 +2241,7 @@ extension CloudKitRecordSyncManager {
     }
 
     func applyAccumulatedFetchIfNeeded() throws {
-        let (maybeAccumulator, pendingState) = takeFetchAccumulatorAndPendingState()
+        let (maybeAccumulator, pendingState, generation) = takeFetchAccumulatorAndPendingState()
         guard let accumulator = maybeAccumulator else {
             // No accumulator taken — the applying flag was not raised.
             // Same guard as the post-apply drain below: with a full fetch
@@ -2090,7 +2251,7 @@ extension CloudKitRecordSyncManager {
             // FullFetchIfNeeded wipes the disk state would skip that batch
             // forever — the reset rewrites the token anyway.
             if let pendingState, !needsFullFetchAfterCurrentSyncIsRequested() {
-                try persistSyncEngineStateSerialization(pendingState)
+                try persistSyncEngineStateSerialization(pendingState, expectedGeneration: generation)
             }
             return
         }
@@ -2118,8 +2279,23 @@ extension CloudKitRecordSyncManager {
         }
 
         if hasUnexplainedDeletes {
+            // The suspicious shape is "metadata says alive, record physically
+            // gone, no tombstone" — most plausibly an expired-tombstone purge
+            // that raced a resurrection THIS device already applied (the purge
+            // guard is check-then-act). The full re-fetch alone would PRUNE
+            // the local copy: nothing re-delivers the record, its metadata
+            // marks it as previously synced, and reconciliation can't protect
+            // it (modificationTime == lastSyncedVersion after the acked
+            // resurrection). Queue saves for the affected live rows first so
+            // the outbox carries them through the prune and re-uploads them.
+            do {
+                try enqueueRecoverySavesForUnexplainedPhysicalDeletes(remoteChanges)
+            } catch {
+                invalidateSyncEngineForRedelivery()
+                throw error
+            }
             if let pendingState {
-                setPendingFetchStateSerialization(pendingState)
+                setPendingFetchStateSerialization(pendingState, generation: generation)
             }
             requestFullFetchAfterCurrentSync()
             return
@@ -2131,16 +2307,24 @@ extension CloudKitRecordSyncManager {
                 missingDependenciesAreOrphans: accumulator.isFullSnapshot,
                 prunesMissingLocalRecords: accumulator.isFullSnapshot && accumulator.prunesMissingLocalRecords,
                 probesZoneDiscontinuity: accumulator.isFullSnapshot && accumulator.probesZoneDiscontinuity,
-                pendingStateSerialization: pendingState
+                pendingStateSerialization: pendingState,
+                expectedGeneration: generation
             )
             // Drain anything a late .stateUpdate dropped into the pending slot while
             // apply was running. If apply requested a full fetch, discard — reset will
             // wipe disk state anyway. Otherwise persist; it's monotonically newer than
             // what apply just wrote inside its txn.
-            if let lateState = takePendingFetchStateSerialization(),
+            if let lateState = takePendingFetchStateSerialization(generation: generation),
                !needsFullFetchAfterCurrentSyncIsRequested() {
-                try persistSyncEngineStateSerialization(lateState)
+                try persistSyncEngineStateSerialization(lateState, expectedGeneration: generation)
             }
+        } catch is CloudKitEngineSupersededError {
+            // The generation bumped while this apply was staging: the taken
+            // lineage is already dead and whoever bumped it owns recovery.
+            // Invalidating here would bump AGAIN and stomp the SUCCESSOR's
+            // live engine and accumulator. The disk token never advanced past
+            // the taken batch, so it re-delivers to the new lineage anyway.
+            throw CloudKitEngineSupersededError()
         } catch {
             // The accumulated records are lost (applyRemoteChanges threw before or
             // inside its transaction) while the engine's in-memory token already
@@ -2292,6 +2476,10 @@ extension CloudKitRecordSyncManager {
             try CloudKitSyncState.clearBootstrapSuppression(in: db)
             try CloudKitSyncState.clearLocalRecordPreservation(in: db)
             try CloudKitSyncState.clearZoneDiscontinuityProbe(in: db)
+            // The rebuild replaces the zone wholesale; a pre-rebuild cascade-
+            // abort recovery flag would only force a pointless engine-state
+            // reset and full re-download right after the rebuild finished.
+            try CloudKitSyncState.clearPendingFullFetchRecovery(in: db)
             try CloudKitLocalTombstone.deleteAll(db)
             try CloudKitOutboxEntry.deleteAll(db)
             try CloudKitRecordMetadata.deleteAll(db)
@@ -2303,12 +2491,15 @@ extension CloudKitRecordSyncManager {
         CloudKitSync.setPendingDisableCleanup(false)
     }
 
-    func sendChangesAndCleanupUploadAssets(_ engine: CKSyncEngine) async throws {
+    /// `generation` must be the CALLING RUN's generation, captured at run
+    /// start — never re-read here. A superseded run reaching this call after
+    /// the bump would otherwise adopt the successor's generation and its
+    /// defer would drain files the successor is still streaming.
+    func sendChangesAndCleanupUploadAssets(_ engine: CKSyncEngine, generation: UInt64) async throws {
         // Per-record cleanup runs in handleSentRecordZoneChanges; this drains anything
         // left behind when sendChanges throws or completes without acking every entry.
         // Generation-scoped: when this run got superseded mid-send, a newer run's
         // freshly staged files must survive this drain.
-        let generation = currentEngineGeneration()
         defer { cleanupUploadAssetFiles(generation: generation) }
         try await engine.sendChanges()
     }
@@ -2462,22 +2653,27 @@ extension CloudKitRecordSyncManager {
         }
     }
 
-    func clearOutbox(ids: [Int64]) throws {
-        var recordNames: [String] = []
+    /// Clear/drop only rows that still match the caller's snapshot
+    /// (operation + localVersion). Between the snapshot read and this write —
+    /// a full network round trip on the batch-build path — the row may have
+    /// been upserted into a NEWER intent under the same record name (a save
+    /// becoming the user's delete is the dangerous one); deleting by id alone
+    /// would silently discard that intent forever, with nothing left to
+    /// re-enqueue it.
+    func clearOutbox(matching entries: [CloudKitOutboxEntry]) throws {
+        guard !entries.isEmpty else { return }
         _ = try AppDatabase.shared.dbWriter?.write { db in
-            recordNames = try CloudKitOutboxEntry.filter(ids: ids).fetchAll(db).map(\.recordName)
-            try CloudKitOutboxEntry.clear(ids: ids, in: db)
+            try CloudKitOutboxEntry.clear(matching: entries, in: db)
         }
-        evictCachedServerRecords(for: recordNames)
+        evictCachedServerRecords(for: entries.map(\.recordName))
     }
 
-    func dropOutbox(ids: [Int64]) throws {
-        var recordNames: [String] = []
+    func dropOutbox(matching entries: [CloudKitOutboxEntry]) throws {
+        guard !entries.isEmpty else { return }
         _ = try AppDatabase.shared.dbWriter?.write { db in
-            recordNames = try CloudKitOutboxEntry.filter(ids: ids).fetchAll(db).map(\.recordName)
-            try CloudKitOutboxEntry.drop(ids: ids, in: db)
+            try CloudKitOutboxEntry.drop(matching: entries, in: db)
         }
-        evictCachedServerRecords(for: recordNames)
+        evictCachedServerRecords(for: entries.map(\.recordName))
     }
 
     func evictCachedServerRecords(for recordNames: [String]) {
@@ -2516,6 +2712,11 @@ extension CloudKitRecordSyncManager {
             guard let type = CloudKitRecordType(rawValue: record.recordType) else { continue }
             if isDeletedRecord(record),
                let tombstone = makeRemoteTombstone(from: record, type: type) {
+                // Newest-deletion-wins on duplicates, same as makeRemoteChangeSet.
+                if let existing = tombstonesByDeletedRecordName[tombstone.deletedRecordName],
+                   existing.deletionTime >= tombstone.deletionTime {
+                    continue
+                }
                 tombstonesByDeletedRecordName[tombstone.deletedRecordName] = tombstone
             } else {
                 activeRecordsByRecordName[record.recordID.recordName] = record
@@ -3029,13 +3230,16 @@ extension CloudKitRecordSyncManager {
         missingDependenciesAreOrphans: Bool,
         prunesMissingLocalRecords: Bool,
         probesZoneDiscontinuity: Bool = false,
-        pendingStateSerialization: CKSyncEngine.State.Serialization? = nil
+        pendingStateSerialization: CKSyncEngine.State.Serialization? = nil,
+        expectedGeneration: UInt64? = nil
     ) throws {
         let imageRecordNamesToStage = try imageRecordNamesToStage(changes)
         var stagedImageAssets = try stageImageAssets(changes, allowedRecordNames: imageRecordNamesToStage)
         let allStagedImageFiles = stagedImageAssets.values.flatMap(\.copiedFiles)
         // Read outside the write transaction (goes through DataManager's reader).
-        let probeDefaultStyleSyncId = probesZoneDiscontinuity
+        // Needed by the probe's keep branch AND the empty-markerless-zone keep
+        // branch of a pruning fetch below.
+        let fallbackDefaultStyleSyncId = (probesZoneDiscontinuity || prunesMissingLocalRecords)
             ? DataManager.shared.fetchStyle(by: Int64(DefaultStyle.getValue().rawValue))?.syncId
             : nil
         var deletedImageFiles: [(String, CacheImageType)] = []
@@ -3050,6 +3254,16 @@ extension CloudKitRecordSyncManager {
         do {
             try AppDatabase.shared.dbWriter?.write { db in
                 try ensureSyncEnabled()
+                // Re-checked on the writer queue: a local reset, account-change
+                // wipe, or disable that bumped the generation while this apply
+                // was staging (sync stays ENABLED during a reset, so the check
+                // above does not cover it) must win. Committing afterwards
+                // would re-insert fetched rows into the freshly wiped library —
+                // and the pendingRemoteReset rebuild would then upload that
+                // resurrected data to every device.
+                if let expectedGeneration {
+                    try ensureEngineGeneration(expectedGeneration)
+                }
                 if probesZoneDiscontinuity {
                     let storedGeneration = try CloudKitSyncState.zoneGeneration(in: db)
                     // Consumed inside the same transaction as the enqueues it
@@ -3071,7 +3285,7 @@ extension CloudKitRecordSyncManager {
                         // (empty, or repopulated by a peer's bootstrap): keep local
                         // data and re-upload — the pre-marker merge behavior.
                         try CloudKitOutboxEntry.enqueueBootstrapSaves(in: db)
-                        try enqueueDefaultStyleSettingIfNeeded(syncId: probeDefaultStyleSyncId, in: db)
+                        try enqueueDefaultStyleSettingIfNeeded(syncId: fallbackDefaultStyleSyncId, in: db)
                     } else if let fetchedGeneration = changes.zoneResetGeneration, fetchedGeneration != storedGeneration {
                         // A peer deliberately rebuilt the zone (reset/rebuild/clear):
                         // adopt its snapshot. Previously-synced records missing from
@@ -3089,10 +3303,41 @@ extension CloudKitRecordSyncManager {
                         // may have been purged past the retention window) — prune
                         // them instead of resurrecting them on every peer.
                         try CloudKitOutboxEntry.enqueueDivergentSaves(in: db)
-                        try enqueueDefaultStyleSettingIfNeeded(syncId: probeDefaultStyleSyncId, in: db)
+                        try enqueueDefaultStyleSettingIfNeeded(syncId: fallbackDefaultStyleSyncId, in: db)
                         shouldPruneMissingLocalRecords = true
                     }
                     try CloudKitSyncState.clearZoneDiscontinuityProbe(in: db)
+                }
+                // A pruning fresh-engine fetch (re-enable on a device that
+                // synced before) against an EMPTY zone with no reset marker:
+                // within the tombstone retention window the only way a
+                // previously-synced zone is empty AND marker-less is an
+                // out-of-band wipe — e.g. the user deleted the app's iCloud
+                // data in Settings while sync was off. A deliberate
+                // clear/rebuild always leaves a marker, and a peer deleting
+                // the whole library leaves tombstones that outlive the window.
+                // Pruning would erase the entire local library to mirror the
+                // accident; keep local data and re-upload instead — the same
+                // verdict the discontinuity probe reaches for a marker-less
+                // zone. BEYOND the window the empty zone is ambiguous (a
+                // legitimate delete-everything plus expired-tombstone purges
+                // looks identical), so the stale device defers to the zone
+                // and prunes, as before.
+                if shouldPruneMissingLocalRecords,
+                   !probesZoneDiscontinuity,
+                   changes.zoneResetGeneration == nil,
+                   remoteSnapshotRecordNames(changes).isEmpty,
+                   try CloudKitRecordMetadata.fetchCount(db) > 0 {
+                    let newestMetadataUpdate = try Int64.fetchOne(
+                        db,
+                        sql: "SELECT MAX(updated_at) FROM cloudkit_record_metadata"
+                    ) ?? 0
+                    let now = try db.transactionDate.nanoSecondSince1970
+                    if now - newestMetadataUpdate < Self.tombstoneRetentionMilliseconds {
+                        shouldPruneMissingLocalRecords = false
+                        try CloudKitOutboxEntry.enqueueBootstrapSaves(in: db)
+                        try enqueueDefaultStyleSettingIfNeeded(syncId: fallbackDefaultStyleSyncId, in: db)
+                    }
                 }
                 if let fetchedGeneration = changes.zoneResetGeneration {
                     try CloudKitSyncState.setZoneGeneration(fetchedGeneration, in: db)
@@ -3109,8 +3354,13 @@ extension CloudKitRecordSyncManager {
                 // same-batch recreate (stale or genuine) must go through the
                 // tombstone-vs-active arbitration, not lose its tombstone here.
                 let activeBatchRecordNames = activeSnapshotRecordNames(changes)
+                // Names with a pending DELETE are also skipped: that delete is
+                // about to re-create the tombstone on the server, and dropping
+                // the metadata row here would make its eventual markSynced
+                // no-op — leaving a server tombstone this device could never
+                // garbage-collect (the purge sweep is keyed on metadata).
                 for recordName in changes.physicalDeletedRecordNamesWithoutTombstone
-                where !activeBatchRecordNames.contains(recordName) {
+                where !activeBatchRecordNames.contains(recordName) && pendingDeletes[recordName] == nil {
                     guard let metadata = try CloudKitRecordMetadata.fetchOne(db, key: recordName),
                           metadata.isDeleted else { continue }
                     try CloudKitRecordMetadata.deleteOne(db, key: recordName)
@@ -3435,6 +3685,12 @@ extension CloudKitRecordSyncManager {
         }
 
         cleanupCopiedImageFiles(stagedImageAssets.values.flatMap(\.copiedFiles))
+        // Cached conflict records for anything this batch touched are stale
+        // now (clearOutboxIfRemoteWins deletes entries in-txn without passing
+        // through the evicting clear/drop helpers). A later re-enqueued save
+        // consuming a stale base would burn a guaranteed serverRecordChanged
+        // round trip.
+        evictCachedServerRecords(for: Array(remoteSnapshotRecordNames(changes)))
         for (fileName, type) in deletedImageFiles {
             _ = ImageCacheManager.shared.deleteImage(fileName: fileName, type: type)
         }
@@ -3654,9 +3910,10 @@ extension CloudKitRecordSyncManager {
                 continue
             }
             guard shouldPrune(style.cloudKitRecordName) else { continue }
+            // syncId order — deterministic across devices; see delete(style:).
             let fallbackStyle = try PostStyle
                 .filter(PostStyle.Columns.id != styleId)
-                .order(PostStyle.Columns.id.asc)
+                .order(Column(PostStyle.CodingKeys.syncId).asc)
                 .fetchOne(db)
             try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
             try PostStyle.deleteAll(db, ids: [styleId])
@@ -4133,8 +4390,13 @@ extension CloudKitRecordSyncManager {
             .fetchOne(db)
         if let existing, remoteModificationTime <= (existing.modificationTime ?? 0) {
             guard remoteModificationTime == (existing.modificationTime ?? 0) else { return (false, false, [], false) }
-            let didRestore = try restoreMissingImageFiles(for: existing, stagedAssets: stagedAssets, in: db)
-            return (didRestore, false, [], false)
+            let restore = try restoreMissingImageFiles(for: existing, stagedAssets: stagedAssets, in: db)
+            // A heal attempt that still lacks its asset (download/staging
+            // failed) arms the same full-fetch retry as the strictly-newer
+            // path — an unchanged record is never re-delivered incrementally,
+            // so without it the lost cache file stays broken until some
+            // device happens to edit the image.
+            return (restore.didChange, false, [], restore.stillMissingAssets)
         }
 
         let texts = try PostText
@@ -4211,36 +4473,47 @@ extension CloudKitRecordSyncManager {
     /// the row; a lost cache file (e.g. an interrupted crop that deleted the old
     /// file before the replacement landed) can be restored from the staged
     /// download. modification_time stays untouched — no LWW impact, no echo
-    /// back to the server.
-    func restoreMissingImageFiles(for image: PostImage, stagedAssets: StagedImageAssets?, in db: Database) throws -> Bool {
-        guard let imageId = image.id, let stagedAssets else { return false }
+    /// back to the server. `stillMissingAssets` reports a file that is missing
+    /// AND could not be restored (asset absent / staging failed), so the
+    /// caller can arm the full-fetch retry.
+    func restoreMissingImageFiles(for image: PostImage, stagedAssets: StagedImageAssets?, in db: Database) throws -> (didChange: Bool, stillMissingAssets: Bool) {
+        guard let imageId = image.id else { return (false, false) }
+        let originalMissing = ImageCacheManager.shared.getURL(name: image.original, type: .original) == nil
+        let processedMissing = ImageCacheManager.shared.getURL(name: image.processed, type: .processed) == nil
         var assignments: [ColumnAssignment] = []
         var consumedOriginal = false
         var consumedProcessed = false
-        if ImageCacheManager.shared.getURL(name: image.original, type: .original) == nil,
-           let stagedOriginal = stagedAssets.originalName {
-            assignments.append(Column(PostImage.CodingKeys.original).set(to: stagedOriginal))
-            consumedOriginal = true
+        var stillMissingAssets = false
+        if originalMissing {
+            if let stagedOriginal = stagedAssets?.originalName {
+                assignments.append(Column(PostImage.CodingKeys.original).set(to: stagedOriginal))
+                consumedOriginal = true
+            } else {
+                stillMissingAssets = true
+            }
         }
-        if ImageCacheManager.shared.getURL(name: image.processed, type: .processed) == nil,
-           let stagedProcessed = stagedAssets.processedName {
-            assignments.append(Column(PostImage.CodingKeys.processed).set(to: stagedProcessed))
-            consumedProcessed = true
+        if processedMissing {
+            if let stagedProcessed = stagedAssets?.processedName {
+                assignments.append(Column(PostImage.CodingKeys.processed).set(to: stagedProcessed))
+                consumedProcessed = true
+            } else {
+                stillMissingAssets = true
+            }
         }
-        guard !assignments.isEmpty else { return false }
+        guard !assignments.isEmpty else { return (false, stillMissingAssets) }
         try PostImage
             .filter(Column(PostImage.CodingKeys.id) == imageId)
             .updateAll(db, assignments)
         // The caller drops the whole staged entry once anything was restored, so
         // clean the unconsumed half here instead of leaking it until the next
         // launch's orphan sweep.
-        if !consumedOriginal, let stagedOriginal = stagedAssets.originalName, stagedOriginal != image.original {
+        if !consumedOriginal, let stagedOriginal = stagedAssets?.originalName, stagedOriginal != image.original {
             _ = ImageCacheManager.shared.deleteImage(fileName: stagedOriginal, type: .original)
         }
-        if !consumedProcessed, let stagedProcessed = stagedAssets.processedName, stagedProcessed != image.processed {
+        if !consumedProcessed, let stagedProcessed = stagedAssets?.processedName, stagedProcessed != image.processed {
             _ = ImageCacheManager.shared.deleteImage(fileName: stagedProcessed, type: .processed)
         }
-        return true
+        return (true, stillMissingAssets)
     }
 
     func applyDecorationRecord(

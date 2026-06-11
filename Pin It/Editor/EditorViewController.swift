@@ -393,16 +393,24 @@ class EditorViewController: UIViewController {
         let resizedImage = image.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3)
         
         if var postImage = detail.images.first {
-            _ = ImageCacheManager.shared.deleteImage(fileName: postImage.processed, type: .processed)
+            // Store the replacement before touching the old file: deleting
+            // first would leave the row pointing at a missing file if the
+            // store fails (blank cell, and a permanently failing CloudKit
+            // upload for this image). Same pattern as the crop path in
+            // MainViewController.
             if let processed = ImageCacheManager.shared.storeImage(resizedImage, type: .processed) {
+                let previousProcessed = postImage.processed
                 postImage.processed = processed
                 postImage.orientation = Int64(imageInfo.orientation)
                 postImage.minX = Int64(cropRect.minX)
                 postImage.minY = Int64(cropRect.minY)
                 postImage.maxX = Int64(cropRect.maxX)
                 postImage.maxY = Int64(cropRect.maxY)
-                
+
                 detail.images[0] = postImage
+                if previousProcessed != processed {
+                    _ = ImageCacheManager.shared.deleteImage(fileName: previousProcessed, type: .processed)
+                }
             }
         }
     }
