@@ -13,12 +13,14 @@ final class CloudKitSettingsViewController: UIViewController {
     private enum Section: Hashable {
         case sync
         case action
+        case diagnostics
     }
 
     private enum Item: Hashable {
         case sync(CloudKitSync)
         case rebuild
         case clear
+        case diagnostics
 
         var title: String {
             switch self {
@@ -28,6 +30,8 @@ final class CloudKitSettingsViewController: UIViewController {
                 return String(localized: "settings.cloudKitSync.rebuild")
             case .clear:
                 return String(localized: "settings.cloudKitSync.clear")
+            case .diagnostics:
+                return String(localized: "settings.cloudKitSync.diagnostics")
             }
         }
     }
@@ -49,6 +53,9 @@ final class CloudKitSettingsViewController: UIViewController {
     private var failedOutboxSummary: String?
     private var isLoadingFailedOutboxSummary = false
     private var needsAnotherFailedOutboxRefresh = false
+    /// Whether the diagnostic event log has anything to export. Loaded off the
+    /// main thread; the export/clear rows show when sync is enabled or this is true.
+    private var hasDiagnosticEvents = false
     /// What the table last actually rendered for the CloudKit section footer.
     /// Diffable snapshot applies don't re-ask footer titles when item identities
     /// are unchanged, so reloadData() compares against this to decide whether
@@ -86,6 +93,7 @@ final class CloudKitSettingsViewController: UIViewController {
         // neither (setLastError dedupes), so the counts can be stale when the
         // page comes back on screen.
         refreshFailedOutboxSummary()
+        refreshDiagnosticsAvailability()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -143,6 +151,12 @@ final class CloudKitSettingsViewController: UIViewController {
                 content.textProperties.alignment = .center
                 cell.contentConfiguration = content
                 cell.isUserInteractionEnabled = !isClearingCloudKitData
+            case .diagnostics:
+                cell.accessoryType = .disclosureIndicator
+                var content = UIListContentConfiguration.valueCell()
+                content.text = item.title
+                content.textProperties.color = .label
+                cell.contentConfiguration = content
             }
 
             return cell
@@ -169,6 +183,12 @@ final class CloudKitSettingsViewController: UIViewController {
             snapshot.appendItems(actionItems, toSection: .action)
         }
 
+        let diagnosticsItems = cloudKitDiagnosticsItems()
+        if !diagnosticsItems.isEmpty {
+            snapshot.appendSections([.diagnostics])
+            snapshot.appendItems(diagnosticsItems, toSection: .diagnostics)
+        }
+
         snapshot.reconfigureItems(snapshot.itemIdentifiers)
         // Footer titles aren't re-queried when the diff is empty; if the
         // CloudKit footer text changed, force the section to reload.
@@ -177,6 +197,7 @@ final class CloudKitSettingsViewController: UIViewController {
         }
         dataSource.apply(snapshot, animatingDifferences: false)
         refreshFailedOutboxSummary()
+        refreshDiagnosticsAvailability()
     }
 
     private func cloudKitActionItems() -> [Item] {
@@ -187,6 +208,13 @@ final class CloudKitSettingsViewController: UIViewController {
         } else {
             return []
         }
+    }
+
+    private func cloudKitDiagnosticsItems() -> [Item] {
+        // Reachable while sync is on (where problems happen) or, after the user
+        // has turned it off, as long as there is still a log worth sending.
+        guard CloudKitSync.current == .enable || hasDiagnosticEvents else { return [] }
+        return [.diagnostics]
     }
 
     private func cloudKitSyncFooter() -> String? {
@@ -231,6 +259,20 @@ final class CloudKitSettingsViewController: UIViewController {
                 var snapshot = self.dataSource.snapshot()
                 snapshot.reloadSections([.sync])
                 self.dataSource.apply(snapshot, animatingDifferences: false)
+            }
+        }
+    }
+
+    private func refreshDiagnosticsAvailability() {
+        Task.detached(priority: .utility) {
+            let hasEvents = CloudKitSyncEventLog.shared.hasEvents()
+            await MainActor.run { [weak self] in
+                guard let self, self.hasDiagnosticEvents != hasEvents else { return }
+                self.hasDiagnosticEvents = hasEvents
+                // Only the diagnostics section's presence depends on this flag;
+                // rebuild the snapshot so the rows appear/disappear. reloadData
+                // re-invokes this, but it no-ops once the value has converged.
+                self.reloadData()
             }
         }
     }
@@ -290,6 +332,8 @@ extension CloudKitSettingsViewController: UITableViewDelegate {
             showCloudKitRebuildAlert()
         case .clear:
             showCloudKitClearAlert()
+        case .diagnostics:
+            navigationController?.pushViewController(CloudKitDiagnosticsViewController(), animated: ConsideringUser.pushAnimated)
         }
     }
 }

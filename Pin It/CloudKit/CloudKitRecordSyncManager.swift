@@ -277,6 +277,8 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
 
     @objc
     private func applicationDidEnterBackground() {
+        // Persist any buffered diagnostic events before the app may be suspended.
+        CloudKitSyncEventLog.shared.flushSynchronously()
         guard CloudKitSync.current == .enable else { return }
         beginBackgroundTaskIfNeeded()
         syncIfEnabled()
@@ -305,6 +307,10 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
 
         var consecutiveFailures = 0
         var rounds = 0
+        CloudKitSyncEventLog.shared.record(.runStart, runId: Int64(runID), "sync run started")
+        defer {
+            CloudKitSyncEventLog.shared.record(.runEnd, runId: Int64(runID), "sync run ended (rounds=\(rounds), consecutiveFailures=\(consecutiveFailures))")
+        }
         while true {
             rounds += 1
             if rounds > Self.maxSyncRoundsPerRun {
@@ -349,6 +355,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
                 }
                 cloudKitSyncLog.error("sync failed: \(error.localizedDescription, privacy: .private)")
                 CloudKitSync.setLastError(error.localizedDescription)
+                CloudKitSyncEventLog.shared.record(.error, level: .error, runId: Int64(runID), "sync failed: \(cloudKitErrorSummary(error))")
                 runOnboardingAfterInitialCloudGateIfNeeded()
                 consecutiveFailures += 1
                 if consecutiveFailures >= Self.maxConsecutiveSyncFailures {
@@ -500,6 +507,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
         try syncEnginePendingChangesFromOutbox(engine)
 
         if try enqueueExpiredTombstonePurgesIfNeeded() {
+            CloudKitSyncEventLog.shared.record(.tombstonePurge, runId: loggableRunID(), "expired tombstone purges enqueued")
             try syncEnginePendingChangesFromOutbox(engine)
             try ensureSyncEnabled()
             try markRemoteDataMayExistBeforeSendingOutboxIfNeeded()
@@ -545,15 +553,26 @@ extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
                     try persistSyncEngineStateSerialization(stateUpdate.stateSerialization, expectedGeneration: eventGeneration)
                 }
             case .accountChange(let accountChange):
+                CloudKitSyncEventLog.shared.record(.accountChange, level: .warning, runId: loggableRunID(), "changeType=\(String(describing: accountChange.changeType))")
                 try handleAccountChange(accountChange.changeType)
                 requestFollowUpSync()
             case .fetchedDatabaseChanges(let changes):
+                CloudKitSyncEventLog.shared.record(.fetchedDatabase, runId: loggableRunID(), "deletions=\(changes.deletions.count)")
                 try handleFetchedDatabaseChanges(changes)
             case .fetchedRecordZoneChanges(let changes):
+                CloudKitSyncEventLog.shared.record(.fetched, runId: loggableRunID(), "modifications=\(changes.modifications.count) deletions=\(changes.deletions.count)")
                 try handleFetchedRecordZoneChanges(changes, generation: eventGeneration)
             case .sentDatabaseChanges(let changes):
                 try handleSentDatabaseChanges(changes, syncEngine: syncEngine)
             case .sentRecordZoneChanges(let changes):
+                let failedSaveCodes = changes.failedRecordSaves.compactMap { ($0.error as? CKError)?.code.rawValue }
+                let sentHadFailures = !changes.failedRecordSaves.isEmpty || !changes.failedRecordDeletes.isEmpty
+                CloudKitSyncEventLog.shared.record(
+                    .sent,
+                    level: sentHadFailures ? .warning : .info,
+                    runId: loggableRunID(),
+                    "saved=\(changes.savedRecords.count) deleted=\(changes.deletedRecordIDs.count) failedSaves=\(changes.failedRecordSaves.count) failedDeletes=\(changes.failedRecordDeletes.count) saveCodes=\(failedSaveCodes)"
+                )
                 try handleSentRecordZoneChanges(changes, syncEngine: syncEngine)
             case .didFetchRecordZoneChanges(let changes):
                 if let error = changes.error, isZoneNotFound(error) || isChangeTokenExpired(error) {
@@ -582,6 +601,7 @@ extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
         } catch {
             cloudKitSyncLog.error("sync engine event failed: \(error.localizedDescription, privacy: .private)")
             CloudKitSync.setLastError(error.localizedDescription)
+            CloudKitSyncEventLog.shared.record(.error, level: .error, runId: loggableRunID(), "handleEvent failed: \(cloudKitErrorSummary(error))")
             requestFollowUpSync()
         }
     }
@@ -719,6 +739,28 @@ extension CloudKitRecordSyncManager {
         stateLock.unlock()
         endBackgroundTask(task)
         return needsSync
+    }
+
+    /// The current sync run counter as a correlation key for the diagnostic
+    /// event log. nil before any run has started. stateLock is independent of
+    /// the database, so this never interferes with a sync write transaction.
+    func loggableRunID() -> Int64? {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return syncRunID == 0 ? nil : Int64(syncRunID)
+    }
+
+    /// A content-free summary of an error for the diagnostic log — CKError code
+    /// plus retry hint only, never a message that could carry user content.
+    func cloudKitErrorSummary(_ error: Error) -> String {
+        if let ckError = error as? CKError {
+            var parts = ["CKError.\(ckError.code) (\(ckError.code.rawValue))"]
+            if let retryAfter = ckError.retryAfterSeconds {
+                parts.append("retryAfter=\(retryAfter)")
+            }
+            return parts.joined(separator: " ")
+        }
+        return String(describing: type(of: error))
     }
 
     func beginBackgroundTaskIfNeeded() {
@@ -2116,6 +2158,7 @@ extension CloudKitRecordSyncManager {
     /// decided once the next full fetch reveals the zone's reset marker, so
     /// just flag the probe here.
     func resetSyncEngineStateForZoneDiscontinuity(cause: ZoneDiscontinuityCause) throws {
+        CloudKitSyncEventLog.shared.record(.zoneReset, level: .warning, runId: loggableRunID(), "zone discontinuity reset (cause=\(String(describing: cause)))")
         try resetSyncEngineState { db in
             try CloudKitSyncState.markZoneDiscontinuityProbe(cause: cause, in: db)
             try CloudKitSyncState.clearBootstrapSuppression(in: db)
@@ -2303,6 +2346,7 @@ extension CloudKitRecordSyncManager {
             changedRecords: accumulator.changedRecords,
             physicalDeletedRecords: accumulator.physicalDeletedRecords
         )
+        CloudKitSyncEventLog.shared.record(.conflict, runId: loggableRunID(), "applying remote changes (changed=\(accumulator.changedRecords.count) deletes=\(accumulator.physicalDeletedRecords.count) fullSnapshot=\(accumulator.isFullSnapshot))")
 
         let hasUnexplainedDeletes: Bool
         if accumulator.isFullSnapshot {
@@ -3714,6 +3758,7 @@ extension CloudKitRecordSyncManager {
                     if pruning.didChangeDatabase {
                         didChangeDatabase = true
                         deletedImageFiles.append(contentsOf: pruning.deletedImageFiles)
+                        CloudKitSyncEventLog.shared.record(.prune, level: .warning, runId: loggableRunID(), "full-fetch prune removed local records (styles=\(pruning.didChangeStyles))")
                     }
                     if pruning.didChangeStyles {
                         didChangeStyles = true
