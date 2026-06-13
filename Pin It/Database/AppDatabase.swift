@@ -145,6 +145,15 @@ final class AppDatabase {
         
         migrator.registerMigration("cloudkit____record____sync") { db in
             let legacyTimestamp = try db.transactionDate.millisecondsSince1970
+            // The row backfill below uses the runtime timestamp above, but a COLUMN
+            // DEFAULT must be a fixed literal: GRDB bakes it into the table schema,
+            // and a value that changes on every migration run makes the rebuilt
+            // schema differ from the stored one every launch — which trips
+            // eraseDatabaseOnSchemaChange (DEBUG) into wiping the whole database.
+            // This default is only a transient placeholder: every migrated row is
+            // overwritten by the backfill UPDATEs that follow, and the app always
+            // sets these columns explicitly (TimestampedRecord).
+            let legacyTimestampColumnDefault: Int64 = 0
 
             func deterministicSyncId(seed: String) -> String {
                 // SHA-256 truncated to 128 bits, version/variant nibbles overwritten
@@ -159,8 +168,8 @@ final class AppDatabase {
 
             func addCloudKitRecordColumns(_ table: TableDefinition) {
                 table.column("sync_id", .text).notNull().defaults(to: "")
-                table.column("creation_time", .integer).notNull().defaults(to: legacyTimestamp)
-                table.column("modification_time", .integer).notNull().defaults(to: legacyTimestamp)
+                table.column("creation_time", .integer).notNull().defaults(to: legacyTimestampColumnDefault)
+                table.column("modification_time", .integer).notNull().defaults(to: legacyTimestampColumnDefault)
             }
 
             func deleteOrphanedChildren() throws {
@@ -235,8 +244,8 @@ final class AppDatabase {
             }
             try db.alter(table: "style") { table in
                 table.add(column: "sync_id", .text).notNull().defaults(to: "")
-                table.add(column: "creation_time", .integer).notNull().defaults(to: legacyTimestamp)
-                table.add(column: "modification_time", .integer).notNull().defaults(to: legacyTimestamp)
+                table.add(column: "creation_time", .integer).notNull().defaults(to: legacyTimestampColumnDefault)
+                table.add(column: "modification_time", .integer).notNull().defaults(to: legacyTimestampColumnDefault)
             }
 
             try deleteOrphanedChildren()
