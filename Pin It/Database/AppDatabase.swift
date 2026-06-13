@@ -144,7 +144,7 @@ final class AppDatabase {
         }
         
         migrator.registerMigration("cloudkit____record____sync") { db in
-            let legacyTimestamp = try db.transactionDate.nanoSecondSince1970
+            let legacyTimestamp = try db.transactionDate.millisecondsSince1970
 
             func deterministicSyncId(seed: String) -> String {
                 // SHA-256 truncated to 128 bits, version/variant nibbles overwritten
@@ -536,7 +536,7 @@ final class AppDatabase {
                     legacyModificationTime,
                     legacyPendingSyncId,
                     legacyPendingModificationTime,
-                    Date().nanoSecondSince1970
+                    Date().millisecondsSince1970
                 ]
             )
         }
@@ -1560,7 +1560,7 @@ private extension AppDatabase {
             try CloudKitLocalTombstone.store(
                 recordType: recordType,
                 recordName: recordName,
-                deletionTime: deletionTime ?? db.transactionDate.nanoSecondSince1970,
+                deletionTime: deletionTime ?? db.transactionDate.millisecondsSince1970,
                 aggregateType: aggregateType,
                 aggregateName: aggregateName,
                 in: db
@@ -1578,7 +1578,7 @@ private extension AppDatabase {
     /// save to the same `row + 1` (nextModificationTime), manufacturing a tie
     /// — which resolves to the delete. Deletes win ties by design.
     func guardedDeletionTime(rowModificationTime: Int64?, in db: Database) throws -> Int64 {
-        max(try db.transactionDate.nanoSecondSince1970, (rowModificationTime ?? 0) + 1)
+        max(try db.transactionDate.millisecondsSince1970, (rowModificationTime ?? 0) + 1)
     }
 
     func enqueueCloudKitSaveIfNeeded(recordType: CloudKitRecordType, syncId: String, modificationTime: Int64?, in db: Database) throws {

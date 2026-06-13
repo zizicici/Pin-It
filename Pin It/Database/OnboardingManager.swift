@@ -337,7 +337,7 @@ extension OnboardingManager {
                 .order(Column(PostStyle.CodingKeys.syncId).asc)
                 .fetchOne(db)
             try PostStyle.deleteAll(db, ids: [styleId])
-            let replacementTime = try db.transactionDate.nanoSecondSince1970
+            let replacementTime = try db.transactionDate.millisecondsSince1970
             if try DefaultStyle.replaceDeletedStyleIfNeeded(
                 deletedStyle: style,
                 fallbackStyle: fallbackStyle,

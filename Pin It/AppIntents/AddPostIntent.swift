@@ -44,7 +44,7 @@ struct AddTextRecordIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Bool> {
-        if let post = DataManager.shared.createPost(content: content, actionLink: actionLink ?? "", expirationTime: expirationTime?.nanoSecondSince1970 ?? Post.getDefaultExpirationTime(), styleId: styleId) {
+        if let post = DataManager.shared.createPost(content: content, actionLink: actionLink ?? "", expirationTime: expirationTime?.millisecondsSince1970 ?? Post.getDefaultExpirationTime(), styleId: styleId) {
             await SyncCompletionManager.shared.waitForCompletion(postId: post.id!, timeout: 5.0)
             
             if LiveActivityManager.shared.status != .running {
@@ -173,7 +173,7 @@ struct AddImageRecordIntent: LiveActivityIntent {
             if let newImage = newImage?.resizeImageIfNeeded(maxWidth: 320 * 3, maxHeight: 160 * 3),
                let processed = ImageCacheManager.shared.storeImage(newImage, type: .processed),
                let original = ImageCacheManager.shared.storeImage(image, type: .original),
-               let post = DataManager.shared.createPost(original: original, processed: processed, rect: imageRect, orientation: 0, actionLink: actionLink ?? "", expirationTime: expirationTime?.nanoSecondSince1970 ?? Post.getDefaultExpirationTime(), styleId: styleId) {
+               let post = DataManager.shared.createPost(original: original, processed: processed, rect: imageRect, orientation: 0, actionLink: actionLink ?? "", expirationTime: expirationTime?.millisecondsSince1970 ?? Post.getDefaultExpirationTime(), styleId: styleId) {
                 await SyncCompletionManager.shared.waitForCompletion(postId: post.id!, timeout: 5.0)
                 
                 if LiveActivityManager.shared.status != .running {

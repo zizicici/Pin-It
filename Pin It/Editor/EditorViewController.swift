@@ -339,13 +339,13 @@ class EditorViewController: UIViewController {
                 let cell = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(DateCell.self), for: indexPath)
                 if let cell = cell as? DateCell {
                     if startTime == nil {
-                        cell.update(with: DateCellItem(title: "", nanoSecondsFrom1970: nil, day: ZCCalendar.manager.today + 5))
+                        cell.update(with: DateCellItem(title: "", millisecondsSince1970: nil, day: ZCCalendar.manager.today + 5))
                     } else {
-                        cell.update(with: DateCellItem(title: "", nanoSecondsFrom1970: startTime, day: nil))
+                        cell.update(with: DateCellItem(title: "", millisecondsSince1970: startTime, day: nil))
                     }
-                    cell.selectDateAction = { [weak self] nanoSeconds in
+                    cell.selectDateAction = { [weak self] milliseconds in
                         guard let self = self else { return }
-                        self.expirationTime = nanoSeconds
+                        self.expirationTime = milliseconds
                         self.updateSaveButtonStatus()
                     }
                 }

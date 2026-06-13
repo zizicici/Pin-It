@@ -1655,7 +1655,7 @@ extension CloudKitRecordSyncManager {
         let recordNames = changes.physicalDeletedRecordNamesWithoutTombstone
         guard !recordNames.isEmpty else { return }
         _ = try AppDatabase.shared.dbWriter?.write { db in
-            let now = try db.transactionDate.nanoSecondSince1970
+            let now = try db.transactionDate.millisecondsSince1970
             for recordName in recordNames {
                 guard let metadata = try CloudKitRecordMetadata.fetchOne(db, key: recordName),
                       !metadata.isDeleted,
@@ -2465,7 +2465,7 @@ extension CloudKitRecordSyncManager {
         _ = try AppDatabase.shared.dbWriter?.write { db in
             for text in try PostText.fetchAll(db) {
                 guard try Post.fetchOne(db, id: text.postId) == nil else { continue }
-                try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, deletionTime: text.modificationTime ?? db.transactionDate.nanoSecondSince1970, in: db)
+                try enqueueCloudKitDeleteIfNeeded(recordType: .text, syncId: text.syncId, deletionTime: text.modificationTime ?? db.transactionDate.millisecondsSince1970, in: db)
                 if let textId = text.id {
                     try PostText.deleteAll(db, ids: [textId])
                 }
@@ -2475,7 +2475,7 @@ extension CloudKitRecordSyncManager {
 
             for image in try PostImage.fetchAll(db) {
                 guard try Post.fetchOne(db, id: image.postId) == nil else { continue }
-                try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, deletionTime: image.modificationTime ?? db.transactionDate.nanoSecondSince1970, in: db)
+                try enqueueCloudKitDeleteIfNeeded(recordType: .image, syncId: image.syncId, deletionTime: image.modificationTime ?? db.transactionDate.millisecondsSince1970, in: db)
                 if let imageId = image.id {
                     try PostImage.deleteAll(db, ids: [imageId])
                 }
@@ -2488,7 +2488,7 @@ extension CloudKitRecordSyncManager {
                 let hasPost = try Post.fetchOne(db, id: decoration.postId) != nil
                 let hasStyle = try PostStyle.fetchOne(db, id: decoration.styleId) != nil
                 guard !hasPost || !hasStyle else { continue }
-                try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: decoration.modificationTime ?? db.transactionDate.nanoSecondSince1970, in: db)
+                try enqueueCloudKitDeleteIfNeeded(recordType: .decoration, syncId: decoration.syncId, deletionTime: decoration.modificationTime ?? db.transactionDate.millisecondsSince1970, in: db)
                 if let decorationId = decoration.id {
                     try PostDecoration.deleteAll(db, ids: [decorationId])
                 }
@@ -2626,7 +2626,7 @@ extension CloudKitRecordSyncManager {
 
     func enqueueExpiredTombstonePurgesIfNeeded() throws -> Bool {
         var didEnqueue = false
-        let cutoff = Date().nanoSecondSince1970 - Self.tombstoneRetentionMilliseconds
+        let cutoff = Date().millisecondsSince1970 - Self.tombstoneRetentionMilliseconds
         _ = try AppDatabase.shared.dbWriter?.write { db in
             let tombstones = try Row.fetchAll(
                 db,
@@ -3385,7 +3385,7 @@ extension CloudKitRecordSyncManager {
                             db,
                             sql: "SELECT MAX(updated_at) FROM cloudkit_record_metadata"
                         ) ?? 0
-                        let now = try db.transactionDate.nanoSecondSince1970
+                        let now = try db.transactionDate.millisecondsSince1970
                         if now - newestMetadataUpdate < Self.tombstoneRetentionMilliseconds {
                             shouldPruneMissingLocalRecords = false
                             try CloudKitOutboxEntry.enqueueBootstrapSaves(in: db)
@@ -3849,7 +3849,7 @@ extension CloudKitRecordSyncManager {
         )
         let knownRecordNames = Set(metadataByRecordName.keys)
         var defaultStyleSyncId = try CloudKitSettingRecord.current(in: db).defaultStyleSyncId
-        let pruneReferenceTime = try db.transactionDate.nanoSecondSince1970
+        let pruneReferenceTime = try db.transactionDate.millisecondsSince1970
         var didChangeDatabase = false
         var didChangeStyles = false
         var deletedImageFiles: [(String, CacheImageType)] = []
@@ -4080,7 +4080,7 @@ extension CloudKitRecordSyncManager {
                 .fetchOne(db)
             try PostDecoration.deleteAll(db, ids: decorations.compactMap(\.id))
             try PostStyle.deleteAll(db, ids: [styleId])
-            let fallbackModificationTime = try db.transactionDate.nanoSecondSince1970
+            let fallbackModificationTime = try db.transactionDate.millisecondsSince1970
             if try DefaultStyle.replaceDeletedStyleIfNeeded(
                 deletedStyle: style,
                 fallbackStyle: fallbackStyle,
@@ -4901,7 +4901,7 @@ extension CloudKitRecordSyncManager {
         for (index, pinnedPost) in pinnedPosts.enumerated() {
             guard let postId = pinnedPost.id else { continue }
             let derivedModificationTime = max(
-                try db.transactionDate.nanoSecondSince1970,
+                try db.transactionDate.millisecondsSince1970,
                 modificationTime + Int64(index) + 1
             )
             try Post

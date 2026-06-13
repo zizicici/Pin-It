@@ -66,7 +66,7 @@ struct PostIntentQuery: EntityQuery {
                 styleEntity = nil
             }
             
-            return .init(id: Int(detail.post.id!), date: Date(nanoSecondSince1970: detail.post.creationTime!), text: text, originalImage: (originalURL != nil) ? IntentFile(fileURL: originalURL!) : nil, isPinned: detail.post.isPinned, style: styleEntity)
+            return .init(id: Int(detail.post.id!), date: Date(millisecondsSince1970: detail.post.creationTime!), text: text, originalImage: (originalURL != nil) ? IntentFile(fileURL: originalURL!) : nil, isPinned: detail.post.isPinned, style: styleEntity)
         }
         
         return result
@@ -88,7 +88,7 @@ struct PostIntentQuery: EntityQuery {
                 styleEntity = nil
             }
             
-            return .init(id: Int(detail.post.id!), date: Date(nanoSecondSince1970: detail.post.creationTime!), text: text, originalImage: (originalURL != nil) ? IntentFile(fileURL: originalURL!) : nil, isPinned: detail.post.isPinned, style: styleEntity)
+            return .init(id: Int(detail.post.id!), date: Date(millisecondsSince1970: detail.post.creationTime!), text: text, originalImage: (originalURL != nil) ? IntentFile(fileURL: originalURL!) : nil, isPinned: detail.post.isPinned, style: styleEntity)
         }
         
         return result

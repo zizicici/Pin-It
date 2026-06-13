@@ -49,7 +49,7 @@ struct CloudKitRecordMetadata: Codable, FetchableRecord, MutablePersistableRecor
 
 extension CloudKitRecordMetadata {
     static func markLocalChange(_ entry: CloudKitOutboxEntry, in db: Database) throws {
-        let timestamp = try db.transactionDate.nanoSecondSince1970
+        let timestamp = try db.transactionDate.millisecondsSince1970
         let existing = try CloudKitRecordMetadata.fetchOne(db, key: entry.recordName)
         let localVersion = max(entry.localVersion, existing?.localVersion ?? 0)
         var metadata = CloudKitRecordMetadata(
@@ -68,7 +68,7 @@ extension CloudKitRecordMetadata {
     }
 
     static func markSynced(_ entries: [CloudKitOutboxEntry], in db: Database) throws {
-        let timestamp = try db.transactionDate.nanoSecondSince1970
+        let timestamp = try db.transactionDate.millisecondsSince1970
         for entry in entries {
             guard var metadata = try CloudKitRecordMetadata.fetchOne(db, key: entry.recordName) else { continue }
             metadata.lastSyncedVersion = max(metadata.lastSyncedVersion, entry.localVersion)
@@ -79,7 +79,7 @@ extension CloudKitRecordMetadata {
     }
 
     static func markFailed(_ entries: [CloudKitOutboxEntry], error: Error, in db: Database) throws {
-        let timestamp = try db.transactionDate.nanoSecondSince1970
+        let timestamp = try db.transactionDate.millisecondsSince1970
         for entry in entries {
             guard var metadata = try CloudKitRecordMetadata.fetchOne(db, key: entry.recordName) else { continue }
             if let entryId = entry.id,
@@ -103,7 +103,7 @@ extension CloudKitRecordMetadata {
         isDeleted: Bool,
         in db: Database
     ) throws {
-        let timestamp = try db.transactionDate.nanoSecondSince1970
+        let timestamp = try db.transactionDate.millisecondsSince1970
         let existing = try CloudKitRecordMetadata.fetchOne(db, key: recordName)
         var metadata = CloudKitRecordMetadata(
             recordName: recordName,
@@ -153,7 +153,7 @@ extension CloudKitSettingRecord {
             defaultStyleModificationTime: 0,
             pendingDefaultStyleSyncId: nil,
             pendingDefaultStyleModificationTime: nil,
-            updatedAt: try db.transactionDate.nanoSecondSince1970
+            updatedAt: try db.transactionDate.millisecondsSince1970
         )
     }
 
@@ -163,7 +163,7 @@ extension CloudKitSettingRecord {
         setting.defaultStyleModificationTime = modificationTime
         setting.pendingDefaultStyleSyncId = nil
         setting.pendingDefaultStyleModificationTime = nil
-        setting.updatedAt = try db.transactionDate.nanoSecondSince1970
+        setting.updatedAt = try db.transactionDate.millisecondsSince1970
         try setting.save(db)
     }
 
@@ -173,7 +173,7 @@ extension CloudKitSettingRecord {
             if setting.pendingDefaultStyleSyncId != nil || setting.pendingDefaultStyleModificationTime != nil {
                 setting.pendingDefaultStyleSyncId = nil
                 setting.pendingDefaultStyleModificationTime = nil
-                setting.updatedAt = try db.transactionDate.nanoSecondSince1970
+                setting.updatedAt = try db.transactionDate.millisecondsSince1970
                 try setting.save(db)
                 return true
             }
@@ -183,7 +183,7 @@ extension CloudKitSettingRecord {
 
         setting.pendingDefaultStyleSyncId = syncId
         setting.pendingDefaultStyleModificationTime = modificationTime
-        setting.updatedAt = try db.transactionDate.nanoSecondSince1970
+        setting.updatedAt = try db.transactionDate.millisecondsSince1970
         try setting.save(db)
         return true
     }
@@ -198,7 +198,7 @@ extension CloudKitSettingRecord {
         }
         setting.pendingDefaultStyleSyncId = nil
         setting.pendingDefaultStyleModificationTime = nil
-        setting.updatedAt = try db.transactionDate.nanoSecondSince1970
+        setting.updatedAt = try db.transactionDate.millisecondsSince1970
         try setting.save(db)
         return true
     }
@@ -215,7 +215,7 @@ extension CloudKitSettingRecord {
         setting.defaultStyleModificationTime = 0
         setting.pendingDefaultStyleSyncId = nil
         setting.pendingDefaultStyleModificationTime = nil
-        setting.updatedAt = try db.transactionDate.nanoSecondSince1970
+        setting.updatedAt = try db.transactionDate.millisecondsSince1970
         try setting.save(db)
         return true
     }

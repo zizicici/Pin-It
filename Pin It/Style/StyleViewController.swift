@@ -1106,7 +1106,7 @@ struct DefaultStyle: RawRepresentable, UserDefaultSettable {
         if promotesLocalOnboarding {
             try promoteLocalOnboardingStyleIfNeeded(value)
         }
-        let modificationTime = Date().nanoSecondSince1970
+        let modificationTime = Date().millisecondsSince1970
         // Track the local change time even when sync is off, so a later re-enable
         // can ship the real timestamp instead of the moment of re-enable.
         CloudKitSync.setDefaultStyleLocalModificationTime(modificationTime)

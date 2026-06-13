@@ -94,7 +94,7 @@ extension CloudKitRecordSyncManager {
 
     func modificationTime(of record: CKRecord) -> Int64 {
         int64Value(Field.modificationTime, in: record)
-        ?? record.modificationDate?.nanoSecondSince1970
+        ?? record.modificationDate?.millisecondsSince1970
         ?? 0
     }
 

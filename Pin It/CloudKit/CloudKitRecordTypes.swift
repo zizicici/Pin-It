@@ -126,11 +126,11 @@ extension CloudKitOutboxEntry {
         recordType: CloudKitRecordType,
         recordName: String,
         operation: Operation,
-        modificationTime: Int64 = Date().nanoSecondSince1970,
+        modificationTime: Int64 = Date().millisecondsSince1970,
         aggregateType: CloudKitAggregateType = .record,
         aggregateName: String? = nil,
         localVersion: Int64? = nil,
-        timestamp: Int64 = Date().nanoSecondSince1970
+        timestamp: Int64 = Date().millisecondsSince1970
     ) {
         self.recordType = recordType.rawValue
         self.recordName = recordName
@@ -215,11 +215,11 @@ extension CloudKitOutboxEntry {
                 recordType: recordType,
                 recordName: CloudKitRecordName.make(recordType, syncId: syncId),
                 operation: .save,
-                modificationTime: modificationTime ?? db.transactionDate.nanoSecondSince1970,
+                modificationTime: modificationTime ?? db.transactionDate.millisecondsSince1970,
                 aggregateType: aggregateType,
                 aggregateName: aggregateName,
                 localVersion: localVersion,
-                timestamp: db.transactionDate.nanoSecondSince1970
+                timestamp: db.transactionDate.millisecondsSince1970
             ),
             in: db
         )
@@ -260,11 +260,11 @@ extension CloudKitOutboxEntry {
                 recordType: recordType,
                 recordName: recordName,
                 operation: .delete,
-                modificationTime: deletionTime ?? db.transactionDate.nanoSecondSince1970,
+                modificationTime: deletionTime ?? db.transactionDate.millisecondsSince1970,
                 aggregateType: aggregateType,
                 aggregateName: aggregateName ?? recordName,
-                localVersion: deletionTime ?? db.transactionDate.nanoSecondSince1970,
-                timestamp: db.transactionDate.nanoSecondSince1970
+                localVersion: deletionTime ?? db.transactionDate.millisecondsSince1970,
+                timestamp: db.transactionDate.millisecondsSince1970
             ),
             in: db
         )
@@ -280,14 +280,14 @@ extension CloudKitOutboxEntry {
                 aggregateType: .setting,
                 aggregateName: CloudKitRecordName.settingsName,
                 localVersion: modificationTime,
-                timestamp: db.transactionDate.nanoSecondSince1970
+                timestamp: db.transactionDate.millisecondsSince1970
             ),
             in: db
         )
     }
 
     static func enqueuePurge(recordType: CloudKitRecordType, recordName: String, in db: Database) throws {
-        let timestamp = try db.transactionDate.nanoSecondSince1970
+        let timestamp = try db.transactionDate.millisecondsSince1970
         try enqueue(
             CloudKitOutboxEntry(
                 recordType: recordType,
@@ -364,7 +364,7 @@ extension CloudKitOutboxEntry {
     static func markFailed(ids: [Int64], error: Error, in db: Database) throws {
         guard !ids.isEmpty else { return }
         let message = detailedErrorDescription(error)
-        let timestamp = try db.transactionDate.nanoSecondSince1970
+        let timestamp = try db.transactionDate.millisecondsSince1970
         var failedEntries: [CloudKitOutboxEntry] = []
         for id in ids {
             guard var entry = try CloudKitOutboxEntry.fetchOne(db, id: id) else { continue }
@@ -507,7 +507,7 @@ extension CloudKitOutboxEntry {
 
     static func enqueuePostGraphSave(postId: Int64, modificationTime: Int64?, in db: Database) throws {
         guard let post = try Post.fetchOne(db, id: postId) else { return }
-        let transactionTime = try db.transactionDate.nanoSecondSince1970
+        let transactionTime = try db.transactionDate.millisecondsSince1970
         let requestedVersion = modificationTime ?? transactionTime
         let graphVersion = max(requestedVersion, (post.modificationTime ?? 0) + 1)
         let aggregateName = post.cloudKitRecordName
@@ -524,7 +524,7 @@ extension CloudKitOutboxEntry {
         if let modificationTime {
             requestedVersion = modificationTime
         } else {
-            requestedVersion = try db.transactionDate.nanoSecondSince1970
+            requestedVersion = try db.transactionDate.millisecondsSince1970
         }
         let graphVersion = max(requestedVersion, (style.modificationTime ?? 0) + 1)
         let aggregateName = style.cloudKitRecordName
@@ -682,7 +682,7 @@ extension CloudKitLocalTombstone {
             recordType: recordType,
             recordName: recordName,
             deletionTime: deletionTime,
-            updatedAt: try db.transactionDate.nanoSecondSince1970,
+            updatedAt: try db.transactionDate.millisecondsSince1970,
             aggregateType: aggregateType,
             aggregateName: aggregateName
         )

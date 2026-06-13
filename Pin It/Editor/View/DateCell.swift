@@ -17,7 +17,7 @@ struct DateCellItem: Hashable {
     }
     
     var title: String?
-    var nanoSecondsFrom1970: Int64?
+    var millisecondsSince1970: Int64?
     var day: GregorianDay?
     var mode: Mode = .dateAndTime
 }
@@ -83,7 +83,7 @@ class DateCell: DateBaseCell {
     
     @objc func editingDidEnd() {
         if let date = datePicker?.date {
-            selectDateAction?(date.nanoSecondSince1970)
+            selectDateAction?(date.millisecondsSince1970)
         }
     }
     
@@ -103,8 +103,8 @@ class DateCell: DateBaseCell {
                 pronunciationText = datePicker?.date.formatted(date: .long, time: .omitted) ?? ""
             case .dateAndTime:
                 datePicker?.datePickerMode = .dateAndTime
-                if let nanoSecondsFrom1970 = dateItem.nanoSecondsFrom1970 {
-                    datePicker?.date = Date(nanoSecondSince1970: nanoSecondsFrom1970)
+                if let millisecondsSince1970 = dateItem.millisecondsSince1970 {
+                    datePicker?.date = Date(millisecondsSince1970: millisecondsSince1970)
                 } else {
                     if let day = dateItem.day {
                         datePicker?.date = Date().combine(with: day)
@@ -115,10 +115,10 @@ class DateCell: DateBaseCell {
                 pronunciationText = datePicker?.date.formatted(date: .long, time: .standard) ?? ""
             case .time:
                 datePicker?.datePickerMode = .time
-                if let nanoSecondsFrom1970 = dateItem.nanoSecondsFrom1970 {
-                    datePicker?.date = Date(nanoSecondSince1970: nanoSecondsFrom1970)
+                if let millisecondsSince1970 = dateItem.millisecondsSince1970 {
+                    datePicker?.date = Date(millisecondsSince1970: millisecondsSince1970)
                 } else {
-                    datePicker?.date = Date(nanoSecondSince1970: 0)
+                    datePicker?.date = Date(millisecondsSince1970: 0)
                 }
                 pronunciationText = datePicker?.date.formatted(date: .omitted, time: .standard) ?? ""
             }

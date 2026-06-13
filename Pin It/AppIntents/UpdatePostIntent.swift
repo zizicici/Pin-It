@@ -205,7 +205,7 @@ struct UpdateExpirationTimeIntent: LiveActivityIntent {
             return .result(value: false)
         }
         
-        let result = DataManager.shared.update(post: detail.post, expirationTime: expirationTime?.nanoSecondSince1970)
+        let result = DataManager.shared.update(post: detail.post, expirationTime: expirationTime?.millisecondsSince1970)
         await SyncCompletionManager.shared.waitForCompletion(postId: Int64(post.id), timeout: 5.0)
         
         return .result(value: result)

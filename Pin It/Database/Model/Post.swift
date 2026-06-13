@@ -170,6 +170,6 @@ extension Post {
             return nil
         }
         let seconds = DefaultExpirationTime.current.rawValue
-        return Date(timeIntervalSinceNow: TimeInterval(seconds)).nanoSecondSince1970
+        return Date(timeIntervalSinceNow: TimeInterval(seconds)).millisecondsSince1970
     }
 }

@@ -36,10 +36,10 @@ extension TimestampedRecord {
     /// this callback, call `initializeTimestamps` from your implementation.
     mutating func initializeTimestamps(_ db: Database) throws {
         if creationTime == nil {
-            creationTime = try db.transactionDate.nanoSecondSince1970
+            creationTime = try db.transactionDate.millisecondsSince1970
         }
         if modificationTime == nil {
-            modificationTime = try db.transactionDate.nanoSecondSince1970
+            modificationTime = try db.transactionDate.millisecondsSince1970
         }
     }
     
@@ -118,7 +118,7 @@ extension TimestampedRecord {
     }
 
     func nextModificationTime(_ db: Database, modificationTime: Date?) throws -> Int64 {
-        let timestamp = try modificationTime?.nanoSecondSince1970 ?? db.transactionDate.nanoSecondSince1970
+        let timestamp = try modificationTime?.millisecondsSince1970 ?? db.transactionDate.millisecondsSince1970
         // Read-after-fetch: callers usually pass a record fetched outside the write
         // block, so a concurrent writer (e.g. CloudKit pull) may have bumped the row
         // since. Take the max of in-memory and on-disk to avoid letting the new write
@@ -145,13 +145,8 @@ extension Date {
     var millisecondsSince1970: Int64 {
         Int64(timeIntervalSince1970 * 1000.0)
     }
-
-    /// Historical name kept for existing call sites. The stored unit is milliseconds.
-    var nanoSecondSince1970: Int64 {
-        millisecondsSince1970
-    }
     
-    init(nanoSecondSince1970: Int64) {
-        self.init(timeIntervalSince1970: Double(nanoSecondSince1970) / 1000.0)
+    init(millisecondsSince1970: Int64) {
+        self.init(timeIntervalSince1970: Double(millisecondsSince1970) / 1000.0)
     }
 }
