@@ -19,7 +19,7 @@ enum PinItPromotion {
             features: [
                 String(localized: "promotion.first"),
                 String(localized: "promotion.second"),
-                String(localized: "promotion.future")
+                String(localized: "promotion.cloudKitSync")
             ],
             gradientColors: [.systemRed.withAlphaComponent(0.7), .systemRed.withAlphaComponent(0.8)]
         )
@@ -380,7 +380,12 @@ class SettingsViewController: UIViewController {
                 cell.isUserInteractionEnabled = true
                 cell.accessoryType = .disclosureIndicator
                 var content = UIListContentConfiguration.valueCell()
-                content.text = identifier.title
+                content.attributedText = ProBadge.attributedTitle(
+                    identifier.title,
+                    font: .preferredFont(forTextStyle: .body),
+                    color: .label,
+                    traitCollection: cell.traitCollection
+                )
                 content.textProperties.color = .label
                 content.secondaryText = cloudKitSync.getName()
                 cell.contentConfiguration = content
@@ -406,7 +411,17 @@ class SettingsViewController: UIViewController {
                 cell.isUserInteractionEnabled = true
                 cell.accessoryType = .disclosureIndicator
                 var content = UIListContentConfiguration.valueCell()
-                content.text = identifier.title
+                if case .maxPinned = item {
+                    // Max pinned posts is a Pro feature — mark it with the badge.
+                    content.attributedText = ProBadge.attributedTitle(
+                        identifier.title,
+                        font: .preferredFont(forTextStyle: .body),
+                        color: .label,
+                        traitCollection: cell.traitCollection
+                    )
+                } else {
+                    content.text = identifier.title
+                }
                 content.textProperties.color = .label
                 content.secondaryText = item.value
                 cell.contentConfiguration = content

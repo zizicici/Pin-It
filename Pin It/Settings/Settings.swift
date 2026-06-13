@@ -92,6 +92,14 @@ extension CloudKitSync: UserDefaultSettable {
         let oldValue = getValue()
         guard oldValue != value else { return }
 
+        // Enabling sync is a Pro feature. Defense-in-depth: the UI routes non-Pro
+        // users to the paywall before reaching here, and lifetime membership never
+        // lapses, so launch-time syncIfEnabled() (which reads the stored flag, not
+        // this setter) stays valid.
+        if value == .enable, User.shared.proTier() == .none {
+            throw SettingsError.needsPro
+        }
+
         setLastError(nil, postsUpdate: false)
         if value == .enable {
             // A stale flag would otherwise resurface the "disabled by account

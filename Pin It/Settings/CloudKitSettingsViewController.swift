@@ -96,6 +96,9 @@ final class CloudKitSettingsViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .SettingsUpdate, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .DatabaseUpdated, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .cloudKitSyncActivityChanged, object: nil)
+        // After a purchase/restore the Pro badge clears and enabling unlocks.
+        NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .LifetimeMembership, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .StoreInfoLoaded, object: nil)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -137,8 +140,15 @@ final class CloudKitSettingsViewController: UIViewController {
             case .sync(let cloudKitSync):
                 cell.accessoryType = .disclosureIndicator
                 var content = UIListContentConfiguration.valueCell()
-                content.text = item.title
                 content.textProperties.color = .label
+                // Mark sync as a Pro feature with an inline badge on the title,
+                // shown regardless of membership status.
+                content.attributedText = ProBadge.attributedTitle(
+                    item.title,
+                    font: .preferredFont(forTextStyle: .body),
+                    color: .label,
+                    traitCollection: cell.traitCollection
+                )
                 if isChangingCloudKitSync {
                     content.secondaryText = String(localized: "settings.cloudKitSync.checking")
                     cell.isUserInteractionEnabled = false
@@ -404,6 +414,20 @@ private extension CloudKitSettingsViewController {
             )
             alertController.addAction(UIAlertAction(title: String(localized: "settings.disable"), style: .destructive) { [weak self] _ in
                 self?.setCloudKitSync(.disable)
+            })
+            alertController.addAction(UIAlertAction(title: String(localized: "button.cancel"), style: .cancel))
+            present(alertController, animated: ConsideringUser.animated)
+        } else if User.shared.proTier() == .none {
+            // Enabling sync is a Pro feature. Explain it, then send the user back
+            // to the Settings page where the membership purchase cell lives. After
+            // buying they re-enter and tap again — the gate clears once they're Pro.
+            let alertController = UIAlertController(
+                title: CloudKitSync.getTitle(),
+                message: String(localized: "error.needsPro.message"),
+                preferredStyle: .alert
+            )
+            alertController.addAction(UIAlertAction(title: String(localized: "membership.purchase"), style: .default) { [weak self] _ in
+                self?.navigationController?.popToRootViewController(animated: ConsideringUser.pushAnimated)
             })
             alertController.addAction(UIAlertAction(title: String(localized: "button.cancel"), style: .cancel))
             present(alertController, animated: ConsideringUser.animated)
