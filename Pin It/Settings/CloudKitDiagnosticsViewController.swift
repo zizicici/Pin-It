@@ -11,7 +11,7 @@ import SnapKit
 import MoreKit
 
 final class CloudKitDiagnosticsViewController: UIViewController {
-    private enum Row: Int, CaseIterable {
+    private enum Section: Int, CaseIterable {
         case export
         case clear
     }
@@ -75,29 +75,39 @@ final class CloudKitDiagnosticsViewController: UIViewController {
 }
 
 extension CloudKitDiagnosticsViewController: UITableViewDataSource {
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return Section.allCases.count
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return Row.allCases.count
+        return 1
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
-        var content = UIListContentConfiguration.subtitleCell()
-        content.textProperties.alignment = .center
-        switch Row(rawValue: indexPath.row) {
+        switch Section(rawValue: indexPath.section) {
         case .export:
+            cell.accessoryType = .disclosureIndicator
+            var content = UIListContentConfiguration.valueCell()
             content.text = String(localized: "settings.cloudKitSync.exportDiagnostics")
-            content.textProperties.color = .systemRed
+            content.textProperties.color = .label
+            cell.contentConfiguration = content
         case .clear:
+            cell.accessoryType = .none
+            var content = UIListContentConfiguration.subtitleCell()
             content.text = String(localized: "settings.cloudKitSync.clearDiagnostics")
             content.textProperties.color = .systemRed
+            content.textProperties.alignment = .center
+            cell.contentConfiguration = content
         case .none:
             break
         }
-        cell.contentConfiguration = content
         return cell
     }
 
     func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        // Description + storage stats sit under the export section.
+        guard Section(rawValue: section) == .export else { return nil }
         return [String(localized: "settings.cloudKitSync.diagnostics.footer"), storageSummaryText]
             .compactMap(\.self)
             .joined(separator: "\n\n")
@@ -107,7 +117,7 @@ extension CloudKitDiagnosticsViewController: UITableViewDataSource {
 extension CloudKitDiagnosticsViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        switch Row(rawValue: indexPath.row) {
+        switch Section(rawValue: indexPath.section) {
         case .export:
             exportDiagnostics()
         case .clear:
@@ -145,7 +155,7 @@ private extension CloudKitDiagnosticsViewController {
         // iPad requires a valid popover anchor or presentation crashes. Resolve
         // the export row's current cell now rather than capturing it earlier.
         if let popover = activityViewController.popoverPresentationController {
-            let exportIndexPath = IndexPath(row: Row.export.rawValue, section: 0)
+            let exportIndexPath = IndexPath(row: 0, section: Section.export.rawValue)
             let anchor: UIView = tableView.cellForRow(at: exportIndexPath) ?? tableView
             popover.sourceView = anchor
             popover.sourceRect = anchor.bounds

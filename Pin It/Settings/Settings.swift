@@ -38,6 +38,7 @@ extension UserDefaults {
 extension Notification.Name {
     static let DefaultStyleDidChanged = Notification.Name(rawValue: "com.zizicici.pin.defaultStyle.didChanged")
     static let cloudKitSyncDidChange = Notification.Name(rawValue: "com.zizicici.pin.cloudKitSync.didChange")
+    static let cloudKitSyncActivityChanged = Notification.Name(rawValue: "com.zizicici.pin.cloudKitSync.activityChanged")
 }
 
 enum AutoBackup: Int, CaseIterable, Codable {
@@ -82,7 +83,7 @@ extension CloudKitSync: UserDefaultSettable {
         }
         if current == .enable {
             parts.append(AppInfo.localized("settings.cloudKitSync.foregroundOnly.footer"))
-            parts.append(String(localized: "settings.cloudKitSync.rebuild.footer"))
+            // The rebuild hint lives in the dedicated rebuild section's footer now.
         }
         return parts.joined(separator: "\n")
     }

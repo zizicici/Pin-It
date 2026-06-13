@@ -120,6 +120,10 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
             throw CloudKitSyncInProgressError()
         }
         beginBackgroundTaskIfNeeded()
+        // A rebuild is a sync run too: keep the settings status row in sync with
+        // its activity (sync() does the same around its own run).
+        postSyncActivityChanged()
+        defer { postSyncActivityChanged() }
 
         do {
             clearFollowUpSync(runID: syncRun)
@@ -308,8 +312,10 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
         var consecutiveFailures = 0
         var rounds = 0
         CloudKitSyncEventLog.shared.record(.runStart, runId: Int64(runID), "sync run started")
+        postSyncActivityChanged()
         defer {
             CloudKitSyncEventLog.shared.record(.runEnd, runId: Int64(runID), "sync run ended (rounds=\(rounds), consecutiveFailures=\(consecutiveFailures))")
+            postSyncActivityChanged()
         }
         while true {
             rounds += 1
@@ -761,6 +767,21 @@ extension CloudKitRecordSyncManager {
             return parts.joined(separator: " ")
         }
         return String(describing: type(of: error))
+    }
+
+    /// Whether a sync run is currently in progress. Drives the settings status row.
+    func isCurrentlySyncing() -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return isSyncing
+    }
+
+    /// Notifies observers (the settings status row) that sync activity started or
+    /// ended. Posted on main since it only drives UI.
+    private func postSyncActivityChanged() {
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .cloudKitSyncActivityChanged, object: nil)
+        }
     }
 
     func beginBackgroundTaskIfNeeded() {

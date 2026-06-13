@@ -1,6 +1,506 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "settings.cloudKitSync.clear.footer" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Clear removes your CloudKit records and syncs the deletion to other devices; records on this device are kept. Available only while sync is off."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Clear removes your CloudKit records and syncs the deletion to other devices; records on this device are kept. Available only while sync is off."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear removes your CloudKit records and syncs the deletion to other devices; records on this device are kept. Available only while sync is off."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Clear removes your CloudKit records and syncs the deletion to other devices; records on this device are kept. Available only while sync is off."
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Clear removes your CloudKit records and syncs the deletion to other devices; records on this device are kept. Available only while sync is off."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Clear removes your CloudKit records and syncs the deletion to other devices; records on this device are kept. Available only while sync is off."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Clear removes your CloudKit records and syncs the deletion to other devices; records on this device are kept. Available only while sync is off."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Clear removes your CloudKit records and syncs the deletion to other devices; records on this device are kept. Available only while sync is off."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Clear removes your CloudKit records and syncs the deletion to other devices; records on this device are kept. Available only while sync is off."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Clear removes your CloudKit records and syncs the deletion to other devices; records on this device are kept. Available only while sync is off."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Clear removes your CloudKit records and syncs the deletion to other devices; records on this device are kept. Available only while sync is off."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Clear removes your CloudKit records and syncs the deletion to other devices; records on this device are kept. Available only while sync is off."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Clear removes your CloudKit records and syncs the deletion to other devices; records on this device are kept. Available only while sync is off."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空会移除 CloudKit 上的记录并把删除同步到其他设备，本机记录会保留。仅在关闭同步后可用。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空會移除 CloudKit 上的記錄並把刪除同步到其他裝置，本機記錄會保留。僅在關閉同步後可用。"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空會移除 CloudKit 上的記錄並把刪除同步到其他裝置，本機記錄會保留。僅在關閉同步後可用。"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.status" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync Status"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync Status"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync Status"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync Status"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync Status"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync Status"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync Status"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync Status"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync Status"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync Status"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync Status"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync Status"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync Status"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步状态"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步狀態"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步狀態"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.syncing" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Syncing…"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Syncing…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Syncing…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Syncing…"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Syncing…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Syncing…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Syncing…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Syncing…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Syncing…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Syncing…"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Syncing…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Syncing…"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Syncing…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步中…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步中…"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步中…"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.upToDate" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Up to date"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Up to date"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up to date"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Up to date"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Up to date"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Up to date"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Up to date"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Up to date"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Up to date"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Up to date"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Up to date"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Up to date"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Up to date"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已是最新"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已是最新"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已是最新"
+          }
+        }
+      }
+    },
+    "settings.cloudKitSync.syncFailed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync failed"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync failed"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync failed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync failed"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync failed"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync failed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync failed"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync failed"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync failed"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync failed"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync failed"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync failed"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sync failed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步出错"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步出錯"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步出錯"
+          }
+        }
+      }
+    },
     "settings.cloudKitSync.exportDiagnostics.failure.message" : {
       "localizations" : {
         "ar" : {

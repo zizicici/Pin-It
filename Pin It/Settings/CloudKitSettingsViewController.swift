@@ -12,12 +12,13 @@ import MoreKit
 final class CloudKitSettingsViewController: UIViewController {
     private enum Section: Hashable {
         case sync
-        case action
-        case diagnostics
+        case rebuild
+        case clear
     }
 
     private enum Item: Hashable {
         case sync(CloudKitSync)
+        case status
         case rebuild
         case clear
         case diagnostics
@@ -26,6 +27,8 @@ final class CloudKitSettingsViewController: UIViewController {
             switch self {
             case .sync:
                 return CloudKitSync.getTitle()
+            case .status:
+                return String(localized: "settings.cloudKitSync.status")
             case .rebuild:
                 return String(localized: "settings.cloudKitSync.rebuild")
             case .clear:
@@ -40,8 +43,16 @@ final class CloudKitSettingsViewController: UIViewController {
         weak var owner: CloudKitSettingsViewController?
 
         override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
-            guard sectionIdentifier(for: section) == .sync else { return nil }
-            return owner?.cloudKitSyncFooter()
+            switch sectionIdentifier(for: section) {
+            case .sync:
+                return owner?.cloudKitSyncFooter()
+            case .rebuild:
+                return String(localized: "settings.cloudKitSync.rebuild.footer")
+            case .clear:
+                return String(localized: "settings.cloudKitSync.clear.footer")
+            case .none:
+                return nil
+            }
         }
     }
 
@@ -84,16 +95,17 @@ final class CloudKitSettingsViewController: UIViewController {
 
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .SettingsUpdate, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .DatabaseUpdated, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .cloudKitSyncActivityChanged, object: nil)
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // The failed-outbox summary only refreshes on .SettingsUpdate /
-        // .DatabaseUpdated; a sync pass whose error text is unchanged posts
-        // neither (setLastError dedupes), so the counts can be stale when the
-        // page comes back on screen.
-        refreshFailedOutboxSummary()
-        refreshDiagnosticsAvailability()
+        // Reflect current state on (re)appear: reloadData reconfigures the sync
+        // status row (its value is computed at cell-build time) and also kicks
+        // the async failed-outbox / diagnostics refreshes. A sync pass whose
+        // error text is unchanged posts no notification (setLastError dedupes),
+        // so these can otherwise be stale when the page comes back on screen.
+        reloadData()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -119,6 +131,7 @@ final class CloudKitSettingsViewController: UIViewController {
             guard let self else { return nil }
             let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
             cell.isUserInteractionEnabled = true
+            cell.selectionStyle = .default
 
             switch item {
             case .sync(let cloudKitSync):
@@ -133,24 +146,33 @@ final class CloudKitSettingsViewController: UIViewController {
                     content.secondaryText = cloudKitSync.getName()
                 }
                 cell.contentConfiguration = content
+            case .status:
+                // Tappable: triggers a manual sync (see didSelectRowAt). Default
+                // selection + interaction from the top of the provider.
+                cell.accessoryType = .none
+                var content = UIListContentConfiguration.valueCell()
+                content.text = item.title
+                content.textProperties.color = .label
+                content.secondaryText = cloudKitSyncStatusText()
+                cell.contentConfiguration = content
             case .rebuild:
                 cell.accessoryType = .none
                 var content = UIListContentConfiguration.subtitleCell()
                 content.text = item.title
                 content.secondaryText = isRebuildingCloudKitSync ? String(localized: "settings.cloudKitSync.rebuilding") : nil
-                content.textProperties.color = isRebuildingCloudKitSync ? .secondaryLabel : .systemRed
+                content.textProperties.color = canRebuildCloudKit ? .systemRed : .secondaryLabel
                 content.textProperties.alignment = .center
                 cell.contentConfiguration = content
-                cell.isUserInteractionEnabled = !isRebuildingCloudKitSync
+                cell.isUserInteractionEnabled = canRebuildCloudKit
             case .clear:
                 cell.accessoryType = .none
                 var content = UIListContentConfiguration.subtitleCell()
                 content.text = item.title
                 content.secondaryText = isClearingCloudKitData ? String(localized: "settings.cloudKitSync.clearing") : nil
-                content.textProperties.color = isClearingCloudKitData ? .secondaryLabel : .systemRed
+                content.textProperties.color = canClearCloudKit ? .systemRed : .secondaryLabel
                 content.textProperties.alignment = .center
                 cell.contentConfiguration = content
-                cell.isUserInteractionEnabled = !isClearingCloudKitData
+                cell.isUserInteractionEnabled = canClearCloudKit
             case .diagnostics:
                 cell.accessoryType = .disclosureIndicator
                 var content = UIListContentConfiguration.valueCell()
@@ -175,18 +197,18 @@ final class CloudKitSettingsViewController: UIViewController {
 
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         snapshot.appendSections([.sync])
-        snapshot.appendItems([.sync(CloudKitSync.getValue())], toSection: .sync)
-
-        let actionItems = cloudKitActionItems()
-        if !actionItems.isEmpty {
-            snapshot.appendSections([.action])
-            snapshot.appendItems(actionItems, toSection: .action)
+        var syncItems: [Item] = [.sync(CloudKitSync.getValue())]
+        if CloudKitSync.current == .enable {
+            syncItems.append(.status)
         }
+        syncItems.append(contentsOf: cloudKitDiagnosticsItems())
+        snapshot.appendItems(syncItems, toSection: .sync)
 
-        let diagnosticsItems = cloudKitDiagnosticsItems()
-        if !diagnosticsItems.isEmpty {
-            snapshot.appendSections([.diagnostics])
-            snapshot.appendItems(diagnosticsItems, toSection: .diagnostics)
+        if shouldShowCloudKitActions {
+            snapshot.appendSections([.rebuild])
+            snapshot.appendItems([.rebuild], toSection: .rebuild)
+            snapshot.appendSections([.clear])
+            snapshot.appendItems([.clear], toSection: .clear)
         }
 
         snapshot.reconfigureItems(snapshot.itemIdentifiers)
@@ -200,14 +222,34 @@ final class CloudKitSettingsViewController: UIViewController {
         refreshDiagnosticsAvailability()
     }
 
-    private func cloudKitActionItems() -> [Item] {
-        if CloudKitSync.current == .enable {
-            return [.rebuild]
-        } else if CloudKitSync.remoteDataMayExist || CloudKitSync.pendingRemoteReset {
-            return [.clear]
-        } else {
-            return []
-        }
+    /// Both the rebuild and clear sections show together whenever either action
+    /// is conceptually relevant; each row enables only in its applicable state
+    /// (see canRebuildCloudKit / canClearCloudKit) and is greyed out otherwise,
+    /// so the user always sees both exist. State-based (not the tappability
+    /// flags) so an in-progress rebuild/clear keeps its row on screen.
+    private var shouldShowCloudKitActions: Bool {
+        CloudKitSync.current == .enable
+            || CloudKitSync.remoteDataMayExist
+            || CloudKitSync.pendingRemoteReset
+    }
+
+    /// Rebuild re-uploads this device's library as the canonical cloud copy —
+    /// only meaningful while sync is on.
+    private var canRebuildCloudKit: Bool {
+        CloudKitSync.current == .enable
+            && !isChangingCloudKitSync
+            && !isRebuildingCloudKitSync
+            && !isClearingCloudKitData
+    }
+
+    /// Clear empties the cloud zone — only offered while sync is off and there is
+    /// still remote data to remove.
+    private var canClearCloudKit: Bool {
+        CloudKitSync.current == .disable
+            && (CloudKitSync.remoteDataMayExist || CloudKitSync.pendingRemoteReset)
+            && !isChangingCloudKitSync
+            && !isRebuildingCloudKitSync
+            && !isClearingCloudKitData
     }
 
     private func cloudKitDiagnosticsItems() -> [Item] {
@@ -215,6 +257,16 @@ final class CloudKitSettingsViewController: UIViewController {
         // has turned it off, as long as there is still a log worth sending.
         guard CloudKitSync.current == .enable || hasDiagnosticEvents else { return [] }
         return [.diagnostics]
+    }
+
+    private func cloudKitSyncStatusText() -> String {
+        if CloudKitRecordSyncManager.shared.isCurrentlySyncing() {
+            return String(localized: "settings.cloudKitSync.syncing")
+        }
+        if CloudKitSync.lastError != nil {
+            return String(localized: "settings.cloudKitSync.syncFailed")
+        }
+        return String(localized: "settings.cloudKitSync.upToDate")
     }
 
     private func cloudKitSyncFooter() -> String? {
@@ -328,6 +380,10 @@ extension CloudKitSettingsViewController: UITableViewDelegate {
         switch item {
         case .sync:
             showCloudKitSyncAlert()
+        case .status:
+            // Tap to sync now (like a pull-to-refresh); the activity notification
+            // flips the row to "Syncing…" and back.
+            CloudKitRecordSyncManager.shared.syncIfEnabled()
         case .rebuild:
             showCloudKitRebuildAlert()
         case .clear:
