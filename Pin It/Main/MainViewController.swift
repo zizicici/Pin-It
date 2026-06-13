@@ -59,7 +59,7 @@ class MainViewController: UIViewController {
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
         
-        tabBarItem = UITabBarItem(title: String(localized: "controller.pin.title"), image: UIImage(systemName: "pin.fill"), tag: 1)
+        tabBarItem = UITabBarItem(title: AppInfo.displayName, image: UIImage(systemName: "pin.fill"), tag: 1)
     }
     
     required init?(coder: NSCoder) {
@@ -224,7 +224,7 @@ class MainViewController: UIViewController {
     @objc
     func updateState() {
         if #available(iOS 26.0, *) {
-            navigationItem.title = String(localized: "controller.pin.title")
+            navigationItem.title = AppInfo.displayName
             navigationItem.subtitle = LiveActivityManager.shared.status.title
         } else {
             navigationItem.title = LiveActivityManager.shared.status.title

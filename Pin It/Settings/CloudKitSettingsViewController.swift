@@ -310,7 +310,7 @@ private extension CloudKitSettingsViewController {
         } else {
             let alertController = UIAlertController(
                 title: String(localized: "settings.cloudKitSync.enable.alert.title"),
-                message: String(localized: "settings.cloudKitSync.enable.alert.message"),
+                message: AppInfo.localized("settings.cloudKitSync.enable.alert.message"),
                 preferredStyle: .alert
             )
             alertController.addAction(UIAlertAction(title: String(localized: "settings.enable"), style: .default) { [weak self] _ in
@@ -352,7 +352,7 @@ private extension CloudKitSettingsViewController {
 
     func showCloudKitRebuildAlert() {
         let message = [
-            String(localized: "settings.cloudKitSync.rebuild.alert.message"),
+            AppInfo.localized("settings.cloudKitSync.rebuild.alert.message"),
             cloudKitLocalRecordSummary()
         ].compactMap(\.self).joined(separator: "\n\n")
         let alertController = UIAlertController(
@@ -372,7 +372,7 @@ private extension CloudKitSettingsViewController {
     func showCloudKitClearAlert() {
         let alertController = UIAlertController(
             title: String(localized: "settings.cloudKitSync.clear.alert.title"),
-            message: String(localized: "settings.cloudKitSync.clear.alert.message"),
+            message: AppInfo.localized("settings.cloudKitSync.clear.alert.message"),
             preferredStyle: .alert
         )
         let clearAction = UIAlertAction(title: String(localized: "settings.cloudKitSync.clear"), style: .destructive) { [weak self] _ in
@@ -403,7 +403,7 @@ private extension CloudKitSettingsViewController {
                         ? String(localized: "settings.cloudKitSync.rebuild.partial.title")
                         : String(localized: "settings.cloudKitSync.rebuild.success.title"),
                         message: hasOutboxFailures
-                        ? String(localized: "settings.cloudKitSync.rebuild.partial.message")
+                        ? AppInfo.localized("settings.cloudKitSync.rebuild.partial.message")
                         : String(localized: "settings.cloudKitSync.rebuild.success.message")
                     )
                 }
@@ -438,7 +438,7 @@ private extension CloudKitSettingsViewController {
                 await MainActor.run {
                     self?.showCloudKitResultAlert(
                         title: String(localized: "settings.cloudKitSync.clear.success.title"),
-                        message: String(localized: "settings.cloudKitSync.clear.success.message")
+                        message: AppInfo.localized("settings.cloudKitSync.clear.success.message")
                     )
                 }
             } catch {

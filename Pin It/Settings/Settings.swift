@@ -73,7 +73,7 @@ extension CloudKitSync: UserDefaultSettable {
     }
 
     static func getFooter() -> String? {
-        var parts = [String(localized: "settings.cloudKitSync.footer")]
+        var parts = [AppInfo.localized("settings.cloudKitSync.footer")]
         if let lastError {
             parts.append(lastError)
         }
@@ -81,7 +81,7 @@ extension CloudKitSync: UserDefaultSettable {
             parts.append(String(localized: "settings.cloudKitSync.pendingReset.footer"))
         }
         if current == .enable {
-            parts.append(String(localized: "settings.cloudKitSync.foregroundOnly.footer"))
+            parts.append(AppInfo.localized("settings.cloudKitSync.foregroundOnly.footer"))
             parts.append(String(localized: "settings.cloudKitSync.rebuild.footer"))
         }
         return parts.joined(separator: "\n")

@@ -1904,106 +1904,6 @@
         }
       }
     },
-    "controller.pin.title" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin It"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin It"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin It"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin It"
-          }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin It"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin It"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin It"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ピンイット"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "핀잇"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin It"
-          }
-        },
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin It"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin It"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin It"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "钉一下"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "釘一下"
-          }
-        },
-        "zh-HK" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "釘一下"
-          }
-        }
-      }
-    },
     "controller.settings.title" : {
       "localizations" : {
         "ar" : {
@@ -15412,97 +15312,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
+            "value" : "CloudKit Sync is off by default. When enabled, %@ syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
+            "value" : "CloudKit Sync is off by default. When enabled, %@ syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
+            "value" : "CloudKit Sync is off by default. When enabled, %@ syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
+            "value" : "CloudKit Sync is off by default. When enabled, %@ syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
+            "value" : "CloudKit Sync is off by default. When enabled, %@ syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
+            "value" : "CloudKit Sync is off by default. When enabled, %@ syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
+            "value" : "CloudKit Sync is off by default. When enabled, %@ syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
+            "value" : "CloudKit Sync is off by default. When enabled, %@ syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
+            "value" : "CloudKit Sync is off by default. When enabled, %@ syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
+            "value" : "CloudKit Sync is off by default. When enabled, %@ syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
+            "value" : "CloudKit Sync is off by default. When enabled, %@ syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
+            "value" : "CloudKit Sync is off by default. When enabled, %@ syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit Sync is off by default. When enabled, Pin It syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
+            "value" : "CloudKit Sync is off by default. When enabled, %@ syncs posts and styles through your private CloudKit database; changes made while it is off (including deletions) sync the next time it is turned back on."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步默认关闭。开启后，Pin It 会通过你的私人 CloudKit 数据库同步便签和样式；关闭期间的改动（包括删除）会在下次开启时同步。"
+            "value" : "CloudKit 同步默认关闭。开启后，「%@」会通过你的私人 CloudKit 数据库同步便签和样式；关闭期间的改动（包括删除）会在下次开启时同步。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步預設關閉。開啓後，Pin It 會透過你的私人 CloudKit 資料庫同步便籤和樣式；關閉期間的改動（包括刪除）會在下次開啓時同步。"
+            "value" : "CloudKit 同步預設關閉。開啓後，「%@」會透過你的私人 CloudKit 資料庫同步便籤和樣式；關閉期間的改動（包括刪除）會在下次開啓時同步。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步預設關閉。開啓後，Pin It 會透過你的私人 CloudKit 資料庫同步便籤和樣式；關閉期間的改動（包括刪除）會在下次開啓時同步。"
+            "value" : "CloudKit 同步預設關閉。開啓後，「%@」會透過你的私人 CloudKit 資料庫同步便籤和樣式；關閉期間的改動（包括刪除）會在下次開啓時同步。"
           }
         }
       }
@@ -15512,97 +15412,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
+            "value" : "%@ pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
+            "value" : "%@ pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
+            "value" : "%@ pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
+            "value" : "%@ pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
+            "value" : "%@ pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
+            "value" : "%@ pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
+            "value" : "%@ pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
+            "value" : "%@ pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
+            "value" : "%@ pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
+            "value" : "%@ pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
+            "value" : "%@ pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
+            "value" : "%@ pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It pulls iCloud changes when you open the app. Background push is not yet enabled."
+            "value" : "%@ pulls iCloud changes when you open the app. Background push is not yet enabled."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It 仅在你打开应用时从 iCloud 拉取最新内容,后台推送暂未启用。"
+            "value" : "「%@」仅在你打开应用时从 iCloud 拉取最新内容，后台推送暂未启用。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It 僅在你打開應用時從 iCloud 拉取最新內容,背景推送暫未啓用。"
+            "value" : "「%@」僅在你打開應用時從 iCloud 拉取最新內容，背景推送暫未啓用。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It 僅在你打開應用時從 iCloud 拉取最新內容,背景推送暫未啓用。"
+            "value" : "「%@」僅在你打開應用時從 iCloud 拉取最新內容，背景推送暫未啓用。"
           }
         }
       }
@@ -15712,97 +15612,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+            "value" : "This deletes %@ records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+            "value" : "This deletes %@ records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+            "value" : "This deletes %@ records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+            "value" : "This deletes %@ records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+            "value" : "This deletes %@ records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+            "value" : "This deletes %@ records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+            "value" : "This deletes %@ records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+            "value" : "This deletes %@ records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+            "value" : "This deletes %@ records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+            "value" : "This deletes %@ records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+            "value" : "This deletes %@ records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+            "value" : "This deletes %@ records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
+            "value" : "This deletes %@ records from CloudKit without changing local records on this device. The deletion will sync to other devices that use CloudKit Sync."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这会删除 CloudKit 中的 Pin It 记录，但不会改变这台设备上的本地记录。该删除会同步到其他使用 CloudKit 同步的设备。"
+            "value" : "这会删除 CloudKit 中的「%@」记录，但不会改变这台设备上的本地记录。该删除会同步到其他使用 CloudKit 同步的设备。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "這會刪除 CloudKit 中的 Pin It 記錄，但不會改變這台裝置上的本機記錄。該刪除會同步到其他使用 CloudKit 同步的裝置。"
+            "value" : "這會刪除 CloudKit 中的「%@」記錄，但不會改變這台裝置上的本機記錄。該刪除會同步到其他使用 CloudKit 同步的裝置。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "這會刪除 CloudKit 中的 Pin It 記錄，但不會改變這部裝置上的本機記錄。該刪除會同步到其他使用 CloudKit 同步的裝置。"
+            "value" : "這會刪除 CloudKit 中的「%@」記錄，但不會改變這部裝置上的本機記錄。該刪除會同步到其他使用 CloudKit 同步的裝置。"
           }
         }
       }
@@ -16012,97 +15912,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It records were deleted from CloudKit."
+            "value" : "%@ records were deleted from CloudKit."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It records were deleted from CloudKit."
+            "value" : "%@ records were deleted from CloudKit."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It records were deleted from CloudKit."
+            "value" : "%@ records were deleted from CloudKit."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It records were deleted from CloudKit."
+            "value" : "%@ records were deleted from CloudKit."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It records were deleted from CloudKit."
+            "value" : "%@ records were deleted from CloudKit."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It records were deleted from CloudKit."
+            "value" : "%@ records were deleted from CloudKit."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It records were deleted from CloudKit."
+            "value" : "%@ records were deleted from CloudKit."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It records were deleted from CloudKit."
+            "value" : "%@ records were deleted from CloudKit."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It records were deleted from CloudKit."
+            "value" : "%@ records were deleted from CloudKit."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It records were deleted from CloudKit."
+            "value" : "%@ records were deleted from CloudKit."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It records were deleted from CloudKit."
+            "value" : "%@ records were deleted from CloudKit."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It records were deleted from CloudKit."
+            "value" : "%@ records were deleted from CloudKit."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It records were deleted from CloudKit."
+            "value" : "%@ records were deleted from CloudKit."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已从 CloudKit 删除 Pin It 记录。"
+            "value" : "已从 CloudKit 删除「%@」记录。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已從 CloudKit 刪除 Pin It 記錄。"
+            "value" : "已從 CloudKit 刪除「%@」記錄。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已從 CloudKit 刪除 Pin It 記錄。"
+            "value" : "已從 CloudKit 刪除「%@」記錄。"
           }
         }
       }
@@ -16612,97 +16512,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+            "value" : "%@ will check your iCloud account and then sync posts and styles through your private CloudKit database."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+            "value" : "%@ will check your iCloud account and then sync posts and styles through your private CloudKit database."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+            "value" : "%@ will check your iCloud account and then sync posts and styles through your private CloudKit database."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+            "value" : "%@ will check your iCloud account and then sync posts and styles through your private CloudKit database."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+            "value" : "%@ will check your iCloud account and then sync posts and styles through your private CloudKit database."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+            "value" : "%@ will check your iCloud account and then sync posts and styles through your private CloudKit database."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+            "value" : "%@ will check your iCloud account and then sync posts and styles through your private CloudKit database."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+            "value" : "%@ will check your iCloud account and then sync posts and styles through your private CloudKit database."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+            "value" : "%@ will check your iCloud account and then sync posts and styles through your private CloudKit database."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+            "value" : "%@ will check your iCloud account and then sync posts and styles through your private CloudKit database."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+            "value" : "%@ will check your iCloud account and then sync posts and styles through your private CloudKit database."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+            "value" : "%@ will check your iCloud account and then sync posts and styles through your private CloudKit database."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Pin It will check your iCloud account and then sync posts and styles through your private CloudKit database."
+            "value" : "%@ will check your iCloud account and then sync posts and styles through your private CloudKit database."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It 会先检查你的 iCloud 账号，然后通过你的私人 CloudKit 数据库同步便签和样式。"
+            "value" : "「%@」会先检查你的 iCloud 账号，然后通过你的私人 CloudKit 数据库同步便签和样式。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It 會先檢查你的 iCloud 帳號，然後透過你的私人 CloudKit 資料庫同步便籤和樣式。"
+            "value" : "「%@」會先檢查你的 iCloud 帳號，然後透過你的私人 CloudKit 資料庫同步便籤和樣式。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It 會先檢查你的 iCloud 帳戶，然後透過你的私人 CloudKit 資料庫同步便籤和樣式。"
+            "value" : "「%@」會先檢查你的 iCloud 帳戶，然後透過你的私人 CloudKit 資料庫同步便籤和樣式。"
           }
         }
       }
@@ -17312,97 +17212,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+            "value" : "Could not check the iCloud account status. %@ will retry automatically."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+            "value" : "Could not check the iCloud account status. %@ will retry automatically."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+            "value" : "Could not check the iCloud account status. %@ will retry automatically."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+            "value" : "Could not check the iCloud account status. %@ will retry automatically."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+            "value" : "Could not check the iCloud account status. %@ will retry automatically."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+            "value" : "Could not check the iCloud account status. %@ will retry automatically."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+            "value" : "Could not check the iCloud account status. %@ will retry automatically."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+            "value" : "Could not check the iCloud account status. %@ will retry automatically."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+            "value" : "Could not check the iCloud account status. %@ will retry automatically."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+            "value" : "Could not check the iCloud account status. %@ will retry automatically."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+            "value" : "Could not check the iCloud account status. %@ will retry automatically."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+            "value" : "Could not check the iCloud account status. %@ will retry automatically."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Could not check the iCloud account status. Pin It will retry automatically."
+            "value" : "Could not check the iCloud account status. %@ will retry automatically."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法检查 iCloud 账号状态。Pin It 会自动重试。"
+            "value" : "无法检查 iCloud 账号状态。「%@」会自动重试。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "無法檢查 iCloud 帳號狀態。Pin It 會自動重試。"
+            "value" : "無法檢查 iCloud 帳號狀態。「%@」會自動重試。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "無法檢查 iCloud 帳戶狀態。Pin It 會自動重試。"
+            "value" : "無法檢查 iCloud 帳戶狀態。「%@」會自動重試。"
           }
         }
       }
@@ -17512,97 +17412,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+            "value" : "CloudKit changes require a full refresh. %@ will retry automatically."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+            "value" : "CloudKit changes require a full refresh. %@ will retry automatically."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+            "value" : "CloudKit changes require a full refresh. %@ will retry automatically."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+            "value" : "CloudKit changes require a full refresh. %@ will retry automatically."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+            "value" : "CloudKit changes require a full refresh. %@ will retry automatically."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+            "value" : "CloudKit changes require a full refresh. %@ will retry automatically."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+            "value" : "CloudKit changes require a full refresh. %@ will retry automatically."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+            "value" : "CloudKit changes require a full refresh. %@ will retry automatically."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+            "value" : "CloudKit changes require a full refresh. %@ will retry automatically."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+            "value" : "CloudKit changes require a full refresh. %@ will retry automatically."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+            "value" : "CloudKit changes require a full refresh. %@ will retry automatically."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+            "value" : "CloudKit changes require a full refresh. %@ will retry automatically."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit changes require a full refresh. Pin It will retry automatically."
+            "value" : "CloudKit changes require a full refresh. %@ will retry automatically."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 变更需要完整刷新。Pin It 会自动重试。"
+            "value" : "CloudKit 变更需要完整刷新。「%@」会自动重试。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 變更需要完整重新整理。Pin It 會自動重試。"
+            "value" : "CloudKit 變更需要完整重新整理。「%@」會自動重試。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 變更需要完整重新整理。Pin It 會自動重試。"
+            "value" : "CloudKit 變更需要完整重新整理。「%@」會自動重試。"
           }
         }
       }
@@ -17612,97 +17512,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+            "value" : "A CloudKit image record is missing its image asset. %@ skipped that record."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+            "value" : "A CloudKit image record is missing its image asset. %@ skipped that record."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+            "value" : "A CloudKit image record is missing its image asset. %@ skipped that record."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+            "value" : "A CloudKit image record is missing its image asset. %@ skipped that record."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+            "value" : "A CloudKit image record is missing its image asset. %@ skipped that record."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+            "value" : "A CloudKit image record is missing its image asset. %@ skipped that record."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+            "value" : "A CloudKit image record is missing its image asset. %@ skipped that record."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+            "value" : "A CloudKit image record is missing its image asset. %@ skipped that record."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+            "value" : "A CloudKit image record is missing its image asset. %@ skipped that record."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+            "value" : "A CloudKit image record is missing its image asset. %@ skipped that record."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+            "value" : "A CloudKit image record is missing its image asset. %@ skipped that record."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+            "value" : "A CloudKit image record is missing its image asset. %@ skipped that record."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A CloudKit image record is missing its image asset. Pin It skipped that record."
+            "value" : "A CloudKit image record is missing its image asset. %@ skipped that record."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "一条 CloudKit 图片记录缺少图片资源。Pin It 已跳过该记录。"
+            "value" : "一条 CloudKit 图片记录缺少图片资源。「%@」已跳过该记录。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "一條 CloudKit 圖片記錄缺少圖片資源。Pin It 已跳過該記錄。"
+            "value" : "一條 CloudKit 圖片記錄缺少圖片資源。「%@」已跳過該記錄。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "一條 CloudKit 圖片記錄缺少圖片資源。Pin It 已跳過該記錄。"
+            "value" : "一條 CloudKit 圖片記錄缺少圖片資源。「%@」已跳過該記錄。"
           }
         }
       }
@@ -17812,97 +17712,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+            "value" : "Some local records could not be prepared for CloudKit. %@ will retry automatically."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+            "value" : "Some local records could not be prepared for CloudKit. %@ will retry automatically."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+            "value" : "Some local records could not be prepared for CloudKit. %@ will retry automatically."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+            "value" : "Some local records could not be prepared for CloudKit. %@ will retry automatically."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+            "value" : "Some local records could not be prepared for CloudKit. %@ will retry automatically."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+            "value" : "Some local records could not be prepared for CloudKit. %@ will retry automatically."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+            "value" : "Some local records could not be prepared for CloudKit. %@ will retry automatically."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+            "value" : "Some local records could not be prepared for CloudKit. %@ will retry automatically."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+            "value" : "Some local records could not be prepared for CloudKit. %@ will retry automatically."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+            "value" : "Some local records could not be prepared for CloudKit. %@ will retry automatically."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+            "value" : "Some local records could not be prepared for CloudKit. %@ will retry automatically."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+            "value" : "Some local records could not be prepared for CloudKit. %@ will retry automatically."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some local records could not be prepared for CloudKit. Pin It will retry automatically."
+            "value" : "Some local records could not be prepared for CloudKit. %@ will retry automatically."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "部分本地记录未能准备上传到 CloudKit。Pin It 会自动重试。"
+            "value" : "部分本地记录未能准备上传到 CloudKit。「%@」会自动重试。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "部分本機記錄未能準備上傳到 CloudKit。Pin It 會自動重試。"
+            "value" : "部分本機記錄未能準備上傳到 CloudKit。「%@」會自動重試。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "部分本機記錄未能準備上載到 CloudKit。Pin It 會自動重試。"
+            "value" : "部分本機記錄未能準備上載到 CloudKit。「%@」會自動重試。"
           }
         }
       }
@@ -18112,97 +18012,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+            "value" : "CloudKit sync is still running. %@ will retry this operation automatically."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+            "value" : "CloudKit sync is still running. %@ will retry this operation automatically."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+            "value" : "CloudKit sync is still running. %@ will retry this operation automatically."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+            "value" : "CloudKit sync is still running. %@ will retry this operation automatically."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+            "value" : "CloudKit sync is still running. %@ will retry this operation automatically."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+            "value" : "CloudKit sync is still running. %@ will retry this operation automatically."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+            "value" : "CloudKit sync is still running. %@ will retry this operation automatically."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+            "value" : "CloudKit sync is still running. %@ will retry this operation automatically."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+            "value" : "CloudKit sync is still running. %@ will retry this operation automatically."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+            "value" : "CloudKit sync is still running. %@ will retry this operation automatically."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+            "value" : "CloudKit sync is still running. %@ will retry this operation automatically."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+            "value" : "CloudKit sync is still running. %@ will retry this operation automatically."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync is still running. Pin It will retry this operation automatically."
+            "value" : "CloudKit sync is still running. %@ will retry this operation automatically."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步仍在进行。Pin It 会自动重试此操作。"
+            "value" : "CloudKit 同步仍在进行。「%@」会自动重试此操作。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步仍在進行。Pin It 會自動重試此操作。"
+            "value" : "CloudKit 同步仍在進行。「%@」會自動重試此操作。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步仍在進行。Pin It 會自動重試此操作。"
+            "value" : "CloudKit 同步仍在進行。「%@」會自動重試此操作。"
           }
         }
       }
@@ -18212,97 +18112,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+            "value" : "iCloud is temporarily unavailable. %@ will retry automatically."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+            "value" : "iCloud is temporarily unavailable. %@ will retry automatically."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+            "value" : "iCloud is temporarily unavailable. %@ will retry automatically."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+            "value" : "iCloud is temporarily unavailable. %@ will retry automatically."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+            "value" : "iCloud is temporarily unavailable. %@ will retry automatically."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+            "value" : "iCloud is temporarily unavailable. %@ will retry automatically."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+            "value" : "iCloud is temporarily unavailable. %@ will retry automatically."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+            "value" : "iCloud is temporarily unavailable. %@ will retry automatically."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+            "value" : "iCloud is temporarily unavailable. %@ will retry automatically."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+            "value" : "iCloud is temporarily unavailable. %@ will retry automatically."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+            "value" : "iCloud is temporarily unavailable. %@ will retry automatically."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+            "value" : "iCloud is temporarily unavailable. %@ will retry automatically."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iCloud is temporarily unavailable. Pin It will retry automatically."
+            "value" : "iCloud is temporarily unavailable. %@ will retry automatically."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iCloud 暂时不可用。Pin It 会自动重试。"
+            "value" : "iCloud 暂时不可用。「%@」会自动重试。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iCloud 暫時無法使用。Pin It 會自動重試。"
+            "value" : "iCloud 暫時無法使用。「%@」會自動重試。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iCloud 暫時無法使用。Pin It 會自動重試。"
+            "value" : "iCloud 暫時無法使用。「%@」會自動重試。"
           }
         }
       }
@@ -18312,97 +18212,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+            "value" : "Some records could not be uploaded to CloudKit. %@ will retry automatically."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+            "value" : "Some records could not be uploaded to CloudKit. %@ will retry automatically."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+            "value" : "Some records could not be uploaded to CloudKit. %@ will retry automatically."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+            "value" : "Some records could not be uploaded to CloudKit. %@ will retry automatically."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+            "value" : "Some records could not be uploaded to CloudKit. %@ will retry automatically."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+            "value" : "Some records could not be uploaded to CloudKit. %@ will retry automatically."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+            "value" : "Some records could not be uploaded to CloudKit. %@ will retry automatically."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+            "value" : "Some records could not be uploaded to CloudKit. %@ will retry automatically."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+            "value" : "Some records could not be uploaded to CloudKit. %@ will retry automatically."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+            "value" : "Some records could not be uploaded to CloudKit. %@ will retry automatically."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+            "value" : "Some records could not be uploaded to CloudKit. %@ will retry automatically."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+            "value" : "Some records could not be uploaded to CloudKit. %@ will retry automatically."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Some records could not be uploaded to CloudKit. Pin It will retry automatically."
+            "value" : "Some records could not be uploaded to CloudKit. %@ will retry automatically."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "部分记录未能上传到 CloudKit。Pin It 会自动重试。"
+            "value" : "部分记录未能上传到 CloudKit。「%@」会自动重试。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "部分記錄未能上傳到 CloudKit。Pin It 會自動重試。"
+            "value" : "部分記錄未能上傳到 CloudKit。「%@」會自動重試。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "部分記錄未能上載到 CloudKit。Pin It 會自動重試。"
+            "value" : "部分記錄未能上載到 CloudKit。「%@」會自動重試。"
           }
         }
       }
@@ -19712,97 +19612,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+            "value" : "This deletes %@'s CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+            "value" : "This deletes %@'s CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+            "value" : "This deletes %@'s CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+            "value" : "This deletes %@'s CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+            "value" : "This deletes %@'s CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+            "value" : "This deletes %@'s CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+            "value" : "This deletes %@'s CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+            "value" : "This deletes %@'s CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+            "value" : "This deletes %@'s CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+            "value" : "This deletes %@'s CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+            "value" : "This deletes %@'s CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+            "value" : "This deletes %@'s CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "This deletes Pin It's CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
+            "value" : "This deletes %@'s CloudKit sync database and uploads the records currently on this device again. This device becomes the source of truth; records that exist only on other devices can be removed when those devices sync."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这会删除 Pin It 的 CloudKit 同步数据库，并重新上传这台设备上的当前记录。这台设备会成为同步来源；只存在于其他设备上的记录，可能会在那些设备同步时被移除。"
+            "value" : "这会删除「%@」的 CloudKit 同步数据库，并重新上传这台设备上的当前记录。这台设备会成为同步来源；只存在于其他设备上的记录，可能会在那些设备同步时被移除。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "這會刪除 Pin It 的 CloudKit 同步資料庫，並重新上傳這台裝置上的目前記錄。這台裝置會成為同步來源；只存在於其他裝置上的記錄，可能會在那些裝置同步時被移除。"
+            "value" : "這會刪除「%@」的 CloudKit 同步資料庫，並重新上傳這台裝置上的目前記錄。這台裝置會成為同步來源；只存在於其他裝置上的記錄，可能會在那些裝置同步時被移除。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "這會刪除 Pin It 的 CloudKit 同步資料庫，並重新上傳這部裝置上的目前記錄。這部裝置會成為同步來源；只存在於其他裝置上的記錄，可能會在那些裝置同步時被移除。"
+            "value" : "這會刪除「%@」的 CloudKit 同步資料庫，並重新上傳這部裝置上的目前記錄。這部裝置會成為同步來源；只存在於其他裝置上的記錄，可能會在那些裝置同步時被移除。"
           }
         }
       }
@@ -20112,97 +20012,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. %@ will retry automatically; details are shown under the CloudKit Sync row in Settings."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. %@ will retry automatically; details are shown under the CloudKit Sync row in Settings."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. %@ will retry automatically; details are shown under the CloudKit Sync row in Settings."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. %@ will retry automatically; details are shown under the CloudKit Sync row in Settings."
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. %@ will retry automatically; details are shown under the CloudKit Sync row in Settings."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. %@ will retry automatically; details are shown under the CloudKit Sync row in Settings."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. %@ will retry automatically; details are shown under the CloudKit Sync row in Settings."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. %@ will retry automatically; details are shown under the CloudKit Sync row in Settings."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. %@ will retry automatically; details are shown under the CloudKit Sync row in Settings."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. %@ will retry automatically; details are shown under the CloudKit Sync row in Settings."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. %@ will retry automatically; details are shown under the CloudKit Sync row in Settings."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. %@ will retry automatically; details are shown under the CloudKit Sync row in Settings."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. Pin It will retry automatically; details are shown under the CloudKit Sync row in Settings."
+            "value" : "CloudKit sync was rebuilt, but some records could not be uploaded. %@ will retry automatically; details are shown under the CloudKit Sync row in Settings."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步已重建，但部分记录未能上传。Pin It 会自动重试；详情会显示在设置页的 CloudKit 同步行下方。"
+            "value" : "CloudKit 同步已重建，但部分记录未能上传。「%@」会自动重试；详情会显示在设置页的 CloudKit 同步行下方。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步已重建，但部分記錄未能上傳。Pin It 會自動重試；詳情會顯示在設定頁的 CloudKit 同步列下方。"
+            "value" : "CloudKit 同步已重建，但部分記錄未能上傳。「%@」會自動重試；詳情會顯示在設定頁的 CloudKit 同步列下方。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步已重建，但部分記錄未能上傳。Pin It 會自動重試；詳情會顯示在設定頁的 CloudKit 同步列下方。"
+            "value" : "CloudKit 同步已重建，但部分記錄未能上載。「%@」會自動重試；詳情會顯示在設定頁的 CloudKit 同步列下方。"
           }
         }
       }
@@ -21540,25 +21440,25 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit Sync is enabled. Resetting data clears local records now and clears Pin It records from CloudKit when iCloud is available. That deletion will sync to your other devices."
+            "value" : "CloudKit Sync is enabled. Resetting data clears local records now and clears %@ records from CloudKit when iCloud is available. That deletion will sync to your other devices."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步已开启。重置数据会立即清空本地记录，并在 iCloud 可用时清空 CloudKit 中的 Pin It 记录；该删除会同步到你的其他设备。"
+            "value" : "CloudKit 同步已开启。重置数据会立即清空本地记录，并在 iCloud 可用时清空 CloudKit 中的「%@」记录；该删除会同步到你的其他设备。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步已開啓。重置資料會立即清空本機記錄，並在 iCloud 可用時清空 CloudKit 中的 Pin It 記錄；該刪除會同步到你的其他裝置。"
+            "value" : "CloudKit 同步已開啓。重置資料會立即清空本機記錄，並在 iCloud 可用時清空 CloudKit 中的「%@」記錄；該刪除會同步到你的其他裝置。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步已開啓。重置資料會立即清空本機記錄，並在 iCloud 可用時清空 CloudKit 中的 Pin It 記錄；該刪除會同步到你的其他裝置。"
+            "value" : "CloudKit 同步已開啓。重置資料會立即清空本機記錄，並在 iCloud 可用時清空 CloudKit 中的「%@」記錄；該刪除會同步到你的其他裝置。"
           }
         }
       }
@@ -21568,25 +21468,25 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit Sync is currently off, but this device has used CloudKit before. Resetting data clears local records only; use Clear CloudKit Data to delete Pin It records from CloudKit."
+            "value" : "CloudKit Sync is currently off, but this device has used CloudKit before. Resetting data clears local records only; use Clear CloudKit Data to delete %@ records from CloudKit."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步目前已关闭，但这台设备之前使用过 CloudKit。重置数据只会清空本地记录；如需删除 CloudKit 中的 Pin It 记录，请使用清空 CloudKit 数据。"
+            "value" : "CloudKit 同步目前已关闭，但这台设备之前使用过 CloudKit。重置数据只会清空本地记录；如需删除 CloudKit 中的「%@」记录，请使用清空 CloudKit 数据。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步目前已關閉，但這台裝置之前使用過 CloudKit。重置資料只會清空本機記錄；如需刪除 CloudKit 中的 Pin It 記錄，請使用清空 CloudKit 資料。"
+            "value" : "CloudKit 同步目前已關閉，但這台裝置之前使用過 CloudKit。重置資料只會清空本機記錄；如需刪除 CloudKit 中的「%@」記錄，請使用清空 CloudKit 資料。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步目前已關閉，但這部裝置之前使用過 CloudKit。重置資料只會清空本機記錄；如需刪除 CloudKit 中的 Pin It 記錄，請使用清空 CloudKit 資料。"
+            "value" : "CloudKit 同步目前已關閉，但這部裝置之前使用過 CloudKit。重置資料只會清空本機記錄；如需刪除 CloudKit 中的「%@」記錄，請使用清空 CloudKit 資料。"
           }
         }
       }
@@ -21874,19 +21774,19 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "通过“共享表单”钉一下"
+            "value" : "通过“共享表单”添加到「%@」"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "透過「分享表」釘一下"
+            "value" : "透過「分享表」加入「%@」"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "透過「分享表」釘一下"
+            "value" : "透過「分享表」加入「%@」"
           }
         }
       }
@@ -22174,19 +22074,19 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "截图钉一下"
+            "value" : "将截图添加到「%@」"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "截圖釘一下"
+            "value" : "將截圖加入「%@」"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "截圖釘一下"
+            "value" : "將截圖加入「%@」"
           }
         }
       }
@@ -22474,19 +22374,19 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI钉一下"
+            "value" : "用AI添加到「%@」"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI釘一下"
+            "value" : "用AI加入「%@」"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI釘一下"
+            "value" : "用AI加入「%@」"
           }
         }
       }
@@ -22596,97 +22496,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "من Pin It إلى الحافظة\""
+            "value" : "من %@ إلى الحافظة\""
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It -> Zwischenablage"
+            "value" : "%@ -> Zwischenablage"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It -> Pasteboard"
+            "value" : "%@ -> Pasteboard"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It -> Portapapeles"
+            "value" : "%@ -> Portapapeles"
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It -> Portapapeles"
+            "value" : "%@ -> Portapapeles"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It -> Presse-papiers"
+            "value" : "%@ -> Presse-papiers"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It -> Appunti"
+            "value" : "%@ -> Appunti"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ピンイット -> クリップボード"
+            "value" : "%@ -> クリップボード"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "핀잇 -> 클립보드"
+            "value" : "%@ -> 클립보드"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It -> Área de transferência"
+            "value" : "%@ -> Área de transferência"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It -> Área de transferência"
+            "value" : "%@ -> Área de transferência"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It -> Буфер обмена"
+            "value" : "%@ -> Буфер обмена"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin It -> Буфер обміну"
+            "value" : "%@ -> Буфер обміну"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "钉一下 -> 剪贴板"
+            "value" : "「%@」→剪贴板"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "釘一下 -> 剪貼板"
+            "value" : "「%@」→剪貼簿"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "釘一下 -> 剪貼板"
+            "value" : "「%@」→剪貼簿"
           }
         }
       }
@@ -22896,97 +22796,97 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "من الحافظة إلى Pin It"
+            "value" : "من الحافظة إلى %@"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zwischenablage -> Pin It"
+            "value" : "Zwischenablage -> %@"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pasteboard -> Pin It"
+            "value" : "Pasteboard -> %@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Portapapeles -> Pin It"
+            "value" : "Portapapeles -> %@"
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Portapapeles -> Pin It"
+            "value" : "Portapapeles -> %@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Presse-papiers -> Pin It"
+            "value" : "Presse-papiers -> %@"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Appunti -> Pin It"
+            "value" : "Appunti -> %@"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "クリップボード -> ピンイット"
+            "value" : "クリップボード -> %@"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "클립보드 -> 핀잇"
+            "value" : "클립보드 -> %@"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Área de transferência -> Pin It"
+            "value" : "Área de transferência -> %@"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Área de transferência -> Pin It"
+            "value" : "Área de transferência -> %@"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Буфер обмена -> Pin It"
+            "value" : "Буфер обмена -> %@"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Буфер обміну -> Pin It"
+            "value" : "Буфер обміну -> %@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "剪贴板 -> 钉一下"
+            "value" : "剪贴板→「%@」"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "剪貼板 -> 釘一下"
+            "value" : "剪貼簿→「%@」"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "剪貼板 -> 釘一下"
+            "value" : "剪貼簿→「%@」"
           }
         }
       }
@@ -23074,19 +22974,19 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "剪贴板钉一下"
+            "value" : "将剪贴板添加到「%@」"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "剪貼簿釘一下"
+            "value" : "將剪貼簿加入「%@」"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "剪貼簿釘一下"
+            "value" : "將剪貼簿加入「%@」"
           }
         }
       }

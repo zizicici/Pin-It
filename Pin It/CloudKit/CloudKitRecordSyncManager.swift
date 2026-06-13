@@ -24,14 +24,14 @@ private struct CloudKitOutboxBuildError: LocalizedError {
     var reason: String
 
     var errorDescription: String? {
-        let prefix = String(localized: "settings.cloudKitSync.error.recordBuildFailed")
+        let prefix = AppInfo.localized("settings.cloudKitSync.error.recordBuildFailed")
         return "\(prefix): \(recordName) (\(reason))"
     }
 }
 
 private struct CloudKitSyncInProgressError: LocalizedError {
     var errorDescription: String? {
-        String(localized: "settings.cloudKitSync.error.syncInProgress")
+        AppInfo.localized("settings.cloudKitSync.error.syncInProgress")
     }
 }
 
@@ -168,7 +168,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
             // into an unrelated later run's error footer.
             let didDropOversizedRecords = takeDidDropOversizedRecords()
             if hasOutboxFailures {
-                CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.uploadFailed"))
+                CloudKitSync.setLastError(AppInfo.localized("settings.cloudKitSync.error.uploadFailed"))
             } else if didDropOversizedRecords {
                 CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.recordTooLarge"))
             } else {
@@ -470,7 +470,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
                     cause: isZoneNotFound(error) ? .zoneLost : .tokenExpired
                 )
                 requestFollowUpSync()
-                CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.fullRefresh"))
+                CloudKitSync.setLastError(AppInfo.localized("settings.cloudKitSync.error.fullRefresh"))
                 runOnboardingAfterInitialCloudGateIfNeeded()
                 return
             }
@@ -517,7 +517,7 @@ final class CloudKitRecordSyncManager: NSObject, @unchecked Sendable {
         let didDropOversizedRecords = takeDidDropOversizedRecords()
         try markRemoteDataMayExistIfCloudKitStateExists()
         if hasOutboxFailures {
-            CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.uploadFailed"))
+            CloudKitSync.setLastError(AppInfo.localized("settings.cloudKitSync.error.uploadFailed"))
         } else if didDropOversizedRecords {
             CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.recordTooLarge"))
         } else {
@@ -561,7 +561,7 @@ extension CloudKitRecordSyncManager: CKSyncEngineDelegate {
                     try resetSyncEngineStateForZoneDiscontinuity(
                         cause: isZoneNotFound(error) ? .zoneLost : .tokenExpired
                     )
-                    CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.fullRefresh"))
+                    CloudKitSync.setLastError(AppInfo.localized("settings.cloudKitSync.error.fullRefresh"))
                     requestFollowUpSync()
                 }
             case .didFetchChanges:
@@ -1059,7 +1059,7 @@ extension CloudKitRecordSyncManager {
     func handleFetchedDatabaseChanges(_ changes: CKSyncEngine.Event.FetchedDatabaseChanges) throws {
         guard changes.deletions.contains(where: { $0.zoneID == CloudKitRecordName.zoneID }) else { return }
         try resetSyncEngineStateForZoneDiscontinuity(cause: .zoneLost)
-        CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.fullRefresh"))
+        CloudKitSync.setLastError(AppInfo.localized("settings.cloudKitSync.error.fullRefresh"))
         requestFollowUpSync()
     }
 
@@ -1893,11 +1893,11 @@ extension CloudKitRecordSyncManager {
         case .restricted:
             return String(localized: "settings.cloudKitSync.error.restricted")
         case .couldNotDetermine:
-            return String(localized: "settings.cloudKitSync.error.couldNotDetermine")
+            return AppInfo.localized("settings.cloudKitSync.error.couldNotDetermine")
         case .temporarilyUnavailable:
-            return String(localized: "settings.cloudKitSync.error.temporarilyUnavailable")
+            return AppInfo.localized("settings.cloudKitSync.error.temporarilyUnavailable")
         @unknown default:
-            return String(localized: "settings.cloudKitSync.error.couldNotDetermine")
+            return AppInfo.localized("settings.cloudKitSync.error.couldNotDetermine")
         }
     }
 }
@@ -2162,7 +2162,7 @@ extension CloudKitRecordSyncManager {
         guard takeNeedsFullFetchAfterCurrentSync() else { return false }
         try resetSyncEngineStateForFullFetch(suppressesBootstrap: true)
         requestFollowUpSync()
-        CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.fullRefresh"))
+        CloudKitSync.setLastError(AppInfo.localized("settings.cloudKitSync.error.fullRefresh"))
         return true
     }
 
@@ -4615,7 +4615,7 @@ extension CloudKitRecordSyncManager {
         if (needsOriginalAsset && stagedAssets?.originalName == nil)
             || (needsProcessedAsset && stagedAssets?.processedName == nil) {
             cloudKitSyncLog.info("image import skipped: assets incomplete for \(record.recordID.recordName, privacy: .private)")
-            CloudKitSync.setLastError(String(localized: "settings.cloudKitSync.error.imageAssetMissing"))
+            CloudKitSync.setLastError(AppInfo.localized("settings.cloudKitSync.error.imageAssetMissing"))
             return (false, false, [], true, false)
         }
 

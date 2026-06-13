@@ -140,13 +140,13 @@ class SettingsViewController: UIViewController {
             var title: String {
                 switch self {
                 case .first:
-                    return String(localized: "shortcuts.1.title")
+                    return AppInfo.localized("shortcuts.1.title")
                 case .second:
-                    return String(localized: "shortcuts.2.title")
+                    return AppInfo.localized("shortcuts.2.title")
                 case .ai:
-                    return String(localized: "shortcuts.3.title")
+                    return AppInfo.localized("shortcuts.3.title")
                 case .pasteboard:
-                    return String(localized: "shortcuts.pasteboard.title")
+                    return AppInfo.localized("shortcuts.pasteboard.title")
                 case .copy:
                     return String(localized: "shortcuts.copy.title")
                 }
@@ -161,9 +161,9 @@ class SettingsViewController: UIViewController {
                 case .ai:
                     return String(localized: "shortcuts.3.subtitle")
                 case .pasteboard:
-                    return String(localized: "shortcuts.pasteboard.subtitle")
+                    return AppInfo.localized("shortcuts.pasteboard.subtitle")
                 case .copy:
-                    return String(localized: "shortcuts.copy.subtitle")
+                    return AppInfo.localized("shortcuts.copy.subtitle")
                 }
             }
             
@@ -726,9 +726,9 @@ extension SettingsViewController {
     func showResetAlert() {
         let message: String?
         if CloudKitSync.current == .enable {
-            message = String(localized: "settings.reset.alert.cloudKit.message")
+            message = AppInfo.localized("settings.reset.alert.cloudKit.message")
         } else if CloudKitSync.remoteDataMayExist || CloudKitSync.pendingRemoteReset {
-            message = String(localized: "settings.reset.alert.cloudKitDisabled.message")
+            message = AppInfo.localized("settings.reset.alert.cloudKitDisabled.message")
         } else {
             message = nil
         }
