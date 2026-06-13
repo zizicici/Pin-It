@@ -215,7 +215,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bitte geben Sie den Aktionslink ein"
+            "value" : "Bitte gib den Aktionslink ein"
           }
         },
         "en" : {
@@ -515,7 +515,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unterstützen Sie uns (=｀ω´=)"
+            "value" : "Unterstütze uns (=｀ω´=)"
           }
         },
         "en" : {
@@ -2715,7 +2715,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kaufen Sie Pro in den Einstellungen, um diese Option zu aktivieren."
+            "value" : "Kaufe Pro in den Einstellungen, um diese Option zu aktivieren."
           }
         },
         "en" : {
@@ -2915,7 +2915,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Danke für Ihre Unterstützung"
+            "value" : "Danke für deine Unterstützung"
           }
         },
         "en" : {
@@ -4945,7 +4945,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Post attualmente bloccato"
+            "value" : "Post attualmente fissato"
           }
         },
         "ja" : {
@@ -6645,7 +6645,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Elimina tutti i post non bloccati"
+            "value" : "Elimina tutti i post non fissati"
           }
         },
         "ja" : {
@@ -7845,7 +7845,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stato bloccaggio"
+            "value" : "Stato fissaggio"
           }
         },
         "ja" : {
@@ -8745,7 +8745,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aggiorna stato bloccaggio di ${post} a ${isPinned}"
+            "value" : "Aggiorna stato fissaggio di ${post} a ${isPinned}"
           }
         },
         "ja" : {
@@ -8845,7 +8845,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aggiorna stato bloccaggio post"
+            "value" : "Aggiorna stato fissaggio post"
           }
         },
         "ja" : {
@@ -10410,7 +10410,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "الإنجليزية"
+            "value" : "العربية"
           }
         },
         "de" : {
@@ -10710,7 +10710,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "س تظهر هذه العينة في شاشة القفل والنشاط المباشر في الجزيرة الديناميكية"
+            "value" : "ستظهر هذه العينة على شاشة القفل وفي النشاط المباشر داخل الجزيرة الديناميكية."
           }
         },
         "de" : {
@@ -12616,7 +12616,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Überprüfen Sie Ihre Einstellungen."
+            "value" : "Überprüfe deine Einstellungen."
           }
         },
         "en" : {
@@ -12716,7 +12716,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wir können keine Daten aus Ihrer Zwischenablage abrufen."
+            "value" : "Wir können keine Daten aus deiner Zwischenablage abrufen."
           }
         },
         "en" : {
@@ -13316,7 +13316,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Möchten Sie unser Wachstum unterstützen?"
+            "value" : "Möchtest du unser Wachstum unterstützen?"
           }
         },
         "en" : {
@@ -13776,7 +13776,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Обновить для разблокировали:"
+            "value" : "Обновить для разблокировки:"
           }
         },
         "uk" : {
@@ -15564,7 +15564,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Isto apaga os eventos de sincronização registrados localmente. Suas notas e os dados do CloudKit não são afetados."
+            "value" : "Isto apaga os eventos de sincronização registrados localmente. Seus posts e os dados do CloudKit não são afetados."
           }
         },
         "pt-PT" : {
@@ -15576,7 +15576,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Это удалит локально записанные события синхронизации. Ваши заметки и данные CloudKit не затрагиваются."
+            "value" : "Это удалит локально записанные события синхронизации. Ваши посты и данные CloudKit не затрагиваются."
           }
         },
         "uk" : {
@@ -16364,7 +16364,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "O %@ verificará sua conta do iCloud e, em seguida, sincronizará notas e estilos através do seu banco de dados privado do CloudKit."
+            "value" : "O %@ verificará sua conta do iCloud e, em seguida, sincronizará posts e estilos através do seu banco de dados privado do CloudKit."
           }
         },
         "pt-PT" : {
@@ -16376,7 +16376,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ проверит вашу учётную запись iCloud, а затем синхронизирует заметки и стили через вашу частную базу данных CloudKit."
+            "value" : "%@ проверит вашу учётную запись iCloud, а затем синхронизирует посты и стили через вашу частную базу данных CloudKit."
           }
         },
         "uk" : {
@@ -16388,19 +16388,19 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "「%@」会先检查你的 iCloud 账号，然后通过你的私人 CloudKit 数据库同步便签和样式。"
+            "value" : "「%@」会先检查你的 iCloud 账号，然后通过你的私人 CloudKit 数据库同步记录和样式。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "「%@」會先檢查你的 iCloud 帳號，然後透過你的私人 CloudKit 資料庫同步便籤和樣式。"
+            "value" : "「%@」會先檢查你的 iCloud 帳號，然後透過你的私人 CloudKit 資料庫同步記錄和樣式。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "「%@」會先檢查你的 iCloud 帳戶，然後透過你的私人 CloudKit 資料庫同步便籤和樣式。"
+            "value" : "「%@」會先檢查你的 iCloud 帳戶，然後透過你的私人 CloudKit 資料庫同步記錄和樣式。"
           }
         }
       }
@@ -18364,7 +18364,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A Sincronização do CloudKit está desativada por padrão. Quando ativada, o %@ sincroniza notas e estilos através do seu banco de dados privado do CloudKit; as alterações feitas enquanto ela está desativada (incluindo exclusões) são sincronizadas na próxima vez que você a reativar."
+            "value" : "A Sincronização do CloudKit está desativada por padrão. Quando ativada, o %@ sincroniza posts e estilos através do seu banco de dados privado do CloudKit; as alterações feitas enquanto ela está desativada (incluindo exclusões) são sincronizadas na próxima vez que você a reativar."
           }
         },
         "pt-PT" : {
@@ -18376,7 +18376,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Синхронизация через CloudKit отключена по умолчанию. Когда она включена, %@ синхронизирует заметки и стили через вашу частную базу данных CloudKit; изменения, внесённые при её отключении (включая удаления), синхронизируются при следующем включении."
+            "value" : "Синхронизация через CloudKit отключена по умолчанию. Когда она включена, %@ синхронизирует посты и стили через вашу частную базу данных CloudKit; изменения, внесённые при её отключении (включая удаления), синхронизируются при следующем включении."
           }
         },
         "uk" : {
@@ -18388,19 +18388,19 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步默认关闭。开启后，「%@」会通过你的私人 CloudKit 数据库同步便签和样式；关闭期间的改动（包括删除）会在下次开启时同步。"
+            "value" : "CloudKit 同步默认关闭。开启后，「%@」会通过你的私人 CloudKit 数据库同步记录和样式；关闭期间的改动（包括删除）会在下次开启时同步。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步預設關閉。開啓後，「%@」會透過你的私人 CloudKit 資料庫同步便籤和樣式；關閉期間的改動（包括刪除）會在下次開啓時同步。"
+            "value" : "CloudKit 同步預設關閉。開啓後，「%@」會透過你的私人 CloudKit 資料庫同步記錄和樣式；關閉期間的改動（包括刪除）會在下次開啓時同步。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CloudKit 同步預設關閉。開啓後，「%@」會透過你的私人 CloudKit 資料庫同步便籤和樣式；關閉期間的改動（包括刪除）會在下次開啓時同步。"
+            "value" : "CloudKit 同步預設關閉。開啓後，「%@」會透過你的私人 CloudKit 資料庫同步記錄和樣式；關閉期間的改動（包括刪除）會在下次開啓時同步。"
           }
         }
       }
@@ -18564,7 +18564,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Este dispositivo tem atualmente %d notas e %d estilos."
+            "value" : "Este dispositivo tem atualmente %d posts e %d estilos."
           }
         },
         "pt-PT" : {
@@ -18576,7 +18576,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "На этом устройстве сейчас %d заметок и %d стилей."
+            "value" : "На этом устройстве сейчас %d постов и %d стилей."
           }
         },
         "uk" : {
@@ -18588,19 +18588,19 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这台设备当前有 %d 条便签和 %d 个样式。"
+            "value" : "这台设备当前有 %d 条记录和 %d 个样式。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "這台裝置目前有 %d 條便籤和 %d 個樣式。"
+            "value" : "這台裝置目前有 %d 條記錄和 %d 個樣式。"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "這部裝置目前有 %d 條便籤和 %d 個樣式。"
+            "value" : "這部裝置目前有 %d 條記錄和 %d 個樣式。"
           }
         }
       }
@@ -20064,7 +20064,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nota"
+            "value" : "Post"
           }
         },
         "pt-PT" : {
@@ -20076,7 +20076,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Заметка"
+            "value" : "Пост"
           }
         },
         "uk" : {
@@ -20088,19 +20088,19 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "便签"
+            "value" : "记录"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "便籤"
+            "value" : "記錄"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "便籤"
+            "value" : "記錄"
           }
         }
       }
@@ -21522,7 +21522,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Deletion Comfirmation"
+            "value" : "Deletion Confirmation"
           }
         },
         "es" : {
@@ -23616,73 +23616,73 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "With Duobao App"
+            "value" : "Mit der Doubao-App"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "With Duobao App"
+            "value" : "With Doubao App"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "With Duobao App"
+            "value" : "Con la app Doubao"
           }
         },
         "es-419" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "With Duobao App"
+            "value" : "Con la app Doubao"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "With Duobao App"
+            "value" : "Avec l'app Doubao"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "With Duobao App"
+            "value" : "Con l'app Doubao"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "With Duobao App"
+            "value" : "Doubao アプリと併用"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "With Duobao App"
+            "value" : "Doubao 앱과 함께 사용"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "With Duobao App"
+            "value" : "Com o app Doubao"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "With Duobao App"
+            "value" : "Com a app Doubao"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "With Duobao App"
+            "value" : "С приложением Doubao"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "With Duobao App"
+            "value" : "Із застосунком Doubao"
           }
         },
         "zh-Hans" : {
