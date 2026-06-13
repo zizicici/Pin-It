@@ -40,20 +40,6 @@ extension Notification.Name {
     static let cloudKitSyncDidChange = Notification.Name(rawValue: "com.zizicici.pin.cloudKitSync.didChange")
 }
 
-extension UserDefaultSettable where Self: RawRepresentable, Self.RawValue == Int {
-    /// MoreKit's `setValue` posts `.SettingsUpdate` synchronously on the calling
-    /// thread, but observers (MoreViewController, MainViewController, ...) touch
-    /// UIKit without hopping to main. CloudKit sync and GRDB `afterNextTransaction`
-    /// callbacks run on background threads, so the value must land synchronously
-    /// while the notification is deferred to the main queue.
-    static func setValueNotifyingOnMain(_ value: Self) {
-        userDefaults.set(value.rawValue, forKey: getKey())
-        DispatchQueue.main.async {
-            NotificationCenter.default.post(name: .SettingsUpdate, object: nil)
-        }
-    }
-}
-
 enum AutoBackup: Int, CaseIterable, Codable {
     case enable
     case disable

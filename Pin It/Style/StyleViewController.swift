@@ -1126,8 +1126,9 @@ struct DefaultStyle: RawRepresentable, UserDefaultSettable {
             }
         }
         // Reached from the GRDB writer queue via OnboardingManager's
-        // afterNextTransaction callback; the notification must go out on main.
-        setValueNotifyingOnMain(value)
+        // afterNextTransaction callback; MoreKit's setValue writes synchronously
+        // and posts .SettingsUpdate on the main thread.
+        setValue(value)
 
         postOnMain(.DefaultStyleDidChanged)
     }

@@ -168,7 +168,7 @@ class OnboardingManager: NSObject {
                     if let defaultStyleId = seededDefaultStyleId {
                         try? DefaultStyle.setCurrent(DefaultStyle(rawValue: Int(defaultStyleId)), promotesLocalOnboarding: false)
                     }
-                    OnboardingSeedState.setValueNotifyingOnMain(.seeded)
+                    OnboardingSeedState.setValue(.seeded)
                 }
             }
         } catch {
@@ -186,7 +186,7 @@ class OnboardingManager: NSObject {
 
     func requestOnboardingSeed() {
         // Reached from the CloudKit sync thread; keep the notification on main.
-        OnboardingSeedState.setValueNotifyingOnMain(.pending)
+        OnboardingSeedState.setValue(.pending)
     }
 }
 
@@ -375,7 +375,7 @@ private extension OnboardingManager {
         guard try OnboardingLocalRecord.isMarked(recordType: recordType, syncId: syncId, in: db) else { return }
         // afterNextTransaction runs on the GRDB writer queue, never main.
         db.afterNextTransaction { _ in
-            OnboardingSeedState.setValueNotifyingOnMain(.dismissed)
+            OnboardingSeedState.setValue(.dismissed)
         }
         try OnboardingLocalRecord.unmark(recordType: recordType, syncId: syncId, in: db)
         guard tracksLocalCloudKitChanges() else { return }
