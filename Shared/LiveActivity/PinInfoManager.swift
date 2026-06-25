@@ -67,9 +67,7 @@ class PinInfoManager: NSObject {
     }
     
     private func commitUpdate() async {
-        if pinInfo.posts.count > 0, AutoStartLiveActivity.current == .withContent {
-            await LiveActivityManager.shared.start()
-        }
+        await LiveActivityManager.shared.startIfAutoStartAllowsContent()
     }
     
     @objc
@@ -101,16 +99,7 @@ class PinInfoManager: NSObject {
     @objc
     private func updatePin() {
         Task {
-            switch AutoStartLiveActivity.current {
-            case .withContent:
-                if pinInfo.posts.count > 0 {
-                    updateDebounce.emit(value: 0)
-                } else {
-                    await LiveActivityManager.shared.update()
-                }
-            case .appLaunch, .disable:
-                await LiveActivityManager.shared.update()
-            }
+            await LiveActivityManager.shared.startIfAutoStartAllowsContent()
         }
     }
     
@@ -119,7 +108,7 @@ class PinInfoManager: NSObject {
         Task {
             switch AutoStartLiveActivity.current {
             case .withContent:
-                updateDebounce.emit(value: 0)
+                await LiveActivityManager.shared.startIfAutoStartAllowsContent()
             case .appLaunch:
                 await LiveActivityManager.shared.start()
             case .disable:

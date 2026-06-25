@@ -177,6 +177,13 @@ struct UpdatePinStateIntent: LiveActivityIntent {
         
         let result = DataManager.shared.update(post: detail.post, isPinned: isPinned)
         await SyncCompletionManager.shared.waitForCompletion(postId: Int64(post.id), timeout: 5.0)
+        if result {
+            if isPinned {
+                await LiveActivityManager.shared.startIfAutoStartAllowsContent()
+            } else {
+                await LiveActivityManager.shared.update()
+            }
+        }
         
         return .result(value: result)
     }
